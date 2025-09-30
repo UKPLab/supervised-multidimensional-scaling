@@ -2,11 +2,11 @@
   <img src='logo.png' width='200'>
 </p>
 
-# ukp_project_template
+# supervised_multidimensional_scaling
 [![Arxiv](https://img.shields.io/badge/Arxiv-YYMM.NNNNN-red?style=flat-square&logo=arxiv&logoColor=white)](https://put-here-your-paper.com)
-[![License](https://img.shields.io/github/license/UKPLab/ukp-project-template)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/github/license/UKPLab/supervised-multidimensional-scaling)](https://opensource.org/licenses/Apache-2.0)
 [![Python Versions](https://img.shields.io/badge/Python-3.9-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
-[![CI](https://github.com/UKPLab/ukp-project-template/actions/workflows/main.yml/badge.svg)](https://github.com/UKPLab/ukp-project-template/actions/workflows/main.yml)
+[![CI](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml/badge.svg)](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml)
 
 This is the official template for new Python projects at UKP Lab. It was adapted for the needs of UKP Lab from the excellent [python-project-template](https://github.com/rochacbruno/python-project-template/) by [rochacbruno](https://github.com/rochacbruno).
 
@@ -49,7 +49,7 @@ pip install -r requirements-dev.txt # Only needed for development
 
 ### Using the classes
 
-To import classes/methods of `ukp_project_template` from inside the package itself you can use relative imports: 
+To import classes/methods of `supervised_multidimensional_scaling` from inside the package itself you can use relative imports: 
 
 ```py
 from .base import BaseClass # Notice how I omit the package name
@@ -60,8 +60,8 @@ BaseClass().something()
 To import classes/methods from outside the package (e.g. when you want to use the package in some other project) you can instead refer to the package name:
 
 ```py
-from ukp_project_template import BaseClass # Notice how I omit the file name
-from ukp_project_template.subpackage import SubPackageClass # Here it's necessary because it's a subpackage
+from supervised_multidimensional_scaling import BaseClass # Notice how I omit the file name
+from supervised_multidimensional_scaling.subpackage import SubPackageClass # Here it's necessary because it's a subpackage
 
 BaseClass().something()
 SubPackageClass().something()
@@ -69,10 +69,10 @@ SubPackageClass().something()
 
 ### Using scripts
 
-This is how you can use `ukp_project_template` from command line:
+This is how you can use `supervised_multidimensional_scaling` from command line:
 
 ```bash
-$ python -m ukp_project_template
+$ python -m supervised_multidimensional_scaling
 ```
 
 ### Expected results

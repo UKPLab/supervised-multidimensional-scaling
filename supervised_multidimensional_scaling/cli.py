@@ -1,4 +1,4 @@
-"""CLI interface for ukp_project_template project.
+"""CLI interface for supervised_multidimensional_scaling project.
 
 Be creative! do whatever you want!
 
@@ -13,7 +13,7 @@ from .subpackage import SubPackageClass
 def main():  # pragma: no cover
     """
     The main function executes on commands:
-    `python -m ukp_project_template` and `$ ukp_project_template `.
+    `python -m supervised_multidimensional_scaling` and `$ supervised_multidimensional_scaling `.
 
     This is your program's entry point.
 

@@ -1,4 +1,4 @@
-"""Python setup.py for ukp_project_template package"""
+"""Python setup.py for supervised_multidimensional_scaling package"""
 import io
 import os
 from setuptools import find_packages, setup
@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 
 def read(*paths, **kwargs):
     """Read the contents of a text file safely.
-    >>> read("ukp_project_template", "VERSION")
+    >>> read("supervised_multidimensional_scaling", "VERSION")
     '0.1.0'
     >>> read("README.md")
     ...
@@ -30,15 +30,15 @@ def read_requirements(path):
 
 
 setup(
-    name="ukp_project_template",
-    url="https://github.com/UKPLab/ukp-project-template/",
+    name="supervised_multidimensional_scaling",
+    url="https://github.com/UKPLab/supervised-multidimensional-scaling/",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     author="author_name",
     packages=find_packages(exclude=["tests", ".github"]),
     install_requires=read_requirements("requirements.txt"),
     entry_points={
-        "console_scripts": ["ukp_project_template = ukp_project_template.__main__:main"]
+        "console_scripts": ["supervised_multidimensional_scaling = supervised_multidimensional_scaling.__main__:main"]
     },
     extras_require={"test": read_requirements("requirements-dev.txt")},
 )
