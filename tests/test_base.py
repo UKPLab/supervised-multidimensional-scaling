@@ -1,6 +1,6 @@
 # Tests are defined here
-from supervised_multidimensional_scaling import BaseClass
-from supervised_multidimensional_scaling.subpackage import SubPackageClass
+from smds import BaseClass
+from smds.subpackage import SubPackageClass
 
 def test_template():
     assert True

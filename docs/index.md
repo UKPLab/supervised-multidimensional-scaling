@@ -18,4 +18,4 @@ For full documentation visit [mkdocs.org](https://www.mkdocs.org).
 
 ## Docs
 
-::: supervised_multidimensional_scaling
+::: smds
