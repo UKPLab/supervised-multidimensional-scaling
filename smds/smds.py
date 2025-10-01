@@ -264,6 +264,13 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
         Apply the learned transformation to X.
+
+        Parameters:
+            X: array-like of shape (n_samples, n_features)
+                The input data to be transformed.
+        Returns:
+            X_proj: array of shape (n_samples, n_components)
+                The transformed data in the low-dimensional space.
         """
         if self.W_ is None:
             raise RuntimeError("You must fit the model before calling transform.")
@@ -273,7 +280,8 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             X_centered = X - self._X_mean
         else:
             X_centered = X
-        return (self.W_ @ X_centered.T).T
+        X_proj = (self.W_ @ X_centered.T).T
+        return X_proj
 
     def _truncated_pinv(self, W: np.ndarray, tol: float = 1e-5) -> np.ndarray:
         U, S, VT = np.linalg.svd(W, full_matrices=False)
@@ -313,17 +321,34 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             return X_centered + self._X_mean
         else:
             return X_centered
+        
 
 
     def fit_transform(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Fit the model and transform X in one step.
+        Parameters:
+            X: array-like of shape (n_samples, n_features)
+                The input data to be transformed.
+            y: array-like of shape (n_samples,) or (n_samples, 2)
+                The labels or coordinates defining the ideal distances.
+        Returns:
+            X_proj: array of shape (n_samples, n_components)
+                The transformed data in the low-dimensional space.
+        """
         return self.fit(X, y).transform(X)
 
     def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Compute how well the transformed distances match ideal distances.
 
+        Parameters:
+            X: array-like of shape (n_samples, n_features)
+                The input data to be transformed.
+            y: array-like of shape (n_samples,) or (n_samples, 2)
+                The labels or coordinates defining the ideal distances.
         Returns:
-            A score between -∞ and 1. Higher is better.
+            score: A score between -∞ and 1. Higher is better.
         """
         if self.W_ is None:
             raise RuntimeError("Model must be fit before scoring.")
@@ -340,7 +365,9 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         stress = np.sum((D_pred[mask] - D_true[mask]) ** 2)
         denom = np.sum(D_true[mask] ** 2)
 
-        return 1 - stress / denom if denom > 0 else -np.inf
+        score = 1 - stress / denom if denom > 0 else -np.inf
+
+        return score
 
     def save(self, filepath: str):
         """
