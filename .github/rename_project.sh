@@ -17,9 +17,9 @@ echo "Description: $description";
 echo "Renaming project..."
 
 original_author="UKPLab"
-original_name="supervised_multidimensional_scaling"
+original_name="smds"
 original_urlname="supervised-multidimensional-scaling"
-original_description="Awesome supervised_multidimensional_scaling created by UKPLab"
+original_description="Awesome smds created by UKPLab"
 # Iterate over all files in the repository
 git ls-files | while read -r filename; do
     # Exclude .github/workflows/rename_project.yml from renaming

@@ -1,4 +1,4 @@
-"""Python setup.py for supervised_multidimensional_scaling package"""
+"""Python setup.py for smds package"""
 import io
 import os
 from setuptools import find_packages, setup
@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 
 def read(*paths, **kwargs):
     """Read the contents of a text file safely.
-    >>> read("supervised_multidimensional_scaling", "VERSION")
+    >>> read("smds", "VERSION")
     '0.1.0'
     >>> read("README.md")
     ...
@@ -30,7 +30,7 @@ def read_requirements(path):
 
 
 setup(
-    name="supervised_multidimensional_scaling",
+    name="smds",
     url="https://github.com/UKPLab/supervised-multidimensional-scaling/",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -38,7 +38,7 @@ setup(
     packages=find_packages(exclude=["tests", ".github"]),
     install_requires=read_requirements("requirements.txt"),
     entry_points={
-        "console_scripts": ["supervised_multidimensional_scaling = supervised_multidimensional_scaling.__main__:main"]
+        "console_scripts": ["smds = smds.__main__:main"]
     },
     extras_require={"test": read_requirements("requirements-dev.txt")},
 )

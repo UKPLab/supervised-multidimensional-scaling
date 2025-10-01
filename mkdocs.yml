@@ -1,4 +1,4 @@
-site_name: supervised_multidimensional_scaling
+site_name: smds
 nav:
   - Home: index.md
 
@@ -8,7 +8,7 @@ theme:
 plugins:
   - search
   - mkdocstrings:
-      project_name: supervised_multidimensional_scaling
+      project_name: smds
       handlers:
         python:
           options:
