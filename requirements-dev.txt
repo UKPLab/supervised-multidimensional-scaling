@@ -12,3 +12,10 @@ mkdocs
 mkdocs-material
 mkdocstrings
 mkdocstrings-python
+transformers
+datasets
+torch
+matplotlib
+seaborn
+pandas
+plotly
