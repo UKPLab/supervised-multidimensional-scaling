@@ -1,4 +1,7 @@
-from smds.smds.base_shape import BaseShape
+import numpy as np
+
+from .base_shape import BaseShape
+
 
 class CircularShape(BaseShape):
     # TODO: This shape is included as an example only
