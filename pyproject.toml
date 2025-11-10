@@ -1,0 +1,50 @@
+[project]
+name = "supervised-multidimensional-scaling"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.3.4",
+    "scikit-learn>=1.7.2",
+    "scipy>=1.16.3",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.9.0",
+    "coverage>=7.11.0",
+    "datasets>=4.4.1",
+    "gitchangelog>=3.0.4",
+    "isort>=7.0.0",
+    "matplotlib>=3.10.7",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.23",
+    "mkdocstrings>=0.30.1",
+    "mkdocstrings-python>=1.18.2",
+    "mypy>=1.18.2",
+    "pandas>=2.3.3",
+    "plotly>=6.4.0",
+    "pylint>=4.0.2",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.3",
+    "seaborn>=0.13.2",
+    "torch>=2.9.0",
+    "transformers>=4.57.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+output-format = "grouped"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+fixable = ["ALL"]
+
+[tool.mypy]
+strict = true
+implicit_reexport = true

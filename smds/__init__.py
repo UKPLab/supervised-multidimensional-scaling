@@ -1,6 +1,3 @@
 from .smds import SupervisedMDS
 
-
-__all__ = [
-    "SupervisedMDS"
-    ]
+__all__ = ["SupervisedMDS"]

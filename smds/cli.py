@@ -7,8 +7,10 @@ Be creative! do whatever you want!
 - Start a web application
 - Import things from your .base module
 """
+
 from .base import BaseClass
 from .subpackage import SubPackageClass
+
 
 def main():  # pragma: no cover
     """
