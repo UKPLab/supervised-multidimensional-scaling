@@ -1,6 +1,5 @@
 # This is a basic workflow to help you get started with Actions
 name: Run tests
-
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
@@ -8,42 +7,41 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-
 jobs:
   tests:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
       - name: Set up Python
-        uses: actions/setup-python@v4
-        with: 
-          python-version: 3.9
-          
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install dependencies
         run: |
-          pip install .
-          pip install -r requirements-dev.txt
-      
-      # Hacky way to get package name from setup.py
+          uv sync --all-extras --dev
+
       - name: Get package name
         id: get_package_name
         run: |
-          setup_file="setup.py"
-          pattern="name="
-          project_name=$(grep -oP "(?<=${pattern}\")[^\"]+" $setup_file)
-          echo "::set-output name=package_name::$project_name"
-  
+          package_name=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['name'])")
+          echo "package_name=$package_name" >> $GITHUB_OUTPUT
+
       - name: Run tests
         run: |
-          pytest -v --cov-fail-under=60 --cov=${{ steps.get_package_name.outputs.package_name }} -l --tb=short --maxfail=1 tests/
-          coverage xml
-          coverage html
+          uv run pytest -v --cov-fail-under=60 --cov=${{ steps.get_package_name.outputs.package_name }} -l --tb=short --maxfail=1 tests/
+          uv run coverage xml
+          uv run coverage html

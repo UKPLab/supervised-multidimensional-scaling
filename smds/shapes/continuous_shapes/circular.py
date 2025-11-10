@@ -1,10 +1,9 @@
 import numpy as np
 
-from .base_shape import BaseShape
+from smds.shapes.base_shape import BaseShape
 
 
 class CircularShape(BaseShape):
-    # TODO: This shape is included as an example only
     def __init__(self, radious: float = 1.0) -> None:
         self.radious = radious
 
