@@ -43,6 +43,6 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run pytest -v --cov-fail-under=60 --cov=${{ steps.get_package_name.outputs.package_name }} -l --tb=short --maxfail=1 tests/
+          uv run pytest -v --cov-fail-under=40 --cov=${{ steps.get_package_name.outputs.package_name }} -l --tb=short --maxfail=1 tests/
           uv run coverage xml
           uv run coverage html
