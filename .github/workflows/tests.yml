@@ -37,7 +37,8 @@ jobs:
       - name: Get package name
         id: get_package_name
         run: |
-          package_name=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['name'])")
+          # Get the actual Python module name (with underscores) from the source directory
+          package_name=$(find . -maxdepth 2 -name "__init__.py" -type f | grep -v ".venv\|tests\|build" | head -1 | xargs dirname | xargs basename)
           echo "package_name=$package_name" >> $GITHUB_OUTPUT
 
       - name: Run tests
