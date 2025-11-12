@@ -6,21 +6,15 @@ from abc import ABC, abstractmethod
 from typing import Self, Any
 
 
-class ManifoldStrategy(BaseModel, BaseEstimator, TransformerMixin, ABC):  # type: ignore[misc]
+class BaseShape(BaseModel, BaseEstimator, TransformerMixin, ABC):  # type: ignore[misc]
     """
     Abstract base class for all manifold strategies.
-    
-    Inherits from:
-    - BaseModel: For Pydantic data validation of parameters (in subclasses).
-    - BaseEstimator: For sklearn compatibility (get_params/set_params).
-    - TransformerMixin: To provide fit_transform, as it's a y -> D transformer.
-    - ABC: To define an abstract interface.
     """
     class Config:
         arbitrary_types_allowed = True
         validate_assignment = True
 
-    def fit(self, y: NDArray[Any], y_ignored: None = None) -> Self: 
+    def fit(self, y: NDArray[Any], y_ignored: None = None) -> Self:
         """
         'Fits' the strategy. Validates the input format.
         'y' here is the "X" data for this transformer.
@@ -46,7 +40,6 @@ class ManifoldStrategy(BaseModel, BaseEstimator, TransformerMixin, ABC):  # type
         Converts to array and checks if empty.
         Returns the processed array.
         """
-        # Konvertiert Eingaben (wie Listen) in ein Array
         y_proc = np.asarray(y)
         
         if y_proc.size == 0:
