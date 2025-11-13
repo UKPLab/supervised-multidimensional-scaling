@@ -1,32 +1,23 @@
 import numpy as np
 from numpy.typing import NDArray
-from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
 from abc import ABC, abstractmethod
 from typing import Self
+from sklearn.base import BaseEstimator  # type: ignore[import-untyped]
 
 
-class BaseShape(BaseEstimator, TransformerMixin, ABC):  # type: ignore[misc]
+class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
     """
     Abstract base class for all manifold strategies.
     """
-
-    def fit(self, y: NDArray[np.float64]) -> Self:
-        """
-        'Fits' the strategy. Validates the input format.
-        'y' here is the "X" data for this transformer.
-        """
-        self._validate_input(y)
-        return self
 
     def __call__(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
         Make BaseShape instances callable.
         Delegates to transform() 
         """
-        #TODO: Do we really need?
-        return self.transform(y)
+        return self.compute_distance_matrix(y)
     
-    def transform(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
+    def compute_distance_matrix(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
         Transforms labels y into an ideal distance matrix D.
         This is the main "Template Method".
@@ -63,26 +54,7 @@ class BaseShape(BaseEstimator, TransformerMixin, ABC):  # type: ignore[misc]
             )
         
         return y_proc
-    
-    def _normalize_y(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        """
-        Normalize y to [0, 1] range with edge case handling.
         
-        If all values are identical (max_y == min_y), returns zeros array.
-        This ensures that subsequent distance calculations result in zero distances.
-        
-        Returns:
-            y_norm: Normalized array in [0, 1] range, or zeros if all values are identical
-        """
-        max_y: np.float64 = np.max(y)
-        min_y: np.float64 = np.min(y)
-        
-        if max_y == min_y:
-            return np.zeros_like(y, dtype=float)
-        
-        y_norm: NDArray[np.float64] = (y - min_y) / (max_y - min_y)
-        return y_norm
-
     @abstractmethod
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
