@@ -34,9 +34,9 @@ class CircularShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         y_norm: NDArray[np.float64] = self._normalize_y(y)
-        
+
         delta: NDArray[np.float64] = np.abs(y_norm[:, None] - y_norm[None, :])
         delta = np.minimum(delta, 1 - delta)
-        
+
         distance: NDArray[np.float64] = 2 * np.sin(np.pi * delta)
         return distance
