@@ -42,7 +42,7 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
         Converts to array, checks if empty, and validates shape.
         Returns the processed array.
         """
-        y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.floating)
+        y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
         
         if y_proc.size == 0:
             raise ValueError("Input 'y' cannot be empty.")
