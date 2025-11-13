@@ -1,13 +1,12 @@
 import numpy as np
 from numpy.typing import NDArray
 from abc import ABC, abstractmethod
-from typing import Self
 from sklearn.base import BaseEstimator  # type: ignore[import-untyped]
 
 
 class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
     """
-    Abstract base class for all manifold strategies.
+    General abstraction for shapes (manifolds).    
     """
 
     def __call__(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
