@@ -46,3 +46,9 @@ jobs:
           uv run pytest -v --cov-fail-under=40 --cov=${{ steps.get_package_name.outputs.package_name }} -l --tb=short --maxfail=1 tests/
           uv run coverage xml
           uv run coverage html
+
+      - name: Make version check script executable
+        run: chmod +x .github/check_project_version.sh
+
+      - name: Check version bump in pyproject.toml
+        run: bash .github/check_project_version.sh
