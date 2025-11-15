@@ -116,7 +116,7 @@ def test_discrete_circular_recovers_structure_from_high_dim(
         structured_circular_data_high_dim: tuple[np.ndarray, np.ndarray, np.ndarray]
 ) -> None:
     """
-    Tests if SMDS can recover a 2D circular structure from a high-dimensional space.
+    Tests if SMDS can recover a 2D discrete circular structure from a high-dimensional space.
     """
     X_high_dim, y, X_original = structured_circular_data_high_dim
 
