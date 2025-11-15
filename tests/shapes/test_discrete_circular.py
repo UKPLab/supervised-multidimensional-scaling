@@ -53,7 +53,8 @@ def structured_circular_data_2d() -> tuple[np.ndarray, np.ndarray]:
 def test_discrete_circular_preserves_structure_in_2d(
         structured_circular_data_2d: tuple[np.ndarray, np.ndarray]) -> None:
     """
-    Sanity Check (2D -> 2D): Tests if SMDS preserves an already-circular structure.
+    Sanity Check (2D -> 2D): Tests the core behavior of DiscreteCircularShape: ensuring that
+    points with adjacent labels are closer than points with opposite labels.
     """
     X, y = structured_circular_data_2d
     smds_engine = SupervisedMDS(n_components=2, manifold=DiscreteCircularShape())
@@ -149,5 +150,5 @@ def test_discrete_circular_recovers_structure_from_high_dim(
     # --- Built-in Score ---
     # The score measures how well the projection satisfies the circular distance rules.
     score = smds_engine.score(X_high_dim, y)
-    #print(f"SMDS score for DiscreteCircular: {score:.4f}")
+    print(f"SMDS score for DiscreteCircular: {score:.4f}")
     assert score > 0.9, "SMDS score is too low, indicating a poor circular recovery."
