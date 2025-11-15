@@ -51,12 +51,12 @@ def structured_cluster_data_2d() -> tuple[np.ndarray, np.ndarray]:
     return X[indices], y[indices]
 
 
-def test_cluster_preserves_structure_in_2d(structured_data: tuple[np.ndarray, np.ndarray]) -> None:
+def test_cluster_preserves_structure_in_2d(structured_cluster_data_2d: tuple[np.ndarray, np.ndarray]) -> None:
     """
     Sanity Check (2D -> 2D): Tests the core behavior of ClusterShape: ensuring that points with the same
     label are closer to each other than to points with different labels.
     """
-    X, y = structured_data
+    X, y = structured_cluster_data_2d
     smds_engine = SupervisedMDS(n_components=2, manifold=ClusterShape())
 
     X_proj = smds_engine.fit_transform(X, y)
@@ -111,12 +111,12 @@ def structured_cluster_data_high_dim() -> tuple[np.ndarray, np.ndarray, np.ndarr
 
 
 def test_cluster_recovers_structure_from_high_dim(
-        structured_data_high_dim: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
+        structured_cluster_data_high_dim: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
     """
     Tests if SMDS can find and recover a 2D cluster structure
     hidden in a noisy, high-dimensional space.
     """
-    X, y, X_original = structured_data_high_dim
+    X, y, X_original = structured_cluster_data_high_dim
 
     smds_engine = SupervisedMDS(n_components=2, manifold=ClusterShape())
     X_proj = smds_engine.fit_transform(X, y)
