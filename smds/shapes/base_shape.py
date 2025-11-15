@@ -9,8 +9,6 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
     General abstraction for shapes (manifolds).    
     """
 
-    # NOTE: The type hint currently enforces float64, which might be too restrictive
-    #       for categorical shapes like ClusterShape. This is a point for team discussion.
     def __call__(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
         Make BaseShape instances callable.
@@ -37,9 +35,6 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
         Converts to array, checks if empty, and validates shape.
         Returns the processed array.
         """
-        # TODO: Discuss with team. This line is the source of the float64
-        #       enforcement. It prevents using string/int labels for shapes like
-        #       ClusterShape. Consider removing `dtype=np.float64` to let NumPy infer it.
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
 
         if y_proc.size == 0:

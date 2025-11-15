@@ -31,10 +31,9 @@ def test_cluster_smoke_test(random_data: tuple[np.ndarray, np.ndarray]) -> None:
 
 
 @pytest.fixture
-def structured_data() -> tuple[np.ndarray, np.ndarray]:
+def structured_cluster_data_2d() -> tuple[np.ndarray, np.ndarray]:
     """
     Provides a dataset where points are already clearly separated into two groups.
-    Tests if ClusterShape correctly groups them.
     """
     # Create 25 points centered around [-10, -10]
     cluster0 = np.random.randn(25, 2) - 10
@@ -52,9 +51,9 @@ def structured_data() -> tuple[np.ndarray, np.ndarray]:
     return X[indices], y[indices]
 
 
-def test_cluster_separates_groups(structured_data: tuple[np.ndarray, np.ndarray]) -> None:
+def test_cluster_preserves_structure_in_2d(structured_data: tuple[np.ndarray, np.ndarray]) -> None:
     """
-    Tests the core behavior of ClusterShape: ensuring that points with the same
+    Sanity Check (2D -> 2D): Tests the core behavior of ClusterShape: ensuring that points with the same
     label are closer to each other than to points with different labels.
     """
     X, y = structured_data
@@ -85,7 +84,7 @@ def test_cluster_separates_groups(structured_data: tuple[np.ndarray, np.ndarray]
 
 
 @pytest.fixture
-def structured_data_high_dim() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def structured_cluster_data_high_dim() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Provides a high-dimensional dataset containing a hidden 2D cluster structure.
     This tests the ability of SMDS to recover a latent manifold.
