@@ -1,6 +1,6 @@
 import numpy as np
-from numpy.typing import NDArray
 import pytest
+from numpy.typing import NDArray
 from scipy.spatial import procrustes
 from scipy.spatial.distance import pdist
 
@@ -24,8 +24,8 @@ def smds_engine() -> SupervisedMDS:
 
 @pytest.mark.smoke
 def test_cluster_smoke_test(
-        random_data: tuple[NDArray[np.float64], NDArray[np.float64]],
-        smds_engine: SupervisedMDS,
+    random_data: tuple[NDArray[np.float64], NDArray[np.float64]],
+    smds_engine: SupervisedMDS,
 ) -> None:
     """
     A simple "smoke test" to ensure ClusterShape can be fit and transformed
@@ -69,8 +69,8 @@ def structured_cluster_data_2d() -> tuple[NDArray[np.float64], NDArray[np.float6
 
 
 def test_cluster_preserves_structure_in_2d(
-        structured_cluster_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
-        smds_engine: SupervisedMDS,
+    structured_cluster_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
+    smds_engine: SupervisedMDS,
 ) -> None:
     """
     Sanity Check (2D -> 2D): Tests the core behavior of ClusterShape: ensuring that points with the same
@@ -131,8 +131,8 @@ def structured_cluster_data_high_dim() -> tuple[NDArray[np.float64], NDArray[np.
 
 
 def test_cluster_recovers_structure_from_high_dim(
-        structured_cluster_data_high_dim: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
-        smds_engine: SupervisedMDS
+    structured_cluster_data_high_dim: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+    smds_engine: SupervisedMDS,
 ) -> None:
     """
     Tests if SMDS can find and recover a 2D cluster structure
@@ -169,6 +169,5 @@ def test_cluster_recovers_structure_from_high_dim(
     score = smds_engine.score(X, y)
     score_threshold = 0.95
     assert score > score_threshold, (
-        f"The SMDS score is too low. "
-        f"Expected a score greater than {score_threshold}, but got {score:.4f}."
+        f"The SMDS score is too low. Expected a score greater than {score_threshold}, but got {score:.4f}."
     )
