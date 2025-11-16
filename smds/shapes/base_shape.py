@@ -1,12 +1,13 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 from numpy.typing import NDArray
-from abc import ABC, abstractmethod
 from sklearn.base import BaseEstimator  # type: ignore[import-untyped]
 
 
 class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
     """
-    General abstraction for shapes (manifolds).    
+    General abstraction for shapes (manifolds).
     """
 
     def __call__(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -22,8 +23,7 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
 
         if distance.shape != (n, n):
             raise ValueError(
-                f"_compute_distances must return a square matrix of shape ({n}, {n}), "
-                f"but got shape {distance.shape}."
+                f"_compute_distances must return a square matrix of shape ({n}, {n}), but got shape {distance.shape}."
             )
 
         np.fill_diagonal(distance, 0)
@@ -45,13 +45,13 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
                 f"Input 'y' must be 1-dimensional (n_samples,), "
                 f"but got shape {y_proc.shape} with {y_proc.ndim} dimensions."
             )
-            
+
         return y_proc
 
     @abstractmethod
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        The specific distance computation logic to be implemented 
+        The specific distance computation logic to be implemented
         by all concrete (sub)strategies..
         """
-        raise NotImplementedError() 
+        raise NotImplementedError()
