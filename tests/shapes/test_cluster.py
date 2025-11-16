@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 import pytest
 from scipy.spatial import procrustes
 from scipy.spatial.distance import pdist
@@ -8,58 +9,78 @@ from smds.shapes.discrete_shapes.cluster import ClusterShape
 
 
 @pytest.fixture
-def random_data() -> tuple[np.ndarray, np.ndarray]:
+def random_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Provides random X and y data for basic testing."""
-    X = np.random.randn(50, 10)
-    y = np.random.randint(0, 3, size=50).astype(float)
+    X: NDArray[np.float64] = np.random.randn(50, 10)
+    y: NDArray[np.float64] = np.random.randint(0, 3, size=50).astype(float)
     return X, y
 
 
-def test_cluster_smoke_test(random_data: tuple[np.ndarray, np.ndarray]) -> None:
+@pytest.fixture
+def smds_engine() -> SupervisedMDS:
+    """Provides a default SupervisedMDS engine for testing."""
+    return SupervisedMDS(n_components=2, manifold=ClusterShape())
+
+
+@pytest.mark.smoke
+def test_cluster_smoke_test(
+        random_data: tuple[NDArray[np.float64], NDArray[np.float64]],
+        smds_engine: SupervisedMDS,
+) -> None:
     """
     A simple "smoke test" to ensure ClusterShape can be fit and transformed
     without errors and produces an output of the correct shape.
     """
+    X: NDArray[np.float64]
+    y: NDArray[np.float64]
     X, y = random_data
+
+    X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
+
     n_samples = X.shape[0]
-    n_components = 2
+    n_components = smds_engine.n_components
 
-    smds_engine = SupervisedMDS(n_components=n_components, manifold=ClusterShape())
-    X_proj = smds_engine.fit_transform(X, y)
-
-    assert X_proj.shape == (n_samples, n_components)
+    assert X_proj.shape == (n_samples, n_components), (
+        f"Output shape is incorrect. "
+        f"Expected (n_samples, n_components): {(n_samples, n_components)}, "
+        f"but got: {X_proj.shape}."
+    )
 
 
 @pytest.fixture
-def structured_cluster_data_2d() -> tuple[np.ndarray, np.ndarray]:
+def structured_cluster_data_2d() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """
     Provides a dataset where points are already clearly separated into two groups.
     """
     # Create 25 points centered around [-10, -10]
-    cluster0 = np.random.randn(25, 2) - 10
+    cluster0: NDArray[np.float64] = np.random.randn(25, 2) - 10
 
     # Create 25 points centered around [10, 10]
-    cluster1 = np.random.randn(25, 2) + 10
+    cluster1: NDArray[np.float64] = np.random.randn(25, 2) + 10
 
-    X = np.vstack([cluster0, cluster1])
-    y = np.array([0.0] * 25 + [1.0] * 25)
+    X: NDArray[np.float64] = np.vstack([cluster0, cluster1])
+    y: NDArray[np.float64] = np.array([0.0] * 25 + [1.0] * 25)
 
     # Shuffle the data
-    indices = np.arange(50)
+    indices: NDArray[np.int_] = np.arange(50)
     np.random.shuffle(indices)
 
     return X[indices], y[indices]
 
 
-def test_cluster_preserves_structure_in_2d(structured_cluster_data_2d: tuple[np.ndarray, np.ndarray]) -> None:
+def test_cluster_preserves_structure_in_2d(
+        structured_cluster_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
+        smds_engine: SupervisedMDS,
+) -> None:
     """
     Sanity Check (2D -> 2D): Tests the core behavior of ClusterShape: ensuring that points with the same
     label are closer to each other than to points with different labels.
     """
+    X: NDArray[np.float64]
+    y: NDArray[np.float64]
     X, y = structured_cluster_data_2d
-    smds_engine = SupervisedMDS(n_components=2, manifold=ClusterShape())
 
-    X_proj = smds_engine.fit_transform(X, y)
+    X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
     # Identify the indices for each cluster
     indices_c0 = np.where(y == 0.0)[0]
@@ -75,16 +96,15 @@ def test_cluster_preserves_structure_in_2d(structured_cluster_data_2d: tuple[np.
     centroid_c1 = X_proj[indices_c1].mean(axis=0)
     dist_between_clusters = np.linalg.norm(centroid_c0 - centroid_c1)
 
-    #print(f"Avg within-cluster distance: {avg_within_cluster_dist:.4f}")
-    #print(f"Distance between cluster centroids: {dist_between_clusters:.4f}")
-    assert avg_within_cluster_dist < dist_between_clusters
-
-
-#ToDo: test for int and string lables IF team decides to include those
+    assert avg_within_cluster_dist < dist_between_clusters, (
+        f"Clusters are not well-separated. "
+        f"Average within-cluster distance ({avg_within_cluster_dist:.4f}) "
+        f"should be less than the distance between centroids ({dist_between_clusters:.4f})."
+    )
 
 
 @pytest.fixture
-def structured_cluster_data_high_dim() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def structured_cluster_data_high_dim() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Provides a high-dimensional dataset containing a hidden 2D cluster structure.
     This tests the ability of SMDS to recover a latent manifold.
@@ -94,52 +114,61 @@ def structured_cluster_data_high_dim() -> tuple[np.ndarray, np.ndarray, np.ndarr
     high_dim = 10
     n_samples_per_cluster = 25
 
-    cluster1_latent = np.random.randn(n_samples_per_cluster, latent_dim) - 10
-    cluster2_latent = np.random.randn(n_samples_per_cluster, latent_dim) + 10
+    cluster1_latent: NDArray[np.float64] = np.random.randn(n_samples_per_cluster, latent_dim) - 10
+    cluster2_latent: NDArray[np.float64] = np.random.randn(n_samples_per_cluster, latent_dim) + 10
     X_latent = np.vstack([cluster1_latent, cluster2_latent])
     y = np.array([0.0] * n_samples_per_cluster + [1.0] * n_samples_per_cluster)
 
     # Create a random projection matrix to map into higher dim
-    projection_matrix = np.random.randn(latent_dim, high_dim)
-    X_high_dim = X_latent @ projection_matrix
+    projection_matrix: NDArray[np.float64] = np.random.randn(latent_dim, high_dim)
+    X_high_dim: NDArray[np.float64] = X_latent @ projection_matrix
 
     # Shuffle to ensure the model isn't relying on data order
-    indices = np.arange(X_high_dim.shape[0])
+    indices: NDArray[np.int_] = np.arange(X_high_dim.shape[0])
     np.random.shuffle(indices)
 
     return X_high_dim[indices], y[indices], X_latent[indices]
 
 
 def test_cluster_recovers_structure_from_high_dim(
-        structured_cluster_data_high_dim: tuple[np.ndarray, np.ndarray, np.ndarray]) -> None:
+        structured_cluster_data_high_dim: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+        smds_engine: SupervisedMDS
+) -> None:
     """
     Tests if SMDS can find and recover a 2D cluster structure
     hidden in a noisy, high-dimensional space.
     """
+    X: NDArray[np.float64]
+    y: NDArray[np.float64]
+    X_original: NDArray[np.float64]
     X, y, X_original = structured_cluster_data_high_dim
 
-    smds_engine = SupervisedMDS(n_components=2, manifold=ClusterShape())
-    X_proj = smds_engine.fit_transform(X, y)
+    X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
     indices_c0 = np.where(y == 0.0)[0]
     indices_c1 = np.where(y == 1.0)[0]
 
-    # --- Sanity check ---
     # Checks if the recovered clusters are separated at all.
     avg_within_cluster_dist = (pdist(X_proj[indices_c0]).mean() + pdist(X_proj[indices_c1]).mean()) / 2
     dist_between_clusters = np.linalg.norm(X_proj[indices_c0].mean(axis=0) - X_proj[indices_c1].mean(axis=0))
-    #print(f"Avg within-cluster distance: {avg_within_cluster_dist:.4f}")
-    #print(f"Distance between cluster centroids: {dist_between_clusters:.4f}")
-    assert avg_within_cluster_dist < dist_between_clusters, "Sanity check failed: Clusters are not separated."
+    assert avg_within_cluster_dist < dist_between_clusters, (
+        f"Clusters are not well-separated. "
+        f"The average distance within clusters ({avg_within_cluster_dist:.4f}) "
+        f"should be less than the distance between their centroids ({dist_between_clusters:.4f})."
+    )
 
-    # --- Procrustes Analysis ---
     # Compares the recovered shape to the original latent shape, ignoring rotation/scale.
     mtx1, mtx2, disparity = procrustes(X_original, X_proj)
-    #print(f"Procrustes disparity between original and recovered shape: {disparity:.4f}")
-    assert disparity < 0.1, "Procrustes analysis shows the recovered shape is too different from the original."
+    procrustes_threshold = 0.1
+    assert disparity < procrustes_threshold, (
+        f"Shape recovery failed Procrustes analysis. "
+        f"The disparity ({disparity:.4f}) exceeds the threshold of {procrustes_threshold}."
+    )
 
-    # --- Built-in Score ---
     # The score measures how well the projection satisfies the ClusterShape distance rules.
     score = smds_engine.score(X, y)
-    #print(f"SMDS score for ClusterShape: {score:.4f}")
-    assert score > 0.95, "SMDS score is too low, indicating a poor clustering result."
+    score_threshold = 0.95
+    assert score > score_threshold, (
+        f"The SMDS score is too low. "
+        f"Expected a score greater than {score_threshold}, but got {score:.4f}."
+    )
