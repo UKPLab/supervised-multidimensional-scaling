@@ -6,6 +6,7 @@ from smds import SupervisedMDS
 from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
 from smds.shapes.discrete_shapes.cluster import ClusterShape
 
+
 # =============================================================================
 # Helper
 # =============================================================================
@@ -22,11 +23,11 @@ def _compare_shape_scores(
     Returns:
         A tuple of (hierarchical_score, cluster_score).
     """
-    # Score the specialist (HierarchicalShape)
+    # Score the HierarchicalShape
     engine_hierarchical.fit(X, y_hierarchical)
     hierarchical_score = engine_hierarchical.score(X, y_hierarchical)
 
-    # Score the generalist (ClusterShape) after flattening the labels
+    # Score the ClusterShape after flattening the labels
     _, y_flat = np.unique(y_hierarchical, axis=0, return_inverse=True)
     engine_cluster.fit(X, y_flat)
     cluster_score = engine_cluster.score(X, y_flat)
@@ -119,14 +120,14 @@ def new_hierarchical_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     Provides data where the X geometry newLY matches the Y hierarchy.
     HierarchicalShape should excel here.
     """
-    n_per_species = 10
+    n_examples = 10
     y_list = [[0, 0, 0], [0, 0, 1], [0, 1, 2], [0, 1, 3], [1, 0, 4], [1, 0, 5], [1, 1, 6], [1, 1, 7]]
-    y = np.repeat(y_list, n_per_species, axis=0).astype(float)
+    y = np.repeat(y_list, n_examples, axis=0).astype(float)
 
-    continent_offset = np.array([-50, 0]) * (1 - y[:, 0:1]) + np.array([50, 0]) * y[:, 0:1]
-    class_offset = np.array([0, -10]) * (1 - y[:, 1:2]) + np.array([0, 10]) * y[:, 1:2]
-    species_offset = np.random.randn(y.shape[0], 2) * 1.0
-    X = continent_offset + class_offset + species_offset
+    level_1_offset = np.array([-50, 0]) * (1 - y[:, 0:1]) + np.array([50, 0]) * y[:, 0:1]
+    level_2_offset = np.array([0, -10]) * (1 - y[:, 1:2]) + np.array([0, 10]) * y[:, 1:2]
+    level_3_offset = np.random.randn(y.shape[0], 2) * 1.0
+    X = level_1_offset + level_2_offset + level_3_offset
 
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
@@ -155,3 +156,4 @@ def test_hierarchical_outperforms_cluster_on_new_data(
         f"ClusterShape score ({cluster_score:.4f}) on a newly hierarchical dataset."
     )
     assert hierarchical_score > 0.9, f"Hierarchical score is unexpectedly low ({hierarchical_score:.4f})"
+
