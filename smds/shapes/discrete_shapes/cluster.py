@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 
 from smds.shapes.base_shape import BaseShape
 
@@ -15,7 +16,7 @@ class ClusterShape(BaseShape):
     def __init__(self) -> None:
         pass
 
-    def _compute_distances(self, y: np.ndarray) -> np.ndarray:
+    def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
         Computes the ideal pairwise distance matrix for categorical labels.
 
@@ -26,6 +27,6 @@ class ClusterShape(BaseShape):
             A (n_samples, n_samples) distance matrix where D[i, j] is 0 if
             y[i] == y[j] and 1 otherwise.
         """
-        distance_matrix = (y[:, None] != y[None, :]).astype(float)
+        distance_matrix: NDArray[np.float64] = (y[:, None] != y[None, :]).astype(float)
 
         return distance_matrix
