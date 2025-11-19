@@ -213,7 +213,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
 
         if np.any(D < 0):
             # Raise warning if any distances are negative
-            print("Warning: Distance matrix is incomplete. Using optimization to fit W.")
+            print("Warning: Distance matrix is incomplete. Using optimization to fit W.") #ToDo: doesnt make sense for chain shape
             mask = D >= 0
             rng = np.random.default_rng(42)
             W0 = rng.normal(scale=0.01, size=(self.n_components, X.shape[1]))
