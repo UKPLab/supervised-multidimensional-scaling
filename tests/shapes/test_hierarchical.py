@@ -17,7 +17,7 @@ def random_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
 
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=HierarchicalShape(level_distances=[1.0, 2.0, 3.0]))
+    return SupervisedMDS(n_components=2, manifold=HierarchicalShape(level_distances=[100.0, 10.0, 1.0]))
 
 
 @pytest.mark.smoke
@@ -48,30 +48,20 @@ def test_hierarchical_smoke_test(
 @pytest.fixture
 def structured_hierarchical_data_2d() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """
-    Provides a dataset with clear hierarchical structure:
-    - Level 0: Two main groups (0 and 1)
-    - Level 1: Subgroups within each main group
-    - Level 2: Fine-grained distinctions
+    Provides a dataset where X geometry matches the Y hierarchy.
+    HierarchicalShape should excel here.
     """
-    n_per_group = 25
-    
-    group0_sub0 = np.random.randn(n_per_group, 2) + np.array([-10, -10])
-    group0_sub1 = np.random.randn(n_per_group, 2) + np.array([-10, 10])
-    group1_sub0 = np.random.randn(n_per_group, 2) + np.array([10, -10])
-    group1_sub1 = np.random.randn(n_per_group, 2) + np.array([10, 10])
-    
-    X: NDArray[np.float64] = np.vstack([group0_sub0, group0_sub1, group1_sub0, group1_sub1])
-    
-    y: NDArray[np.float64] = np.array(
-        [[0, 0, 0]] * n_per_group +
-        [[0, 0, 1]] * n_per_group +
-        [[1, 0, 0]] * n_per_group +
-        [[1, 0, 1]] * n_per_group
-    ).astype(float)
-    
-    indices: NDArray[np.int_] = np.arange(X.shape[0])
+    n_examples = 25
+    y_list = [[0, 0, 0], [0, 0, 1], [0, 1, 2], [0, 1, 3], [1, 0, 4], [1, 0, 5], [1, 1, 6], [1, 1, 7]]
+    y = np.repeat(y_list, n_examples, axis=0).astype(float)
+
+    level_1_offset = np.array([-50, 0]) * (1 - y[:, 0:1]) + np.array([50, 0]) * y[:, 0:1]
+    level_2_offset = np.array([0, -10]) * (1 - y[:, 1:2]) + np.array([0, 10]) * y[:, 1:2]
+    level_3_offset = np.random.randn(y.shape[0], 2) * 1.0
+    X = level_1_offset + level_2_offset + level_3_offset
+
+    indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
-    
     return X[indices], y[indices]
 
 
@@ -94,8 +84,8 @@ def test_hierarchical_preserves_structure_in_2d(
     )
     
     score = smds_engine.score(X, y)
-    assert score > 0.5, (
-        f"The SMDS score should be positive, but got {score:.4f}."
+    assert score > 0.9, (
+        f"The SMDS score should be high since X geometry matches Y hierarchy, but got {score:.4f}."
     )
 
 
@@ -157,31 +147,24 @@ def test_hierarchical_init_validation() -> None:
 @pytest.fixture
 def structured_hierarchical_data_high_dim() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
-    Provides a high-dimensional dataset containing a hidden hierarchical structure.
+    Provides a high-dimensional dataset where X geometry matches the Y hierarchy.
     """
-    latent_dim = 2
+    n_examples = 25
+    y_list = [[0, 0, 0], [0, 0, 1], [0, 1, 2], [0, 1, 3], [1, 0, 4], [1, 0, 5], [1, 1, 6], [1, 1, 7]]
+    y = np.repeat(y_list, n_examples, axis=0).astype(float)
+
+    level_1_offset = np.array([-50, 0]) * (1 - y[:, 0:1]) + np.array([50, 0]) * y[:, 0:1]
+    level_2_offset = np.array([0, -10]) * (1 - y[:, 1:2]) + np.array([0, 10]) * y[:, 1:2]
+    level_3_offset = np.random.randn(y.shape[0], 2) * 1.0
+    X_latent = level_1_offset + level_2_offset + level_3_offset
+
     high_dim = 10
-    n_samples_per_group = 25
-    
-    group0_sub0_latent = np.random.randn(n_samples_per_group, latent_dim) + np.array([-10, -10])
-    group0_sub1_latent = np.random.randn(n_samples_per_group, latent_dim) + np.array([-10, 10])
-    group1_sub0_latent = np.random.randn(n_samples_per_group, latent_dim) + np.array([10, -10])
-    group1_sub1_latent = np.random.randn(n_samples_per_group, latent_dim) + np.array([10, 10])
-    
-    X_latent = np.vstack([group0_sub0_latent, group0_sub1_latent, group1_sub0_latent, group1_sub1_latent])
-    y = np.array(
-        [[0, 0, 0]] * n_samples_per_group +
-        [[0, 0, 1]] * n_samples_per_group +
-        [[1, 0, 0]] * n_samples_per_group +
-        [[1, 0, 1]] * n_samples_per_group
-    ).astype(float)
-    
-    projection_matrix: NDArray[np.float64] = np.random.randn(latent_dim, high_dim)
+    projection_matrix: NDArray[np.float64] = np.random.randn(2, high_dim)
     X_high_dim: NDArray[np.float64] = X_latent @ projection_matrix
-    
+
     indices: NDArray[np.int_] = np.arange(X_high_dim.shape[0])
     np.random.shuffle(indices)
-    
+
     return X_high_dim[indices], y[indices], X_latent[indices]
 
 
@@ -205,7 +188,7 @@ def test_hierarchical_recovers_structure_from_high_dim(
     )
     
     score = smds_engine.score(X, y)
-    score_threshold = 0.70
+    score_threshold = 0.9
     assert score > score_threshold, (
         f"The SMDS score is too low. "
         f"Expected a score greater than {score_threshold}, but got {score:.4f}."
