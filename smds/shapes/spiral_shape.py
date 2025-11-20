@@ -11,6 +11,7 @@ class SpiralShape(BaseShape):
     growth_rate: Rate at which spiral expands per radian
     num_turns: Number of complete rotations
     """
+
     def __init__(self, initial_radius: float = 0.5, growth_rate: float = 1.0, num_turns: float = 2.0) -> None:
         self.initial_radius = initial_radius
         self.growth_rate = growth_rate

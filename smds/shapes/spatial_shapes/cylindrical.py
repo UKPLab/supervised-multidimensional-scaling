@@ -33,11 +33,14 @@ class CylindricalShape(BaseShape):
         lat = np.radians(y[:, 0])  # latitude as height
         lon = np.radians(y[:, 1])  # longitude as angle
 
-        coords = np.stack([
-            self.radius * np.cos(lon),
-            self.radius * np.sin(lon),
-            lat  # treat lat as height
-        ], axis=1)
+        coords = np.stack(
+            [
+                self.radius * np.cos(lon),
+                self.radius * np.sin(lon),
+                lat,  # treat lat as height
+            ],
+            axis=1,
+        )
 
         diffs = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
         distance = np.linalg.norm(diffs, axis=2)

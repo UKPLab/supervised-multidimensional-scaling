@@ -42,17 +42,17 @@ def test_discrete_circular_distance_computation() -> None:
 
     dists: NDArray[np.float64] = shape(y)
 
-    expected: NDArray[np.float64] = np.array([
-        [0.0, 1.0, 6.0, 1.0],
-        [1.0, 0.0, 5.0, 2.0],
-        [6.0, 5.0, 0.0, 5.0],
-        [1.0, 2.0, 5.0, 0.0],
-    ])
+    expected: NDArray[np.float64] = np.array(
+        [
+            [0.0, 1.0, 6.0, 1.0],
+            [1.0, 0.0, 5.0, 2.0],
+            [6.0, 5.0, 0.0, 5.0],
+            [1.0, 2.0, 5.0, 0.0],
+        ]
+    )
 
     assert_array_almost_equal(
-        dists,
-        expected,
-        err_msg="The computed distance matrix does not match the expected wrap-around distances."
+        dists, expected, err_msg="The computed distance matrix does not match the expected wrap-around distances."
     )
 
 
@@ -85,8 +85,7 @@ def test_discrete_circular_smoke_test(
     n_samples = X.shape[0]
     n_components = smds_engine.n_components
     assert X_proj.shape == (n_samples, n_components), (
-        f"Output shape is incorrect. "
-        f"Expected {(n_samples, n_components)}, but got {X_proj.shape}."
+        f"Output shape is incorrect. Expected {(n_samples, n_components)}, but got {X_proj.shape}."
     )
 
 
@@ -139,7 +138,7 @@ def test_discrete_circular_preserves_structure_in_2d(
 
 @pytest.fixture
 def structured_circular_data_high_dim(
-    structured_circular_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]]
+    structured_circular_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Provides a high-dimensional dataset containing a hidden 2D circular structure."""
     X_latent, y = structured_circular_data_2d
@@ -176,6 +175,5 @@ def test_discrete_circular_recovers_structure_from_high_dim(
     score = smds_engine.score(X, y)
     score_threshold = 0.9
     assert score > score_threshold, (
-        f"The SMDS score is too low. "
-        f"Expected a score greater than {score_threshold}, but got {score:.4f}."
+        f"The SMDS score is too low. Expected a score greater than {score_threshold}, but got {score:.4f}."
     )

@@ -32,11 +32,14 @@ class SphericalShape(BaseShape):
         lat = np.radians(y[:, 0])
         lon = np.radians(y[:, 1])
 
-        coords = np.stack([
-            self.radius * np.cos(lat) * np.cos(lon),  # x
-            self.radius * np.cos(lat) * np.sin(lon),  # y
-            self.radius * np.sin(lat)  # z
-        ], axis=1)
+        coords = np.stack(
+            [
+                self.radius * np.cos(lat) * np.cos(lon),  # x
+                self.radius * np.cos(lat) * np.sin(lon),  # y
+                self.radius * np.sin(lat),  # z
+            ],
+            axis=1,
+        )
 
         diffs = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
         distance = np.linalg.norm(diffs, axis=2)
