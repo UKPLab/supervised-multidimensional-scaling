@@ -1,6 +1,7 @@
+from typing import Optional
+
 import numpy as np
 from numpy.typing import NDArray
-from typing import Optional
 
 from smds.shapes.base_shape import BaseShape
 
@@ -14,6 +15,7 @@ class DiscreteCircularShape(BaseShape):
     hours on a clock. The resulting projection should form a ring or polygon
     where adjacent categories are placed next to each other.
     """
+
     def __init__(self, num_points: Optional[int] = None) -> None:
         """
         Initialize the DiscreteCircularShape.
@@ -67,9 +69,6 @@ class DiscreteCircularShape(BaseShape):
 
         for i in range(n):
             for j in range(n):
-                distance_matrix[i, j] = min(
-                    abs(y[i] - y[j]),
-                    max_y + 1 - abs(y[i] - y[j])
-                )
+                distance_matrix[i, j] = min(abs(y[i] - y[j]), max_y + 1 - abs(y[i] - y[j]))
 
         return distance_matrix

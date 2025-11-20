@@ -1,6 +1,6 @@
 import numpy as np
-from numpy.typing import NDArray
 import pytest
+from numpy.typing import NDArray
 
 from smds import SupervisedMDS
 from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
@@ -22,8 +22,8 @@ def smds_engine() -> SupervisedMDS:
 
 @pytest.mark.smoke
 def test_hierarchical_smoke_test(
-        random_data: tuple[NDArray[np.float64], NDArray[np.float64]],
-        smds_engine: SupervisedMDS,
+    random_data: tuple[NDArray[np.float64], NDArray[np.float64]],
+    smds_engine: SupervisedMDS,
 ) -> None:
     """
     A simple "smoke test" to ensure HierarchicalShape can be fit and transformed
@@ -66,8 +66,8 @@ def structured_hierarchical_data_2d() -> tuple[NDArray[np.float64], NDArray[np.f
 
 
 def test_hierarchical_preserves_structure_in_2d(
-        structured_hierarchical_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
-        smds_engine: SupervisedMDS,
+    structured_hierarchical_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
+    smds_engine: SupervisedMDS,
 ) -> None:
     """
     Tests that HierarchicalShape can be fit and produces reasonable scores.
@@ -77,16 +77,13 @@ def test_hierarchical_preserves_structure_in_2d(
     X, y = structured_hierarchical_data_2d
 
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
-    
+
     assert X_proj.shape == (X.shape[0], smds_engine.n_components), (
-        f"Output shape should be (n_samples, n_components), "
-        f"but got {X_proj.shape}."
+        f"Output shape should be (n_samples, n_components), but got {X_proj.shape}."
     )
-    
+
     score = smds_engine.score(X, y)
-    assert score > 0.9, (
-        f"The SMDS score should be high since X geometry matches Y hierarchy, but got {score:.4f}."
-    )
+    assert score > 0.9, f"The SMDS score should be high since X geometry matches Y hierarchy, but got {score:.4f}."
 
 
 def test_hierarchical_distance_computation() -> None:
@@ -94,17 +91,11 @@ def test_hierarchical_distance_computation() -> None:
     Tests that HierarchicalShape correctly computes distances based on the first differing level.
     """
     shape = HierarchicalShape(level_distances=[1.0, 2.0, 3.0])
-    
-    y = np.array([
-        [1, 1, 1],
-        [1, 1, 2],
-        [1, 2, 1],
-        [2, 1, 1],
-        [1, 1, 1]
-    ]).astype(float)
-    
+
+    y = np.array([[1, 1, 1], [1, 1, 2], [1, 2, 1], [2, 1, 1], [1, 1, 1]]).astype(float)
+
     D = shape(y)
-    
+
     assert D[0, 1] == 3.0, "Points differing at level 2 should have distance 3.0"
     assert D[0, 2] == 2.0, "Points differing at level 1 should have distance 2.0"
     assert D[0, 3] == 1.0, "Points differing at level 0 should have distance 1.0"
@@ -118,16 +109,16 @@ def test_hierarchical_validation() -> None:
     Tests that HierarchicalShape correctly validates input dimensions.
     """
     shape = HierarchicalShape(level_distances=[1.0, 2.0])
-    
+
     with pytest.raises(ValueError, match="must be 2-dimensional"):
         shape(np.array([1, 2, 3]))
-    
+
     with pytest.raises(ValueError, match="must have 2 columns"):
         shape(np.array([[1, 2, 3], [4, 5, 6]]))
-    
+
     with pytest.raises(ValueError, match="cannot be empty"):
         shape(np.array([]).reshape(0, 2))
-    
+
     valid_y = np.array([[1, 1], [1, 2], [2, 1]]).astype(float)
     D = shape(valid_y)
     assert D.shape == (3, 3), "Should accept valid 2D input"
@@ -139,7 +130,7 @@ def test_hierarchical_init_validation() -> None:
     """
     with pytest.raises(ValueError, match="cannot be empty"):
         HierarchicalShape(level_distances=[])
-    
+
     with pytest.raises(ValueError, match="must be non-negative"):
         HierarchicalShape(level_distances=[1.0, -1.0, 2.0])
 
@@ -169,8 +160,8 @@ def structured_hierarchical_data_high_dim() -> tuple[NDArray[np.float64], NDArra
 
 
 def test_hierarchical_recovers_structure_from_high_dim(
-        structured_hierarchical_data_high_dim: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
-        smds_engine: SupervisedMDS
+    structured_hierarchical_data_high_dim: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+    smds_engine: SupervisedMDS,
 ) -> None:
     """
     Tests if SMDS can find and recover a hierarchical structure
@@ -181,16 +172,13 @@ def test_hierarchical_recovers_structure_from_high_dim(
     X, y, _ = structured_hierarchical_data_high_dim
 
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
-    
+
     assert X_proj.shape == (X.shape[0], smds_engine.n_components), (
-        f"Output shape should be (n_samples, n_components), "
-        f"but got {X_proj.shape}."
+        f"Output shape should be (n_samples, n_components), but got {X_proj.shape}."
     )
-    
+
     score = smds_engine.score(X, y)
     score_threshold = 0.9
     assert score > score_threshold, (
-        f"The SMDS score is too low. "
-        f"Expected a score greater than {score_threshold}, but got {score:.4f}."
+        f"The SMDS score is too low. Expected a score greater than {score_threshold}, but got {score:.4f}."
     )
-

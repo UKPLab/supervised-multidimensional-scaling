@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.distance import pdist
 
 from smds.stress.base_stress import BaseStress
-
+from numpy.typing import NDArray
 
 class ScaleNormalizedStress(BaseStress):
     """
@@ -15,7 +15,7 @@ class ScaleNormalizedStress(BaseStress):
         Interpret Stress Correctly", https://arxiv.org/html/2408.07724v1
     """
 
-    def compute(self, X_high, X_low):
+    def compute(self, X_high: NDArray, X_low: NDArray):
         # Compute pairwise distances (only upper triangle for efficiency)
         D_high = pdist(X_high, metric="euclidean")
         D_low = pdist(X_low, metric="euclidean")
