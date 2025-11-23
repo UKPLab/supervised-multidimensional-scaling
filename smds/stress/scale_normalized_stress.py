@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.typing import NDArray
-from scipy.spatial.distance import pdist
 
 from smds.stress.base_stress import BaseStress
 
@@ -17,13 +16,13 @@ class ScaleNormalizedStress(BaseStress):
     """
 
     def compute(self, D_high: NDArray[np.float64], D_low: NDArray[np.float64]) -> float:
-        denominator_alpha: float = np.sum(D_low**2) 
-        
+        denominator_alpha: float = np.sum(D_low**2)
+
         if denominator_alpha == 0:
             return np.inf
 
-        alpha: float = np.sum(D_high * D_low) / denominator_alpha 
-        
+        alpha: float = np.sum(D_high * D_low) / denominator_alpha
+
         residuals: NDArray[np.float64] = D_high - (alpha * D_low)
         
         stress: float = np.sqrt(np.sum(residuals**2) / np.sum(D_high**2)) 
