@@ -332,13 +332,9 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         n = X_proj.shape[0]
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
-        mask = np.triu(np.ones((n, n), dtype=bool), k=1)
-        D_ideal_flat = D_ideal[mask]
-        D_pred_flat = D_pred[mask]
-
         # Compute stress
         if metric == "scale_normalized_stress":
-            score_value = ScaleNormalizedStress().compute(D_ideal_flat, D_pred_flat)
+            score_value = 1 - ScaleNormalizedStress().compute(D_ideal, D_pred)
         # TODO: Add other metrics from the paper here
         else:
             raise ValueError(f"Unknown metric: {metric}")
