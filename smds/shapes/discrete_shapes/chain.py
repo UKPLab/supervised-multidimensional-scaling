@@ -43,7 +43,7 @@ class ChainShape(BaseShape):
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
         Computes a sparse distance matrix where only neighbors in a cycle are connected.
-
+        """
         cycle_length = np.max(y) + 1
 
         direct_dist = np.abs(y[:, None] - y[None, :])
@@ -55,20 +55,5 @@ class ChainShape(BaseShape):
             base_distances,
             -1.0
         )
-        """
-        n = len(y)
-        max_y = np.max(y)
-        cycle_length = max_y + 1
-
-        distance_matrix = np.zeros((n, n), dtype=float)
-
-        for i in range(n):
-            for j in range(n):
-                direct_dist = np.abs(y[i] - y[j])
-                wrap_around_dist = cycle_length - direct_dist
-                dist = min(direct_dist, wrap_around_dist)
-
-                # Apply the threshold
-                distance_matrix[i, j] = dist if dist < self.threshold else -1.0
 
         return distance_matrix

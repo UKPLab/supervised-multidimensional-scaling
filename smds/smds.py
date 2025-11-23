@@ -343,6 +343,10 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
 
         # Compute stress and normalize
         mask = np.triu(np.ones((n, n), dtype=bool), k=1)
+
+        # Exclude any undefined (negative) distances.
+        mask = mask & (D_true >= 0)
+
         stress = np.sum((D_pred[mask] - D_true[mask]) ** 2)
         denom = np.sum(D_true[mask] ** 2)
 
