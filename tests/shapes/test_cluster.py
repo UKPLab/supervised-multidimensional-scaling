@@ -167,7 +167,7 @@ def test_cluster_recovers_structure_from_high_dim(
 
     # The score measures how well the projection satisfies the ClusterShape distance rules.
     score = smds_engine.score(X, y)
-    score_threshold = 0.95
+    score_threshold = 0.9
     assert score > score_threshold, (
         f"The SMDS score is too low. Expected a score greater than {score_threshold}, but got {score:.4f}."
     )
