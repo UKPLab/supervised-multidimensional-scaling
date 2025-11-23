@@ -7,7 +7,7 @@ from smds.stress.base_stress import BaseStress
 
 
 class NonMetricStress(BaseStress):
-     """
+    """
     Notes:
     - Time complexity: ... # TODO: Decide if we want to include such things. IMO could be interesting
     - Space complexity: ...
