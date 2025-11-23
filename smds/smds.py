@@ -322,7 +322,12 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         """
         return self.fit(X, y).transform(X)
 
-    def score(self, X: np.ndarray, y: np.ndarray, metric: StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS) -> float:
+    def score(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        metric: StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS,
+    ) -> float:
         """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
         if self.W_ is None:
             raise RuntimeError("Model must be fit before scoring.")

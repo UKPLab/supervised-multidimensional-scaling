@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.typing import NDArray
-from scipy.spatial.distance import pdist
 from sklearn.isotonic import IsotonicRegression
 
 from smds.stress.base_stress import BaseStress

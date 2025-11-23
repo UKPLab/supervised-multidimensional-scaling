@@ -24,7 +24,7 @@ class ScaleNormalizedStress(BaseStress):
         alpha: float = np.sum(D_high * D_low) / denominator_alpha
 
         residuals: NDArray[np.float64] = D_high - (alpha * D_low)
-        
-        stress: float = np.sqrt(np.sum(residuals**2) / np.sum(D_high**2)) 
-        
+
+        stress: float = np.sqrt(np.sum(residuals**2) / np.sum(D_high**2))
+
         return stress
