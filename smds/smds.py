@@ -7,7 +7,9 @@ from scipy.linalg import eigh
 from scipy.optimize import minimize
 from sklearn.base import BaseEstimator, TransformerMixin
 
+from smds.stress.non_metric_stress import NonMetricStress
 from smds.stress.scale_normalized_stress import ScaleNormalizedStress
+from smds.stress.stress_metrics import StressMetrics
 
 
 class SupervisedMDS(BaseEstimator, TransformerMixin):
@@ -320,7 +322,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         """
         return self.fit(X, y).transform(X)
 
-    def score(self, X: np.ndarray, y: np.ndarray, metric: str = "scale_normalized_stress") -> float:
+    def score(self, X: np.ndarray, y: np.ndarray, metric: StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS) -> float:
         """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
         if self.W_ is None:
             raise RuntimeError("Model must be fit before scoring.")
@@ -329,11 +331,19 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
 
         # Compute predicted pairwise distances
         X_proj = self.transform(X)
+        n = X_proj.shape[0]
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
+        mask = np.triu(np.ones((n, n), dtype=bool), k=1)
+        mask = mask & (D_ideal >= 0)
+        D_ideal_flat = D_ideal[mask]
+        D_pred_flat = D_pred[mask]
+
         # Compute stress
-        if metric == "scale_normalized_stress":
-            score_value = 1 - ScaleNormalizedStress().compute(D_ideal, D_pred)
+        if metric == StressMetrics.SCALE_NORMALIZED_STRESS:
+            score_value = 1 - ScaleNormalizedStress().compute(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.NON_METRIC_STRESS:
+            score_value = 1 - NonMetricStress().compute(D_ideal_flat, D_pred_flat)
         # TODO: Add other metrics from the paper here
         else:
             raise ValueError(f"Unknown metric: {metric}")
