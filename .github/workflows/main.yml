@@ -58,6 +58,9 @@ jobs:
         run: |
           uv sync --all-extras --dev
 
+      - name: Check code formatting
+        run: make check
+
       - name: Analysing the code with pylint
         run: |
           uv run pylint --disable=trailing-whitespace,missing-class-docstring,missing-final-newline,trailing-newlines \
