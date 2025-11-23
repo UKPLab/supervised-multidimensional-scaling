@@ -2023,6 +2023,18 @@ wheels = [
 ]
 
 [[package]]
+name = "numpy-typing-compat"
+version = "20250818.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c9/e3/1a29f174c1e09a2bf111d37a41afceea1b501371abb39e73170ca31a7599/numpy_typing_compat-20250818.2.3.tar.gz", hash = "sha256:72e83d535b635d668ba7315e43ae80be1469a6faea6fc96d312516f39b3d8fa5", size = 4974, upload-time = "2025-08-18T23:46:42.968Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/4a/fa4c90a03d6a8ee1a7f0e0fb101887d9a8cdb9b07a5901af9ae831e9feea/numpy_typing_compat-20250818.2.3-py3-none-any.whl", hash = "sha256:930413d34dd9083c0bf418815576222f1c66ea2d68950f447fd27ea1a78b26b0", size = 6286, upload-time = "2025-08-18T23:46:35.681Z" },
+]
+
+[[package]]
 name = "nvidia-cublas-cu12"
 version = "12.8.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2154,6 +2166,24 @@ version = "12.8.90"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a2/eb/86626c1bbc2edb86323022371c39aa48df6fd8b0a1647bc274577f72e90b/nvidia_nvtx_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:5b17e2001cc0d751a5bc2c6ec6d26ad95913324a4adb86788c944f8ce9ba441f", size = 89954, upload-time = "2025-03-07T01:42:44.131Z" },
+]
+
+[[package]]
+name = "optype"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/94/ca/d3a2abcf12cc8c18ccac1178ef87ab50a235bf386d2401341776fdad18aa/optype-0.14.0.tar.gz", hash = "sha256:925cf060b7d1337647f880401f6094321e7d8e837533b8e159b9a92afa3157c6", size = 100880, upload-time = "2025-10-01T04:49:56.232Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/84/a6/11b0eb65eeafa87260d36858b69ec4e0072d09e37ea6714280960030bc93/optype-0.14.0-py3-none-any.whl", hash = "sha256:50d02edafd04edf2e5e27d6249760a51b2198adb9f6ffd778030b3d2806b026b", size = 89465, upload-time = "2025-10-01T04:49:54.674Z" },
+]
+
+[package.optional-dependencies]
+numpy = [
+    { name = "numpy" },
+    { name = "numpy-typing-compat" },
 ]
 
 [[package]]
@@ -3158,6 +3188,18 @@ wheels = [
 ]
 
 [[package]]
+name = "scipy-stubs"
+version = "1.16.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "optype", extra = ["numpy"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bd/68/c53c3bce6bd069a164015be1be2671c968b526be4af1e85db64c88f04546/scipy_stubs-1.16.3.0.tar.gz", hash = "sha256:d6943c085e47a1ed431309f9ca582b6a206a9db808a036132a0bf01ebc34b506", size = 356462, upload-time = "2025-10-28T22:05:31.198Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/86/1c/0ba7305fa01cfe7a6f1b8c86ccdd1b7a0d43fa9bd769c059995311e291a2/scipy_stubs-1.16.3.0-py3-none-any.whl", hash = "sha256:90e5d82ced2183ef3c5c0a28a77df8cc227458624364fa0ff975ad24fa89d6ad", size = 557713, upload-time = "2025-10-28T22:05:29.454Z" },
+]
+
+[[package]]
 name = "seaborn"
 version = "0.13.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3232,7 +3274,7 @@ wheels = [
 
 [[package]]
 name = "supervised-multidimensional-scaling"
-version = "0.4.2"
+version = "0.4.4"
 source = { editable = "." }
 dependencies = [
     { name = "notebook" },
@@ -3263,6 +3305,9 @@ dev = [
     { name = "seaborn" },
     { name = "torch" },
     { name = "transformers" },
+]
+pipeline = [
+    { name = "scipy-stubs" },
 ]
 
 [package.metadata]
@@ -3296,6 +3341,7 @@ dev = [
     { name = "torch", specifier = ">=2.9.0" },
     { name = "transformers", specifier = ">=4.57.1" },
 ]
+pipeline = [{ name = "scipy-stubs", specifier = ">=1.16.3.0" }]
 
 [[package]]
 name = "sympy"

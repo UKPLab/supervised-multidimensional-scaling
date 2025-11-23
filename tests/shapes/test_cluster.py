@@ -11,6 +11,7 @@ from smds.shapes.discrete_shapes.cluster import ClusterShape
 @pytest.fixture
 def random_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Provides random X and y data for basic testing."""
+    np.random.seed(2137)
     X: NDArray[np.float64] = np.random.randn(50, 10)
     y: NDArray[np.float64] = np.random.randint(0, 3, size=50).astype(float)
     return X, y
