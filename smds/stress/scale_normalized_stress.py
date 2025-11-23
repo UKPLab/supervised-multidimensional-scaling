@@ -16,12 +16,16 @@ class ScaleNormalizedStress(BaseStress):
         Interpret Stress Correctly", https://arxiv.org/html/2408.07724v1
     """
 
-    def compute(self, X_high: NDArray[np.float64], X_low: NDArray[np.float64]) -> float:
-        D_high = pdist(X_high, metric="euclidean")
-        D_low = pdist(X_low, metric="euclidean")
+    def compute(self, D_high: NDArray[np.float64], D_low: NDArray[np.float64]) -> float:
+        denominator_alpha: float = np.sum(D_low**2) 
+        
+        if denominator_alpha == 0:
+            return np.inf
 
-        alpha = np.sum(D_high * D_low) / np.sum(D_high**2)
-
-        residuals: NDArray[np.float64] = D_high - alpha * D_low
-        stress: float = np.sqrt(np.sum(residuals**2) / np.sum(D_high**2))
+        alpha: float = np.sum(D_high * D_low) / denominator_alpha 
+        
+        residuals: NDArray[np.float64] = D_high - (alpha * D_low)
+        
+        stress: float = np.sqrt(np.sum(residuals**2) / np.sum(D_high**2)) 
+        
         return stress
