@@ -10,8 +10,8 @@ class BaseStress(ABC):
         Compute the stress metric between high and low dimensional embeddings.
 
         Args:
-            X_high: High-dimensional data points (n_samples, n_features_high)
-            X_low: Low-dimensional embedding (n_samples, n_features_low)
+            D_high: Pairwise distances in high-dimensional space (1D array of shape (n_pairs,))
+            D_low: Pairwise distances in low-dimensional space (1D array of shape (n_pairs,))
 
         Returns:
             float: Computed stress value
