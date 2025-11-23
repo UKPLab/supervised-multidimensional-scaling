@@ -1,8 +1,9 @@
 import numpy as np
+from numpy.typing import NDArray
 from scipy.spatial.distance import pdist
 
 from smds.stress.base_stress import BaseStress
-from numpy.typing import NDArray
+
 
 class ScaleNormalizedStress(BaseStress):
     """
@@ -16,7 +17,6 @@ class ScaleNormalizedStress(BaseStress):
     """
 
     def compute(self, X_high: NDArray[np.float64], X_low: NDArray[np.float64]) -> float:
-
         D_high = pdist(X_high, metric="euclidean")
         D_low = pdist(X_low, metric="euclidean")
 
