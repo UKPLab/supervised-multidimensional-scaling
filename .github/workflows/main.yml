@@ -2,9 +2,7 @@
 name: CI
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ main ]
+  # Triggers the workflow on pull request events but only for the main branch
   pull_request:
     branches: [ main ]
   # Allows you to run this workflow manually from the Actions tab
@@ -58,8 +56,5 @@ jobs:
         run: |
           uv sync --all-extras --dev
 
-      - name: Analysing the code with pylint
-        run: |
-          uv run pylint --disable=trailing-whitespace,missing-class-docstring,missing-final-newline,trailing-newlines \
-                  --fail-under=9.0 \
-                  $(git ls-files '*.py') || echo "::warning::Pylint check failed, but the workflow will continue."
+      - name: Check code formatting
+        run: make check

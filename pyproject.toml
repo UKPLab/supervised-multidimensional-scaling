@@ -4,6 +4,7 @@ version = "0.4.4"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
+    "notebook>=7.4.7",
     "numpy>=2.3.4",
     "scikit-learn>=1.7.2",
     "scipy>=1.16.3",
@@ -35,6 +36,9 @@ dev = [
     "torch>=2.9.0",
     "transformers>=4.57.1",
 ]
+pipeline = [
+    "scipy-stubs>=1.16.3.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["."]
@@ -47,6 +51,9 @@ output-format = "grouped"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+"smds/shapes/coordinates/base_coordinates.py" = ["F821"]
 
 [tool.mypy]
 strict = true
