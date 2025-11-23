@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.typing import NDArray
-from scipy.spatial.distance import pdist
 from sklearn.isotonic import IsotonicRegression
 
 from smds.stress.base_stress import BaseStress
@@ -16,7 +15,7 @@ class NonMetricStress(BaseStress):
         Smelser et al., "Normalized Stress is Not Normalized: How to
         Interpret Stress Correctly", https://arxiv.org/html/2408.07724v1
     """
-    def compute(self, D_high: NDArray, D_low: NDArray) -> float:
+    def compute(self, D_high: NDArray[np.float64], D_low: NDArray[np.float64]) -> float:
 
         ir: IsotonicRegression = IsotonicRegression(increasing=True)
         d_hat: NDArray[np.float64] = ir.fit_transform(D_high, D_low)
