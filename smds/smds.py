@@ -7,6 +7,8 @@ from scipy.linalg import eigh
 from scipy.optimize import minimize
 from sklearn.base import BaseEstimator, TransformerMixin
 
+from smds.stress.scale_normalized_stress import ScaleNormalizedStress
+
 
 class SupervisedMDS(BaseEstimator, TransformerMixin):
     def __init__(
@@ -312,43 +314,32 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             X: array-like of shape (n_samples, n_features)
                 The input data to be transformed.
             y: array-like of shape (n_samples,) or (n_samples, 2)
-                The labels or coordinates defining the ideal distances.
         Returns:
             X_proj: array of shape (n_samples, n_components)
                 The transformed data in the low-dimensional space.
         """
         return self.fit(X, y).transform(X)
 
-    def score(self, X: np.ndarray, y: np.ndarray) -> float:
-        """
-        Compute how well the transformed distances match ideal distances.
-
-        Parameters:
-            X: array-like of shape (n_samples, n_features)
-                The input data to be transformed.
-            y: array-like of shape (n_samples,) or (n_samples, 2)
-                The labels or coordinates defining the ideal distances.
-        Returns:
-            score: A score between -∞ and 1. Higher is better.
-        """
+    def score(self, X: np.ndarray, y: np.ndarray, metric: str = "scale_normalized_stress") -> float:
+        """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
         if self.W_ is None:
             raise RuntimeError("Model must be fit before scoring.")
 
-        D_true = self._compute_ideal_distances(y)
-        X_proj = self.transform(X)
+        D_ideal = self._compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
+        X_proj = self.transform(X)
         n = X_proj.shape[0]
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
-        # Compute stress and normalize
-        mask = np.triu(np.ones((n, n), dtype=bool), k=1)
-        stress = np.sum((D_pred[mask] - D_true[mask]) ** 2)
-        denom = np.sum(D_true[mask] ** 2)
+        # Compute stress
+        if metric == "scale_normalized_stress":
+            score_value = 1 - ScaleNormalizedStress().compute(D_ideal, D_pred)
+        # TODO: Add other metrics from the paper here
+        else:
+            raise ValueError(f"Unknown metric: {metric}")
 
-        score = 1 - stress / denom if denom > 0 else -np.inf
-
-        return score
+        return score_value
 
     def save(self, filepath: str):
         """
