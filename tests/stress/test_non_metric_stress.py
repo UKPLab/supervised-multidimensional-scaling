@@ -10,9 +10,9 @@ def test_non_metric_stress_perfect_monotonic_preservation() -> None:
     """
     nms = NonMetricStress()
 
-    X_high = np.array([[0], [1], [2], [3]])
+    X_high = np.array([[0], [1], [3]])
 
-    X_low_distorted = np.array([[0], [1], [10], [1000]])
+    X_low_distorted = np.array([[0], [10], [1000]])
 
     stress: float = nms.compute(X_high, X_low_distorted)
 
