@@ -334,8 +334,13 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         n = X_proj.shape[0]
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
+        mask = np.triu(np.ones((n, n), dtype=bool), k=1)
+        mask = mask & (D_ideal >= 0)
+        D_ideal = D_ideal[mask]
+        D_pred = D_pred[mask]
+
         # Compute stress
-        if metric == StressMetrics.SCALE_NORMALIZED_STRESS:   
+        if metric == StressMetrics.SCALE_NORMALIZED_STRESS: 
             score_value = 1 - ScaleNormalizedStress().compute(D_ideal, D_pred)
         elif metric == StressMetrics.NON_METRIC_STRESS:
             score_value = 1 - NonMetricStress().compute(D_ideal, D_pred)
