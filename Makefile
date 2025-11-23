@@ -17,6 +17,11 @@ format: ## Format code and apply auto-fixes using Ruff
 	$(RUN) ruff format .
 	$(RUN) ruff check . --fix
 
+check:
+	$(RUN) ruff check .
+	$(RUN) mypy . --config=pyproject.toml
+
+
 format-check: ## Check code for formatting, linting, and type errors
 	$(RUN) ruff check .
 	$(RUN) ruff format . --check

@@ -329,7 +329,6 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
 
         # Compute predicted pairwise distances
         X_proj = self.transform(X)
-        n = X_proj.shape[0]
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
         # Compute stress
