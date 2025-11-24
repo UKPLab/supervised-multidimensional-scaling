@@ -44,7 +44,7 @@ def test_initialization_params(init_radius: float, growth: float, turns: float) 
     ids=["standard_range", "constant_array", "negative_values", "single_value"],
 )
 def test_normalize_y(spiral: SpiralShape, y_input: NDArray[np.float64], expected_output: NDArray[np.float64]) -> None:
-    normalized = spiral._normalize_y(y_input)
+    normalized = spiral._do_normalize_labels(y_input)
     assert_array_almost_equal(normalized, expected_output)
 
 
