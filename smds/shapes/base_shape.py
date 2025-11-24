@@ -10,6 +10,27 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
     General abstraction for shapes (manifolds).
     """
 
+    @property
+    @abstractmethod
+    def normalize_labels(self) -> bool:
+        """
+        Flag to normalize labels.
+        Should default to False.
+        """
+        pass
+
+    @staticmethod
+    def _do_normalize_labels(y: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Default implementation - 0-1 normalization.
+        Override for your Shape if needed.
+        """
+        max_y = np.max(y)
+        min_y = np.min(y)
+        if max_y == min_y:
+            return np.zeros_like(y, dtype=float)
+        return (y - min_y) / (max_y - min_y)
+
     def __call__(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
         Make BaseShape instances callable.
@@ -18,6 +39,9 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
         """
         y_proc: NDArray[np.float64] = self._validate_input(y)
         n: int = len(y_proc)
+
+        if self.normalize_labels:
+            y_proc = self._do_normalize_labels(y_proc)
 
         distance: NDArray[np.float64] = self._compute_distances(y_proc)
 
