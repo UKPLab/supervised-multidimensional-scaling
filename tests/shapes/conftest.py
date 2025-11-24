@@ -9,6 +9,9 @@ from smds.shapes.discrete_shapes.chain import ChainShape
 from smds.shapes.discrete_shapes.cluster import ClusterShape
 from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
 from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
+from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
+from smds.shapes.spatial_shapes.geodesic import GeodesicShape
+from smds.shapes.spatial_shapes.spherical import SphericalShape
 from smds.shapes.spiral_shape import SpiralShape
 
 
@@ -26,25 +29,35 @@ def _project_and_shuffle(
     rng = np.random.default_rng(seed)
     n_samples, latent_dim = X_latent.shape
 
-    # 1. Create random projection matrix
+    # Create random projection matrix
     projection_matrix = rng.standard_normal((latent_dim, high_dim))
 
-    # 2. Project to High Dim
+    # Project to High Dim
     X_high = X_latent @ projection_matrix
 
-    # 3. Add Noise
+    # Add Noise
     X_high += rng.normal(scale=noise_level, size=X_high.shape)
 
-    # 4. Shuffle indices to ensure model doesn't rely on order
+    # Shuffle indices to ensure model doesn't rely on order
     indices = np.arange(n_samples)
     rng.shuffle(indices)
 
     return X_high[indices], y[indices], X_latent[indices]
 
 
+def _generate_lat_lon(n_samples: int, seed: int = 42) -> NDArray[np.float64]:
+    """Helper to generate random (lat, lon) pairs."""
+    rng = np.random.default_rng(seed)
+
+    # Lat: -90 to 90, Lon: -180 to 180
+    lat = rng.uniform(-90, 90, n_samples)
+    lon = rng.uniform(-180, 180, n_samples)
+
+    return np.stack([lat, lon], axis=1)
+
 
 # =============================================================================
-# CHAIN SETUP (Cyclical topology)
+# CHAIN SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
 def chain_engine():
@@ -54,10 +67,12 @@ def chain_engine():
 @pytest.fixture(scope="module")
 def chain_data_10d():
     n_points = 20
-    # Latent 2D Circle (Matches Chain topology)
+
+    # Latent 2D Circle (Chain topology)
     y = np.arange(n_points).astype(float)
     angles = 2 * np.pi * y / n_points
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+
     return _project_and_shuffle(X_latent, y)
 
 
@@ -72,11 +87,13 @@ def cluster_engine():
 @pytest.fixture(scope="module")
 def cluster_data_10d():
     n_per_cluster = 25
+
     # Latent 2D Clusters
     c1 = np.random.randn(n_per_cluster, 2) - 10
     c2 = np.random.randn(n_per_cluster, 2) + 10
     X_latent = np.vstack([c1, c2])
     y = np.array([0.0] * n_per_cluster + [1.0] * n_per_cluster)
+
     return _project_and_shuffle(X_latent, y)
 
 
@@ -93,9 +110,11 @@ def disc_circular_data_10d():
     n_labels = 12
     n_per_label = 10
     y = np.repeat(np.arange(n_labels), n_per_label).astype(float)
+
     # Latent 2D Circle
     angles = 2 * np.pi * y / n_labels
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+
     return _project_and_shuffle(X_latent, y)
 
 
@@ -123,7 +142,7 @@ def hierarchical_data_10d():
 
 
 # =============================================================================
-# 5. CONTINUOUS CIRCULAR SETUP
+# (CONTINUOUS) CIRCULAR SETUP
 # =============================================================================
 
 @pytest.fixture(scope="module")
@@ -136,16 +155,119 @@ def circular_engine() -> SupervisedMDS:
 def circular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Generates 10D data with a latent Continuous Circle."""
     n_points = 50
-
-    # FIX: Use linspace instead of random.uniform
-    # endpoint=False ensures we don't have 0.0 and 1.0 (which are the same point)
     y = np.linspace(0, 1, n_points, endpoint=False).astype(float)
 
     # Latent 2D Circle
-    # y goes 0 -> 1, Angles go 0 -> 2pi
     angles = y * 2 * np.pi
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
 
-    # Use Helper
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# CYLINDRICAL SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def cylindrical_engine() -> SupervisedMDS:
+    # Cylinder is a 3D object
+    return SupervisedMDS(n_components=3, manifold=CylindricalShape(radius=1.0))
+
+
+@pytest.fixture(scope="module")
+def cylindrical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    n_samples = 50
+    y = _generate_lat_lon(n_samples)
+
+    # Construct Latent 3D Cylinder
+    radius = 1.0
+    lat_rad = np.radians(y[:, 0])
+    lon_rad = np.radians(y[:, 1])
+
+    X_latent = np.stack([
+        radius * np.cos(lon_rad),
+        radius * np.sin(lon_rad),
+        lat_rad
+    ], axis=1)
+
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# SPHERICAL SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def spherical_engine() -> SupervisedMDS:
+    # Sphere is a 3D object
+    return SupervisedMDS(n_components=3, manifold=SphericalShape(radius=1.0))
+
+
+@pytest.fixture(scope="module")
+def spherical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    n_samples = 50
+    y = _generate_lat_lon(n_samples)
+
+    # Construct Latent 3D Sphere
+    lat_rad = np.radians(y[:, 0])
+    lon_rad = np.radians(y[:, 1])
+
+    # Matching SphericalShape._compute_distances
+    radius = 1.0
+    X_latent = np.stack([
+        radius * np.cos(lat_rad) * np.cos(lon_rad),
+        radius * np.cos(lat_rad) * np.sin(lon_rad),
+        radius * np.sin(lat_rad)
+    ], axis=1)
+
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# GEODESIC SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def geodesic_engine() -> SupervisedMDS:
+    return SupervisedMDS(n_components=3, manifold=GeodesicShape(radius=1.0))
+
+
+@pytest.fixture(scope="module")
+def geodesic_data_10d(spherical_data_10d) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Geodesic uses the same 3D Latent Sphere geometry as SphericalShape.
+    However, the metric (Great Circle vs Chord) differs.
+    """
+    return spherical_data_10d
+
+
+# =============================================================================
+# SPIRAL SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def spiral_engine() -> SupervisedMDS:
+    return SupervisedMDS(n_components=2, manifold=SpiralShape(
+        initial_radius=0.5, growth_rate=1.0, num_turns=2.0
+    ))
+
+
+@pytest.fixture(scope="module")
+def spiral_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Generates 10D data with a latent 2D Spiral structure."""
+    n_samples = 50
+
+    # Continuous labels [0, 1]
+    y = np.linspace(0, 1, n_samples).astype(float)
+
+    # Latent 2D Spiral (Matching SpiralShape logic)
+    initial_radius = 0.5
+    growth_rate = 1.0
+    num_turns = 2.0
+
+    theta = y * 2 * np.pi * num_turns
+    radius = initial_radius + growth_rate * theta
+
+    X_latent = np.stack([
+        radius * np.cos(theta),
+        radius * np.sin(theta)
+    ], axis=1)
+
     return _project_and_shuffle(X_latent, y)
 
