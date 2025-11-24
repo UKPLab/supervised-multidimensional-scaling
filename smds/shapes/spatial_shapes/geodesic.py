@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -11,8 +13,13 @@ class GeodesicShape(BaseShape):
     Straight-line distances between points in Euclidean space that lie on a sphere.
     """
 
-    def __init__(self, radius: float = 1.0):
+    @property
+    def normalize_labels(self) -> bool:
+        return self._normalize_labels
+
+    def __init__(self, radius: Optional[float] = 1.0, normalize_labels: Optional[bool] = False):
         self.radius = radius
+        self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
