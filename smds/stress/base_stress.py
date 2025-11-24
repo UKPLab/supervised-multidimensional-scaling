@@ -5,13 +5,13 @@ from numpy.typing import NDArray
 
 class BaseStress(ABC):
     @abstractmethod
-    def compute(self, X_high: NDArray, X_low: NDArray) -> float:
+    def compute(self, D_high: NDArray, D_low: NDArray) -> float:
         """
         Compute the stress metric between high and low dimensional embeddings.
 
         Args:
-            X_high: High-dimensional data points (n_samples, n_features_high)
-            X_low: Low-dimensional embedding (n_samples, n_features_low)
+            D_high: Pairwise distances in high-dimensional space (1D array of shape (n_pairs,))
+            D_low: Pairwise distances in low-dimensional space (1D array of shape (n_pairs,))
 
         Returns:
             float: Computed stress value
