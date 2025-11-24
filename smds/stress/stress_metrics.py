@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class StressMetrics(Enum):
     SCALE_NORMALIZED_STRESS = "scale_normalized_stress"
     NON_METRIC_STRESS = "non_metric_stress"

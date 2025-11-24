@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -13,7 +15,12 @@ class ChainShape(BaseShape):
     undefined (-1.0).
     """
 
-    def __init__(self, threshold: float = 2.0) -> None:
+    @property
+    def normalize_labels(self) -> bool:
+        return self._normalize_labels
+
+    def __init__(self, normalize_labels: Optional[bool] = False, threshold: float = 2.0):
+        self._normalize_labels = normalize_labels
         """
         Initialize the ChainShape.
 
