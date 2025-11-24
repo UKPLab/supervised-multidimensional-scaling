@@ -217,7 +217,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
 
         if np.any(D < 0):
             # Raise warning if any distances are negative
-            print("Warning: Distance matrix is incomplete. Using optimization to fit W.") #ToDo: doesnt make sense for chain shape
+            print("Warning: Distance matrix is incomplete. Using optimization to fit W.")
             mask = D >= 0
             rng = np.random.default_rng(42)
             W0 = rng.normal(scale=0.01, size=(self.n_components, X.shape[1]))
@@ -322,7 +322,12 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         """
         return self.fit(X, y).transform(X)
 
-    def score(self, X: np.ndarray, y: np.ndarray, metric: StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS) -> float:
+    def score(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        metric: StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS,
+    ) -> float:
         """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
         if self.W_ is None:
             raise RuntimeError("Model must be fit before scoring.")

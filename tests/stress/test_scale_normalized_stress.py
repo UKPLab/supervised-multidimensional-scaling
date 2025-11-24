@@ -28,12 +28,12 @@ def test_perfect_preservation() -> None:
     """
     sns = ScaleNormalizedStress()
     rng = np.random.default_rng(42)
-    
+
     X = rng.standard_normal((10, 5))
-    
+
     # Compute distances (same for both since it's perfect preservation)
     D = pdist(X, metric="euclidean")
-    
+
     stress = sns.compute(D, D)
     assert stress < 1e-10  # essentially 0
 

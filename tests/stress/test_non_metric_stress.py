@@ -1,8 +1,8 @@
 import numpy as np
-import pytest
 from scipy.spatial.distance import pdist
 
 from smds.stress.non_metric_stress import NonMetricStress
+
 
 def test_non_metric_stress_perfect_monotonic_preservation() -> None:
     """
@@ -12,7 +12,7 @@ def test_non_metric_stress_perfect_monotonic_preservation() -> None:
 
     # 1. High-Dim: 3 points on a line: 0, 1, 3 -> Distances: 1, 2, 3
     X_high = np.array([[0], [1], [3]])
-    
+
     # 2. Low-Dim: Distortion preserving order -> Distances: 10, 90, 100
     X_low_distorted = np.array([[0], [10], [100]])
 
