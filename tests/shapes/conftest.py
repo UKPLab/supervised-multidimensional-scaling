@@ -86,11 +86,12 @@ def cluster_engine():
 
 @pytest.fixture(scope="module")
 def cluster_data_10d():
+    rng = np.random.default_rng(42)
     n_per_cluster = 25
 
     # Latent 2D Clusters
-    c1 = np.random.randn(n_per_cluster, 2) - 10
-    c2 = np.random.randn(n_per_cluster, 2) + 10
+    c1 = rng.standard_normal((n_per_cluster, 2)) - 10
+    c2 = rng.standard_normal((n_per_cluster, 2)) + 10
     X_latent = np.vstack([c1, c2])
     y = np.array([0.0] * n_per_cluster + [1.0] * n_per_cluster)
 
@@ -128,6 +129,7 @@ def hierarchical_engine():
 
 @pytest.fixture(scope="module")
 def hierarchical_data_10d():
+    rng = np.random.default_rng(42)
     n_per_species = 10
     y_list = [[0, 0, 0], [0, 0, 1], [0, 1, 2], [0, 1, 3], [1, 0, 4], [1, 0, 5], [1, 1, 6], [1, 1, 7]]
     y = np.repeat(y_list, n_per_species, axis=0).astype(float)
@@ -135,7 +137,7 @@ def hierarchical_data_10d():
     # Latent 2D Hierarchy (Tree structure laid out in 2D)
     offset_0 = np.array([-50, 0]) * (1 - y[:, 0:1]) + np.array([50, 0]) * y[:, 0:1]
     offset_1 = np.array([0, -10]) * (1 - y[:, 1:2]) + np.array([0, 10]) * y[:, 1:2]
-    offset_2 = np.random.randn(y.shape[0], 2)
+    offset_2 = rng.standard_normal((y.shape[0], 2))
     X_latent = offset_0 + offset_1 + offset_2
 
     return _project_and_shuffle(X_latent, y)
