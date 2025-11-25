@@ -25,7 +25,7 @@ class LogLinearShape(BaseShape):
             normalize_labels: Whether to scale inputs to [0, 1].
             epsilon: Small constant to prevent log(0) errors.
         """
-        self._normalize_labels = normalize_labels
+        self._normalize_labels = normalize_labels if normalize_labels is not None else True
         self.epsilon = epsilon
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
