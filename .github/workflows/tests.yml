@@ -51,4 +51,5 @@ jobs:
         run: chmod +x .github/check_project_version.sh
 
       - name: Check version bump in pyproject.toml
+        if: github.event_name == 'pull_request'
         run: bash .github/check_project_version.sh
