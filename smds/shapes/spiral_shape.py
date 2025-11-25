@@ -22,7 +22,7 @@ class SpiralShape(BaseShape):
                  initial_radius: Optional[float] = 0.5,
                  growth_rate: Optional[float] = 1.0,
                  num_turns: Optional[float] = 2.0,
-                 normalize_labels: Optional[bool] = False) -> None:
+                 normalize_labels: Optional[bool] = True) -> None:
 
         self.initial_radius = initial_radius
         self.growth_rate = growth_rate

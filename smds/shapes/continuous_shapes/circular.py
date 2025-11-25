@@ -18,7 +18,7 @@ class CircularShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, radious: Optional[float] = 1.0, normalize_labels: Optional[bool] = False):
+    def __init__(self, radious: Optional[float] = 1.0, normalize_labels: Optional[bool] = True):
         self.radious = radious
         self._normalize_labels = normalize_labels
 
