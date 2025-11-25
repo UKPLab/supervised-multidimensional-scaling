@@ -26,11 +26,6 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             n_components:
                 Dimensionality of the target subspace.
             manifold:
-                If 'trivial', 'cluster', 'discrete_circular', 'chain', y contains discrete values.
-                If 'euclidean', 'linear', 'log_linear', 'circular', 'helix', 'semicircular',
-                'log_semicircular', y contains continuous values.
-                If 'sphere_chord', 'geodesic', 'cylinder_chord',
-                y contains 2D coordinates (latitude, longitude).
                 If callable, should return a (n x n) ideal distance matrix given y.
         """
         self.n_components = n_components
@@ -48,116 +43,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         """
         Compute ideal pairwise distance matrix D based on labels y and specified self.manifold.
         """
-        n = len(y)
-        D = np.zeros((n, n))
-
-        if self.manifold in ["trivial", "cluster"]:  # Retrocompatibility
-            D = (y[:, None] != y[None, :]).astype(float)
-        elif self.manifold in ["euclidean", "linear"]:
-            diff = y[None, :, None] - y[None, None, :]
-            D = np.linalg.norm(diff, axis=0)
-        elif self.manifold == "log_linear":
-            log_y = np.log(y + 1)
-            D = np.abs(log_y[:, None] - log_y[None, :])
-        elif self.manifold == "helix":
-            y_norm = (y - np.min(y)) / (np.max(y) - np.min(y))  # shape: (n,)
-
-            # Map to 3D spiral
-            theta = 2 * np.pi * y_norm  # angle around the circle
-            x = np.cos(theta)
-            y_circle = np.sin(theta)
-            z = y_norm  # vertical component
-
-            spiral_coords = np.stack([x, y_circle, z], axis=1)  # shape: (n, 3)
-
-            # Compute pairwise Euclidean distances in spiral space
-            diffs = spiral_coords[:, None, :] - spiral_coords[None, :, :]
-            D = np.linalg.norm(diffs, axis=2)  # shape: (n, n)
-
-        elif self.manifold == "discrete_circular":
-            max_y = np.max(y)
-            for i in range(n):
-                for j in range(n):
-                    D[i, j] = min(np.abs(y[i] - y[j]), max_y + 1 - np.abs(y[i] - y[j]))
-        elif self.manifold == "chain":
-            max_y = np.max(y)
-            for i in range(n):
-                for j in range(n):
-                    dist = min(np.abs(y[i] - y[j]), max_y + 1 - np.abs(y[i] - y[j]))
-                    D[i, j] = dist if dist < threshold else -1
-        elif self.manifold == "semicircular":
-            max_y = np.max(y)
-            min_y = np.min(y)
-
-            # Normalize y to [0, 1]
-            y_norm = (y - min_y) / (max_y - min_y)
-
-            # Pairwise absolute differences
-            delta = np.abs(y_norm[:, None] - y_norm[None, :])
-            D = 2 * np.sin((np.pi / 2) * delta)
-        elif self.manifold == "log_semicircular":
-            max_y = np.max(y)
-            min_y = np.min(y)
-
-            # Normalize y to [0, 1]
-            y_norm = (y - min_y) / (max_y - min_y)
-
-            # Log transform (add 1 to avoid log(0))
-            y_log = np.log(y_norm + 1)
-
-            # Pairwise absolute differences
-            delta = np.abs(y_log[:, None] - y_log[None, :])
-            D = 2 * np.sin((np.pi / 2) * delta)
-        elif self.manifold == "sphere_chord":
-            if len(y.shape) != 2 or y.shape[1] != 2:
-                raise ValueError("For 'sphere_chord', labels must be a 2D array with shape (n_samples, 2).")
-            lat_rad = np.radians(y[:, 0])
-            lon_rad = np.radians(y[:, 1])
-            radius = self.radius
-
-            x = radius * np.cos(lat_rad) * np.cos(lon_rad)
-            y_ = radius * np.cos(lat_rad) * np.sin(lon_rad)
-            z = radius * np.sin(lat_rad)
-
-            coords = np.stack([x, y_, z], axis=1)
-            diffs = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-            D = np.linalg.norm(diffs, axis=2)
-
-        elif self.manifold == "geodesic":
-            if len(y.shape) != 2 or y.shape[1] != 2:
-                raise ValueError("For 'geodesic', labels must be a 2D array with shape (n_samples, 2).")
-            radius = self.radius
-            lat = np.radians(y[:, 0])[:, np.newaxis]
-            lon = np.radians(y[:, 1])[:, np.newaxis]
-
-            dlat = lat - lat.T
-            dlon = lon - lon.T
-
-            lat1 = lat
-            lat2 = lat.T
-
-            a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-            c = 2 * np.arcsin(np.sqrt(a))
-            D = radius * c
-
-        elif self.manifold == "cylinder_chord":
-            if len(y.shape) != 2 or y.shape[1] != 2:
-                raise ValueError("For 'cylinder_chord', labels must be a 2D array with shape (n_samples, 2).")
-
-            lat_rad = np.radians(y[:, 0])  # latitude as height
-            lon_rad = np.radians(y[:, 1])  # longitude as angle
-
-            radius = self.radius  # cylinder radius
-
-            x = radius * np.cos(lon_rad)
-            y_ = radius * np.sin(lon_rad)
-            z = lat_rad  # treat lat as height
-
-            coords = np.stack([x, y_, z], axis=1)
-            diffs = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-            D = np.linalg.norm(diffs, axis=2)
-
-        elif callable(self.manifold):
+        if callable(self.manifold):
             D = self.manifold(y)
         else:
             raise ValueError("Invalid manifold specification.")
