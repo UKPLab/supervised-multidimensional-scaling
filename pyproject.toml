@@ -1,6 +1,6 @@
 [project]
 name = "supervised-multidimensional-scaling"
-version = "0.4.4"
+version = "0.4.5"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
