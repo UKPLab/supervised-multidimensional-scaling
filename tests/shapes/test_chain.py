@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 from numpy.testing import assert_array_almost_equal
+from numpy.typing import NDArray
 
 from smds.shapes.discrete_shapes.chain import ChainShape
 

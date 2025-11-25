@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 from numpy.testing import assert_array_equal
+from numpy.typing import NDArray
 from scipy.spatial.distance import pdist
 
 from smds import SupervisedMDS

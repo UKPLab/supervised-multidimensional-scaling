@@ -18,6 +18,7 @@ Arc vs. Chord Mismatch (Geodesic, DiscreteCircular):
 
 import pytest
 from scipy.spatial import procrustes
+
 from smds import SupervisedMDS
 
 # Format: (shape_name, engine_fixture_name, data_fixture_name, score_min, procrustes_max)

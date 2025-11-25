@@ -1,7 +1,6 @@
-import pytest
 import numpy as np
+import pytest
 from numpy.typing import NDArray
-
 
 from smds import SupervisedMDS
 from smds.shapes.continuous_shapes.circular import CircularShape
