@@ -15,7 +15,7 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
     def normalize_labels(self) -> bool:
         """
         Flag to normalize labels.
-        Should default to False.
+        Should default to True unless specified by the shape.
         """
         pass
 
