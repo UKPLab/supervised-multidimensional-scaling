@@ -15,8 +15,8 @@ from smds.stress.stress_metrics import StressMetrics
 class SupervisedMDS(BaseEstimator, TransformerMixin):
     def __init__(
         self,
+        manifold: Callable,
         n_components: int = 2,
-        manifold: Union[str, Callable] = "trivial",
         alpha: float = 0.1,
         orthonormal: bool = False,
         radius: float = 6371,
