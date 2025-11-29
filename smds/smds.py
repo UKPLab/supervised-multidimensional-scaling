@@ -235,6 +235,12 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             score_value = 1 - ScaleNormalizedStress().compute(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.NON_METRIC_STRESS:
             score_value = 1 - NonMetricStress().compute(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.SHEPARD_GOODNESS_SCORE:
+            score_value = ShepardGoodnessScore().compute(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.NORMALIZED_STRESS:
+            score_value = 1-NormalizedStress().compute(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
+            score_value = NormalizedKLDivergence().compute(D_ideal_flat, D_pred_flat)
         # TODO: Add other metrics from the paper here
         else:
             raise ValueError(f"Unknown metric: {metric}")
