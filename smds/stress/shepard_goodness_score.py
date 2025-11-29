@@ -1,14 +1,42 @@
-from smds.stress.base_stress import BaseStress
-from numpy.typing import NDArray
-from zadu.measures import spearman_rho
 import numpy as np
-from scipy.spatial.distance import pdist
+from numpy.typing import NDArray
+from scipy.stats import spearmanr
+from sklearn.utils.validation import check_array, check_consistent_length, validate_params
 
+@validate_params(
+    {
+        "d_true": ["array-like"],
+        "d_pred": ["array-like"],
+    },
+    prefer_skip_nested_validation=True,
+)
+def shepard_goodness_score(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) -> float:
+    """
+    Compute the Shepard Goodness Score (Spearman's Rho) on pairwise distances.
 
-class ShepardGoodnessScore(BaseStress):
-    def compute(self, X_high: NDArray[np.float64], X_low: NDArray[np.float64]) -> float:
-        dist_high = pdist(X_high)
-        dist_low = pdist(X_low)
+    Parameters
+    ----------
+    d_true : array-like of shape (n_pairs,)
+        The target dissimilarities (D_high/D_ideal).
 
-        res = spearman_rho.measure(X_high, X_low, (dist_high, dist_low))
-        return res['spearman_rho']
+    d_pred : array-like of shape (n_pairs,)
+        The embedding distances (D_low/D_pred).
+
+    Returns
+    -------
+    score : float
+        Spearman's rank correlation coefficient (rho).
+
+    References
+    ----------
+    - Smelser, K., Miller, J., & Kobourov, S. (2024). "Normalized Stress is Not
+    Normalized: How to Interpret Stress Correctly". arXiv preprint arXiv:2408.07724.
+    """
+    d_true = check_array(d_true, ensure_2d=False, dtype=np.float64)
+    d_pred = check_array(d_pred, ensure_2d=False, dtype=np.float64)
+    check_consistent_length(d_true, d_pred)
+
+    correlation = spearmanr(d_true, d_pred)
+
+    result: float = float(correlation[0])
+    return result

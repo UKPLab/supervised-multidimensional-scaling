@@ -1,21 +1,21 @@
 import os
 import pickle
-from typing import Callable, Union
+from typing import Callable
 
 import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from smds.stress.non_metric_stress import NonMetricStress
-from smds.stress.scale_normalized_stress import ScaleNormalizedStress
 from smds.stress.stress_metrics import StressMetrics
-
+from smds.stress.non_metric_stress import non_metric_stress
+from smds.stress.scale_normalized_stress import scale_normalized_stress
+from smds.stress.shepard_goodness_score import shepard_goodness_score
 
 class SupervisedMDS(BaseEstimator, TransformerMixin):
     def __init__(
         self,
-        manifold: Callable,
+        manifold: Callable
         n_components: int = 2,
         alpha: float = 0.1,
         orthonormal: bool = False,
@@ -232,20 +232,13 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
 
         # Compute stress
         if metric == StressMetrics.SCALE_NORMALIZED_STRESS:
-            score_value = 1 - ScaleNormalizedStress().compute(D_ideal_flat, D_pred_flat)
+            score_value = 1 - scale_normalized_stress(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.NON_METRIC_STRESS:
-            score_value = 1 - NonMetricStress().compute(D_ideal_flat, D_pred_flat)
+            score_value = 1 - non_metric_stress(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.SHEPARD_GOODNESS_SCORE:
-            score_value = ShepardGoodnessScore().compute(D_ideal_flat, D_pred_flat)
-        elif metric == StressMetrics.NORMALIZED_STRESS:
-            score_value = 1-NormalizedStress().compute(D_ideal_flat, D_pred_flat)
-        elif metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
-            score_value = NormalizedKLDivergence().compute(D_ideal_flat, D_pred_flat)
-        # TODO: Add other metrics from the paper here
+            score_value = shepard_goodness_score(D_ideal_flat, D_pred_flat)
         else:
             raise ValueError(f"Unknown metric: {metric}")
-
-        return score_value
 
     def save(self, filepath: str):
         """
