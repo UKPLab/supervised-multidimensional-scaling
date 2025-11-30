@@ -17,7 +17,7 @@ Arc vs. Chord Mismatch (Geodesic, DiscreteCircular):
 """
 
 import pytest
-from scipy.spatial import procrustes
+from scipy.spatial import procrustes  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 

@@ -19,7 +19,7 @@ class GeodesicShape(BaseShape):
 
     def __init__(self, radius: Optional[float] = 1.0, normalize_labels: Optional[bool] = False):
         self.radius = radius
-        self._normalize_labels = normalize_labels
+        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else False
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
@@ -48,5 +48,5 @@ class GeodesicShape(BaseShape):
         a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
         a = np.clip(a, 0, 1)  # prevent floating-point error
         c = 2 * np.arcsin(np.sqrt(a))
-        distance = self.radius * c
+        distance: NDArray[np.float64] = self.radius * c
         return distance

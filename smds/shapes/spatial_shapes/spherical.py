@@ -19,7 +19,7 @@ class SphericalShape(BaseShape):
 
     def __init__(self, radius: Optional[float] = 1.0, normalize_labels: Optional[bool] = False):
         self.radius = radius
-        self._normalize_labels = normalize_labels
+        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else False
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
@@ -49,5 +49,5 @@ class SphericalShape(BaseShape):
         )
 
         diffs = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-        distance = np.linalg.norm(diffs, axis=2)
+        distance: NDArray[np.float64] = np.linalg.norm(diffs, axis=2)
         return distance

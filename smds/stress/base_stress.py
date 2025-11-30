@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
 from numpy.typing import NDArray
 
 
 class BaseStress(ABC):
     @abstractmethod
-    def compute(self, D_high: NDArray, D_low: NDArray) -> float:
+    def compute(self, D_high: NDArray[np.float64], D_low: NDArray[np.float64]) -> float:
         """
         Compute the stress metric between high and low dimensional embeddings.
 

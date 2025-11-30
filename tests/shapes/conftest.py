@@ -41,7 +41,8 @@ def _project_and_shuffle(
     indices = np.arange(n_samples)
     rng.shuffle(indices)
 
-    return X_high[indices], y[indices], X_latent[indices]
+    result: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]] = (X_high[indices], y[indices], X_latent[indices])
+    return result
 
 
 def _generate_lat_lon(n_samples: int, seed: int = 42) -> NDArray[np.float64]:
@@ -59,12 +60,12 @@ def _generate_lat_lon(n_samples: int, seed: int = 42) -> NDArray[np.float64]:
 # CHAIN SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def chain_engine():
+def chain_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=2, manifold=ChainShape(threshold=1.1))
 
 
 @pytest.fixture(scope="module")
-def chain_data_10d():
+def chain_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     n_points = 20
 
     # Latent 2D Circle (Chain topology)
@@ -79,12 +80,12 @@ def chain_data_10d():
 # CLUSTER SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def cluster_engine():
+def cluster_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=2, manifold=ClusterShape())
 
 
 @pytest.fixture(scope="module")
-def cluster_data_10d():
+def cluster_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     rng = np.random.default_rng(42)
     n_per_cluster = 25
 
@@ -101,12 +102,12 @@ def cluster_data_10d():
 # DISCRETE CIRCULAR SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def disc_circular_engine():
+def disc_circular_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=2, manifold=DiscreteCircularShape(num_points=12))
 
 
 @pytest.fixture(scope="module")
-def disc_circular_data_10d():
+def disc_circular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     n_labels = 12
     n_per_label = 10
     y = np.repeat(np.arange(n_labels), n_per_label).astype(float)
@@ -122,12 +123,12 @@ def disc_circular_data_10d():
 # HIERARCHICAL SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def hierarchical_engine():
+def hierarchical_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=2, manifold=HierarchicalShape(level_distances=[100.0, 10.0, 1.0]))
 
 
 @pytest.fixture(scope="module")
-def hierarchical_data_10d():
+def hierarchical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     rng = np.random.default_rng(42)
     n_per_species = 10
     y_list = [[0, 0, 0], [0, 0, 1], [0, 1, 2], [0, 1, 3], [1, 0, 4], [1, 0, 5], [1, 1, 6], [1, 1, 7]]
@@ -231,12 +232,13 @@ def geodesic_engine() -> SupervisedMDS:
 
 
 @pytest.fixture(scope="module")
-def geodesic_data_10d(spherical_data_10d) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+def geodesic_data_10d(spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Geodesic uses the same 3D Latent Sphere geometry as SphericalShape.
     However, the metric (Great Circle vs Chord) differs.
     """
-    return spherical_data_10d
+    result: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]] = spherical_data_10d
+    return result
 
 
 # =============================================================================

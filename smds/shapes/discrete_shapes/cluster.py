@@ -20,7 +20,7 @@ class ClusterShape(BaseShape):
         return self._normalize_labels
 
     def __init__(self, normalize_labels: Optional[bool] = False):
-        self._normalize_labels = normalize_labels
+        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else False
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """

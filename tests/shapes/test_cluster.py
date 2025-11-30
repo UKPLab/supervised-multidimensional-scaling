@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 from numpy.typing import NDArray
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.discrete_shapes.cluster import ClusterShape

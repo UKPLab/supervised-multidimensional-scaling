@@ -20,7 +20,7 @@ class CircularShape(BaseShape):
 
     def __init__(self, radious: Optional[float] = 1.0, normalize_labels: Optional[bool] = True):
         self.radious = radious
-        self._normalize_labels = normalize_labels
+        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else True
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         delta: NDArray[np.float64] = np.abs(y[:, None] - y[None, :])
