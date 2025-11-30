@@ -190,6 +190,10 @@ def test_stress_scaled_range(
         assert min_val <= result_scaled <= max_val, (
             f"[{metric_enum.value}] Scaled result {result_scaled} outside expected range."
         )
+        assert not np.isclose(result_original, result_scaled), (
+            f"[{metric_enum.value}] Metric should be scale-sensitive, "
+            f"but got identical values: {result_original:.6f} == {result_scaled:.6f}"
+        )
 
 
 @pytest.mark.parametrize(
