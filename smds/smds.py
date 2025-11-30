@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Callable, Union
+from typing import Callable
 
 import numpy as np
 from scipy.linalg import eigh  # type: ignore[import-untyped]

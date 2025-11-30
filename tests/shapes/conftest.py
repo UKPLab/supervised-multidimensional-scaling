@@ -41,7 +41,11 @@ def _project_and_shuffle(
     indices = np.arange(n_samples)
     rng.shuffle(indices)
 
-    result: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]] = (X_high[indices], y[indices], X_latent[indices])
+    result: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]] = (
+        X_high[indices],
+        y[indices],
+        X_latent[indices],
+    )
     return result
 
 
@@ -232,7 +236,9 @@ def geodesic_engine() -> SupervisedMDS:
 
 
 @pytest.fixture(scope="module")
-def geodesic_data_10d(spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+def geodesic_data_10d(
+    spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Geodesic uses the same 3D Latent Sphere geometry as SphericalShape.
     However, the metric (Great Circle vs Chord) differs.
