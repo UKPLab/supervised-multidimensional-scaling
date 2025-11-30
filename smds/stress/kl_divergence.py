@@ -26,7 +26,6 @@ def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray
     {
         "d_true": ["array-like"],
         "d_pred": ["array-like"],
-        "sigma": ["float"],
     },
     prefer_skip_nested_validation=True,
 )
