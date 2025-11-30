@@ -1,41 +1,97 @@
 import numpy as np
 from numpy.typing import NDArray
+from sklearn.utils.validation import check_array, check_consistent_length
+from sklearn.utils._param_validation import validate_params
 
-from smds.stress.base_stress import BaseStress
-
-
-class KLDivergence(BaseStress):
+def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray[np.float64]:
     """
-    Computes Kullback-Leibler (KL) Divergence between the Ideal distribution (P)
-    and the Recovered distribution (Q).
+    Helper to convert distance matrix to joint probability matrix using a Gaussian kernel.
     """
+    D_sq = D ** 2
+    np.fill_diagonal(D_sq, np.inf)
+    
+    # Gaussian Kernel
+    P = np.exp(-D_sq / (2 * sigma**2))
+    
+    sum_P = np.sum(P, axis=1, keepdims=True)
+    sum_P = np.maximum(sum_P, 1e-12) 
 
-    def _distances_to_probabilities(self, D: NDArray[np.float64], sigma: float = 1.0) -> NDArray[np.float64]:
-        """
-        Convert a distance matrix to a probability matrix using a Gaussian kernel.
-        """
-        D_sq = D ** 2       
-        np.fill_diagonal(D_sq, np.inf)
-        P = np.exp(-D_sq / (2 * sigma**2))
+    P = P / sum_P
+    
+    P = (P + P.T) / (2 * P.shape[0])
+
+    return np.maximum(P, 1e-12)
+
+@validate_params(
+    {
+        "d_true": ["array-like"],
+        "d_pred": ["array-like"],
+        "sigma": ["float"],
+    },
+    prefer_skip_nested_validation=True,
+)
+def kl_divergence_stress(
+    d_true: NDArray[np.float64],
+    d_pred: NDArray[np.float64],
+    sigma: float = 1.0
+) -> float:
+    """
+    Compute the Kullback-Leibler (KL) Divergence using Gaussian kernels for both P and Q.
+
+    This metric measures the information loss when approximating the high-dimensional
+    structure (P) with the low-dimensional structure (Q). Unlike standard t-SNE which
+    uses a Student-t distribution for Q, this implementation uses a Gaussian kernel
+    for both, corresponding to the metric denoted as :math:`KL_G` in Smelser et al. (2025).
+
+    Parameters
+    ----------
+    d_true : array-like of shape (n_samples, n_samples)
+        The target distance matrix (Ground Truth/Ideal).
+        Must be a square, symmetric matrix of pairwise distances.
+
+    d_pred : array-like of shape (n_samples, n_samples)
+        The recovered distance matrix (Embedding).
+        Must be a square, symmetric matrix of pairwise distances.
+
+    sigma : float, default=1.0
+        The standard deviation (width) of the Gaussian kernel.
+
+    Returns
+    -------
+    kl_div : float
+        The Kullback-Leibler divergence :math:`KL(P||Q)`.
         
-        sum_P = np.sum(P, axis=1, keepdims=True)
-        sum_P = np.maximum(sum_P, 1e-12)
+    Notes
+    -----
+    The divergence is calculated as:
 
-        P = P / sum_P
-        P = (P + P.T) / (2 * P.shape[0])
+    .. math::
+        KL(P||Q) = \\sum_{i \\neq j} p_{ij} \\log \\frac{p_{ij}}{q_{ij}}
 
-        return np.maximum(P, 1e-12)
+    Where both :math:`p_{ij}` and :math:`q_{ij}` are derived using Gaussian kernels:
+    
+    .. math::
+        q_{ij}^G(\\alpha) = \\frac{\\exp(-\\alpha^2 ||y_i - y_j||^2)}{\\sum_{k \\neq l} \\exp(-\\alpha^2 ||y_k - y_l||^2)}
+    
+    (Assuming alpha=1 and incorporated into sigma).
+    
+    References
+    ----------
+    Smelser, K., Gunaratne, K., Miller, J., & Kobourov, S. (2025).
+    "How Scale Breaks 'Normalized Stress' and KL Divergence: Rethinking Quality Metrics".
+    arXiv preprint arXiv:2510.08660.
+    """
+    d_true = check_array(d_true, ensure_2d=True, dtype=np.float64)
+    d_pred = check_array(d_pred, ensure_2d=True, dtype=np.float64)
+    check_consistent_length(d_true, d_pred)
 
-    def compute(self, D_high: NDArray[np.float64], D_low: NDArray[np.float64]) -> float:
-        """
-        Args:
-            D_high: Ideal distances (Ground Truth)
-            D_low: Recovered distances
-        """
-        # Convert distances to probability distributions P (Ideal) and Q (Recovered)
-        P = self._distances_to_probabilities(D_high, sigma=1.0)
-        Q = self._distances_to_probabilities(D_low, sigma=1.0)
+    if d_true.shape[0] != d_true.shape[1]:
+        raise ValueError("d_true must be a square distance matrix.")
+    if d_pred.shape[0] != d_pred.shape[1]:
+        raise ValueError("d_pred must be a square distance matrix.")
 
-        kl_div: float = np.sum(P * np.log(P / Q))
+    P = _distances_to_probabilities(d_true, sigma)
+    Q = _distances_to_probabilities(d_pred, sigma)
 
-        return kl_div
+    result: float = float(np.sum(P * np.log(P / Q)))
+    return result

@@ -10,12 +10,14 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from smds.stress.stress_metrics import StressMetrics
 from smds.stress.non_metric_stress import non_metric_stress
 from smds.stress.scale_normalized_stress import scale_normalized_stress
-from smds.stress.shepard_goodness_score import shepard_goodness_score
+from smds.stress.shepard_goodness_score import shepard_goodness_stress
+from smds.stress.kl_divergence import kl_divergence_stress
+from smds.stress.normalized_stress import normalized_stress
 
 class SupervisedMDS(BaseEstimator, TransformerMixin):
     def __init__(
         self,
-        manifold: Callable
+        manifold: Callable,
         n_components: int = 2,
         alpha: float = 0.1,
         orthonormal: bool = False,
@@ -236,9 +238,16 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         elif metric == StressMetrics.NON_METRIC_STRESS:
             score_value = 1 - non_metric_stress(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.SHEPARD_GOODNESS_SCORE:
-            score_value = shepard_goodness_score(D_ideal_flat, D_pred_flat)
+            score_value = shepard_goodness_stress(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
+            kl_val = kl_divergence_stress(D_ideal, D_pred)
+            score_value = -kl_val
+        elif metric == StressMetrics.NORMALIZED_STRESS:
+            score_value = 1 - normalized_stress(D_ideal_flat, D_pred_flat)
         else:
             raise ValueError(f"Unknown metric: {metric}")
+    
+        return score_value
 
     def save(self, filepath: str):
         """

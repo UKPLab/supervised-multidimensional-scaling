@@ -10,7 +10,7 @@ from sklearn.utils.validation import check_array, check_consistent_length, valid
     },
     prefer_skip_nested_validation=True,
 )
-def shepard_goodness_score(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) -> float:
+def shepard_goodness_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) -> float:
     """
     Compute the Shepard Goodness Score (Spearman's Rho) on pairwise distances.
 

@@ -1,32 +1,62 @@
 import numpy as np
 from numpy.typing import NDArray
+from sklearn.utils.validation import check_array, check_consistent_length
+from sklearn.utils._param_validation import validate_params
 
-from smds.stress.base_stress import BaseStress
-
-
-class NormalizedStress(BaseStress):
+@validate_params(
+    {
+        "d_true": ["array-like"],
+        "d_pred": ["array-like"],
+    },
+    prefer_skip_nested_validation=True,
+)
+def normalized_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) -> float:
     """
-    Computes the Supervised Normalized Stress.
+    Compute the Normalized Stress between ideal and recovered geometries.
 
-    Reference: Equation 4 in "Shape Happens" paper.
-    Formula: S := sum( (||Wx_i - Wx_j|| - d_hat_ij)^2 ) / sum( d_hat_ij^2 )
+    This metric quantifies the preservation of pairwise distances by comparing
+    the squared differences relative to the magnitude of the ideal distances.
+
+    Parameters
+    ----------
+    d_true : array-like of shape (n_pairs,)
+        The ideal/target distance matrix (D_high).
+        Can be a flattened array of pairwise distances.
+
+    d_pred : array-like of shape (n_pairs,)
+        The recovered/embedding distance matrix (D_low).
+        Can be a flattened array of pairwise distances.
+
+    Returns
+    -------
+    stress : float
+        The calculated normalized stress value.
+
+    Notes
+    -----
+    The formula implemented is:
+
+    .. math::
+
+        S = \\frac{\\sum (d_{pred} - d_{true})^2}{\\sum d_{true}^2}
+
+    Note that typically 'Normalized Stress' includes a square root operation.
+    This implementation returns the squared variant (variance explained ratio).
+
+    References
+    ----------
+    - Smelser, K., Miller, J., & Kobourov, S. (2024). "Normalized Stress is Not
+    Normalized: How to Interpret Stress Correctly". arXiv preprint arXiv:2408.07724.
     """
+    d_true = check_array(d_true, ensure_2d=False, dtype=np.float64)
+    d_pred = check_array(d_pred, ensure_2d=False, dtype=np.float64)
+    check_consistent_length(d_true, d_pred)
 
-    def compute(self, D_high: NDArray[np.float64], D_low: NDArray[np.float64]) -> float:
-        """
-        Computes stress between the ideal geometry (D_high) and recovered geometry (D_low).
+    numerator = np.sum((d_pred - d_true) ** 2)
+    denominator = np.sum(d_true ** 2)
 
-        Args:
-            D_high: The IDEAL distance matrix (d_hat_ij from the paper).
-            D_low: The RECOVERED distance matrix (Euclidean dist in projection).
-        """
-        numerator: float = np.sum((D_low - D_high) ** 2)
-        
-        denominator: float = np.sum(D_high ** 2)
+    if denominator == 0:
+        return np.inf
+    result: float = float(numerator / denominator)
 
-        if denominator == 0:
-            # Avoid division by zero if ideal distances are all 0 (e.g. trivial manifold)
-            return np.inf
-
-        stress: float = numerator / denominator
-        return stress
+    return result
