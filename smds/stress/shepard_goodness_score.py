@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.typing import NDArray
 from scipy.stats import spearmanr
-from sklearn.utils.validation import check_array, check_consistent_length, validate_params
+from sklearn.utils.validation import check_array, check_consistent_length
+from sklearn.utils._param_validation import validate_params
 
 @validate_params(
     {
