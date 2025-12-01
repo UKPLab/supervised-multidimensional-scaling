@@ -20,7 +20,7 @@ class DiscreteCircularShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, num_points: Optional[int] = None, normalize_labels: Optional[bool] = False) -> None:
+    def __init__(self, num_points: Optional[int] = None, normalize_labels: bool = False) -> None:
         """
         Initialize the DiscreteCircularShape.
 
@@ -34,7 +34,7 @@ class DiscreteCircularShape(BaseShape):
         if num_points is not None and num_points <= 0:
             raise ValueError("num_points must be a positive integer.")
         self.num_points = num_points
-        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else False
+        self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """

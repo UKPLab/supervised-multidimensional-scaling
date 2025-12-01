@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -18,16 +16,17 @@ class SpiralShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self,
-                 initial_radius: Optional[float] = 0.5,
-                 growth_rate: Optional[float] = 1.0,
-                 num_turns: Optional[float] = 2.0,
-                 normalize_labels: Optional[bool] = True) -> None:
-
-        self.initial_radius: float = initial_radius if initial_radius is not None else 0.5
-        self.growth_rate: float = growth_rate if growth_rate is not None else 1.0
-        self.num_turns: float = num_turns if num_turns is not None else 2.0
-        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else True
+    def __init__(
+        self,
+        initial_radius: float = 0.5,
+        growth_rate: float = 1.0,
+        num_turns: float = 2.0,
+        normalize_labels: bool = True,
+    ) -> None:
+        self.initial_radius = initial_radius
+        self.growth_rate = growth_rate
+        self.num_turns = num_turns
+        self._normalize_labels = normalize_labels
 
     @staticmethod
     def _do_normalize_labels(y: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -35,7 +34,7 @@ class SpiralShape(BaseShape):
         if y_range == 0:
             result: NDArray[np.float64] = np.zeros_like(y)
             return result
-        result = (y - y.min()) / y_range
+        result: NDArray[np.float64] = (y - y.min()) / y_range
         return result
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:

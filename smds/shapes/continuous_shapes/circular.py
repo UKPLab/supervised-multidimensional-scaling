@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -18,9 +16,9 @@ class CircularShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, radious: Optional[float] = 1.0, normalize_labels: Optional[bool] = True):
+    def __init__(self, radious: float = 1.0, normalize_labels: bool = True):
         self.radious = radious
-        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else True
+        self._normalize_labels = normalize_labels
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         delta: NDArray[np.float64] = np.abs(y[:, None] - y[None, :])

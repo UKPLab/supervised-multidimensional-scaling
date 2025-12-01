@@ -17,8 +17,12 @@ def test_chain_distance_computation() -> None:
     shape = ChainShape(threshold=2.0)
     y: NDArray[np.float64] = np.array([0, 1, 2, 3]).astype(float)
     dists: NDArray[np.float64] = shape(y)
-    expected: NDArray[np.float64] = np.array([
-        [0.0, 1.0, -1.0, 1.0], [1.0, 0.0, 1.0, -1.0],
-        [-1.0, 1.0, 0.0, 1.0], [1.0, -1.0, 1.0, 0.0],
-    ])
+    expected: NDArray[np.float64] = np.array(
+        [
+            [0.0, 1.0, -1.0, 1.0],
+            [1.0, 0.0, 1.0, -1.0],
+            [-1.0, 1.0, 0.0, 1.0],
+            [1.0, -1.0, 1.0, 0.0],
+        ]
+    )
     assert_array_almost_equal(dists, expected)

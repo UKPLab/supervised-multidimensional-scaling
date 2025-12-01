@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 from numpy.typing import NDArray
@@ -18,7 +18,7 @@ class HierarchicalShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, level_distances: List[float], normalize_labels: Optional[bool] = False) -> None:
+    def __init__(self, level_distances: List[float], normalize_labels: bool = False) -> None:
         """
         Initialize HierarchicalShape with level distances.
 
@@ -31,7 +31,7 @@ class HierarchicalShape(BaseShape):
         if any(d < 0 for d in level_distances):
             raise ValueError("All level_distances must be non-negative.")
         self.level_distances = np.array(level_distances, dtype=np.float64)
-        self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else False
+        self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """

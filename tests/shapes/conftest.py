@@ -15,11 +15,7 @@ from smds.shapes.spiral_shape import SpiralShape
 
 
 def _project_and_shuffle(
-        X_latent: NDArray[np.float64],
-        y: NDArray[np.float64],
-        high_dim: int = 10,
-        noise_level: float = 0.5,
-        seed: int = 42
+    X_latent: NDArray[np.float64], y: NDArray[np.float64], high_dim: int = 10, noise_level: float = 0.5, seed: int = 42
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Helper to project latent 2D data into high-dimensional space, add noise,
@@ -151,6 +147,7 @@ def hierarchical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 # (CONTINUOUS) CIRCULAR SETUP
 # =============================================================================
 
+
 @pytest.fixture(scope="module")
 def circular_engine() -> SupervisedMDS:
     """Provides a default engine with Continuous Circular Shape."""
@@ -189,11 +186,7 @@ def cylindrical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], ND
     lat_rad = np.radians(y[:, 0])
     lon_rad = np.radians(y[:, 1])
 
-    X_latent = np.stack([
-        radius * np.cos(lon_rad),
-        radius * np.sin(lon_rad),
-        lat_rad
-    ], axis=1)
+    X_latent = np.stack([radius * np.cos(lon_rad), radius * np.sin(lon_rad), lat_rad], axis=1)
 
     return _project_and_shuffle(X_latent, y)
 
@@ -226,11 +219,14 @@ def spherical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDAr
 
     # Matching SphericalShape._compute_distances
     radius = 1.0
-    X_latent = np.stack([
-        radius * np.cos(lat_rad) * np.cos(lon_rad),
-        radius * np.cos(lat_rad) * np.sin(lon_rad),
-        radius * np.sin(lat_rad)
-    ], axis=1)
+    X_latent = np.stack(
+        [
+            radius * np.cos(lat_rad) * np.cos(lon_rad),
+            radius * np.cos(lat_rad) * np.sin(lon_rad),
+            radius * np.sin(lat_rad),
+        ],
+        axis=1,
+    )
 
     return _project_and_shuffle(X_latent, y)
 
@@ -248,9 +244,7 @@ def geodesic_engine() -> SupervisedMDS:
 # =============================================================================
 @pytest.fixture(scope="module")
 def spiral_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=SpiralShape(
-        initial_radius=0.5, growth_rate=1.0, num_turns=2.0
-    ))
+    return SupervisedMDS(n_components=2, manifold=SpiralShape(initial_radius=0.5, growth_rate=1.0, num_turns=2.0))
 
 
 @pytest.fixture(scope="module")
@@ -269,10 +263,6 @@ def spiral_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray
     theta = y * 2 * np.pi * num_turns
     radius = initial_radius + growth_rate * theta
 
-    X_latent = np.stack([
-        radius * np.cos(theta),
-        radius * np.sin(theta)
-    ], axis=1)
+    X_latent = np.stack([radius * np.cos(theta), radius * np.sin(theta)], axis=1)
 
     return _project_and_shuffle(X_latent, y)
-
