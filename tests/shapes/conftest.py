@@ -230,15 +230,6 @@ def geodesic_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=3, manifold=GeodesicShape(radius=1.0))
 
 
-@pytest.fixture(scope="module")
-def geodesic_data_10d(spherical_data_10d) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
-    """
-    Geodesic uses the same 3D Latent Sphere geometry as SphericalShape.
-    However, the metric (Great Circle vs Chord) differs.
-    """
-    return spherical_data_10d
-
-
 # =============================================================================
 # SPIRAL SETUP
 # =============================================================================
