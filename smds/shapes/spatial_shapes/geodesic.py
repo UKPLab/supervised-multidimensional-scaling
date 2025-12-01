@@ -17,7 +17,7 @@ class GeodesicShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, radius: Optional[float] = 1.0, normalize_labels: Optional[bool] = False):
+    def __init__(self, radius: Optional[float] = 1.0, normalize_labels: bool = False):
         self.radius = radius
         self._normalize_labels: bool = bool(normalize_labels) if normalize_labels is not None else False
 

@@ -209,6 +209,14 @@ def spherical_engine() -> SupervisedMDS:
 
 @pytest.fixture(scope="module")
 def spherical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Test data for SphericalShape and GeodesicShape.
+
+    Geodesic uses the same 3D Latent Sphere geometry as SphericalShape.
+    However, the distance calculation method differs:
+        - SphericalShape uses Chord distance (used here);
+        - GeodesicShape uses Great Circle distance.
+    """
     n_samples = 50
     y = _generate_lat_lon(n_samples)
 
@@ -233,18 +241,6 @@ def spherical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDAr
 @pytest.fixture(scope="module")
 def geodesic_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=3, manifold=GeodesicShape(radius=1.0))
-
-
-@pytest.fixture(scope="module")
-def geodesic_data_10d(
-    spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
-    """
-    Geodesic uses the same 3D Latent Sphere geometry as SphericalShape.
-    However, the metric (Great Circle vs Chord) differs.
-    """
-    result: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]] = spherical_data_10d
-    return result
 
 
 # =============================================================================

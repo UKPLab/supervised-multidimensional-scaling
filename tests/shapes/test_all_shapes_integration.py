@@ -31,7 +31,7 @@ SHAPE_TEST_CASES = [
     ("Circular",        "circular_engine",      "circular_data_10d",        0.80, 0.1),
     ("Cylindrical",     "cylindrical_engine",   "cylindrical_data_10d",     0.80, 0.1),
     ("Spherical",       "spherical_engine",     "spherical_data_10d",       0.70, 0.2),
-    ("Geodesic",        "geodesic_engine",      "geodesic_data_10d",        0.70, 0.2),  # max score 0.90 without noise
+    ("Geodesic",        "geodesic_engine",      "spherical_data_10d",       0.70, 0.2),  # max score 0.90 without noise
     ("Spiral",          "spiral_engine",        "spiral_data_10d",          0.90, 0.1),
 ]
 
