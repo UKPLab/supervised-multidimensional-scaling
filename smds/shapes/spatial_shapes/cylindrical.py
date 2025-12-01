@@ -17,7 +17,7 @@ class CylindricalShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, radius: Optional[float] = 1.0, normalize_labels: Optional[bool] = False):
+    def __init__(self, radius: Optional[float] = 1.0, normalize_labels: bool = False):
         self.radius = radius
         self._normalize_labels = normalize_labels
 
@@ -50,5 +50,5 @@ class CylindricalShape(BaseShape):
         )
 
         diffs = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-        distance = np.linalg.norm(diffs, axis=2)
+        distance: NDArray[np.float64] = np.linalg.norm(diffs, axis=2)
         return distance
