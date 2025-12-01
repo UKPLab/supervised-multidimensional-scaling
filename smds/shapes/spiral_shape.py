@@ -32,8 +32,8 @@ class SpiralShape(BaseShape):
     def _do_normalize_labels(y: NDArray[np.float64]) -> NDArray[np.float64]:
         y_range = np.ptp(y)
         if y_range == 0:
-            result: NDArray[np.float64] = np.zeros_like(y)
-            return result
+            zero_array: NDArray[np.float64] = np.zeros_like(y)
+            return zero_array
         result: NDArray[np.float64] = (y - y.min()) / y_range
         return result
 
