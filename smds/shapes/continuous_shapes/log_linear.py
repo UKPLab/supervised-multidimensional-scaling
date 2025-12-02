@@ -19,7 +19,7 @@ class LogLinearShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, normalize_labels: Optional[bool] = True, epsilon: float = 1e-9):
+    def __init__(self, normalize_labels: Optional[bool] = True, epsilon: float = 1):
         """
         Args:
             normalize_labels: Whether to scale inputs to [0, 1].
