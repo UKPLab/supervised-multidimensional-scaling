@@ -8,11 +8,8 @@ Be creative! do whatever you want!
 - Import things from your .base module
 """
 
-from .base import BaseClass
-from .subpackage import SubPackageClass
 
-
-def main():  # pragma: no cover
+def main() -> None:  # pragma: no cover
     """
     The main function executes on commands:
     `python -m smds` and `$ smds `.
@@ -28,8 +25,4 @@ def main():  # pragma: no cover
         * List all available tasks
         * Run an application (Flask, FastAPI, Django, etc.)
     """
-    bc = BaseClass("test")
-    print(f"This will do something: {bc.something()}")
-
-    spc = SubPackageClass("test")
-    print(f"This will do something else: {spc.something()}")
+    print("SMDS CLI - Add your functionality here")
