@@ -1,6 +1,6 @@
-from scipy.stats import spearmanr # type: ignore[import-untyped]
-from numpy.typing import NDArray
 import numpy as np
+from numpy.typing import NDArray
+from scipy.stats import spearmanr  # type: ignore[import-untyped]
 
 
 def shepard_goodness_score(D_high: NDArray[np.float64], D_low: NDArray[np.float64]) -> float:
