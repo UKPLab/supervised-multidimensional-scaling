@@ -20,7 +20,7 @@ class DiscreteCircularShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, num_points: Optional[int] = None, normalize_labels: Optional[bool] = False) -> None:
+    def __init__(self, num_points: Optional[int] = None, normalize_labels: bool = False) -> None:
         """
         Initialize the DiscreteCircularShape.
 

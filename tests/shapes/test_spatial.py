@@ -23,7 +23,7 @@ def engine_spherical() -> SupervisedMDS:
 
 
 @pytest.fixture
-def X() -> np.ndarray:
+def X() -> np.typing.NDArray[np.float64]:
     return np.random.randn(10, 10)
 
 

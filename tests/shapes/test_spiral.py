@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
 from numpy.typing import NDArray
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.spiral_shape import SpiralShape

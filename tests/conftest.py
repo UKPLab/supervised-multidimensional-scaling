@@ -2,13 +2,14 @@
 # See https://docs.pytest.org/en/latest/fixture.html for more information about fixtures.
 
 import sys
+from collections.abc import Generator
 
 import pytest
 
 
 # each test runs on cwd to its temp dir
 @pytest.fixture(autouse=True)
-def go_to_tmpdir(request):
+def go_to_tmpdir(request: pytest.FixtureRequest) -> Generator[None, None, None]:
     # Get the fixture dynamically by its name.
     tmpdir = request.getfixturevalue("tmpdir")
     # ensure local test created packages can be imported

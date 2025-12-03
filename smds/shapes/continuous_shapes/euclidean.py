@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -18,9 +16,8 @@ class EuclideanShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, normalize_labels: Optional[bool] = True):
-
-        self._normalize_labels = normalize_labels if normalize_labels is not None else True
+    def __init__(self, normalize_labels: bool = True):
+        self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
@@ -36,11 +33,10 @@ class EuclideanShape(BaseShape):
                 f"Input 'y' for EuclideanShape must be 1-dimensional (n_samples,) "
                 f"or (n_samples, 1), but got shape {y_proc.shape}."
             )
-            
+
         return y_proc.ravel()
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-
         y_flat = y.ravel()
 
         distance_matrix: NDArray[np.float64] = np.abs(y_flat[:, None] - y_flat[None, :])

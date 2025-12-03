@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 from numpy.typing import NDArray
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.discrete_shapes.cluster import ClusterShape
@@ -32,17 +32,12 @@ def test_cluster_distance_computation() -> None:
 
     dists: NDArray[np.float64] = shape(y)
 
-    expected: NDArray[np.float64] = np.array([
-        [0.0, 0.0, 1.0, 1.0],
-        [0.0, 0.0, 1.0, 1.0],
-        [1.0, 1.0, 0.0, 1.0],
-        [1.0, 1.0, 1.0, 0.0]
-    ])
+    expected: NDArray[np.float64] = np.array(
+        [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 1.0], [1.0, 1.0, 1.0, 0.0]]
+    )
 
     assert_array_equal(
-        dists,
-        expected,
-        err_msg="Cluster distance logic failed. Expected 0 for same class, 1 for different."
+        dists, expected, err_msg="Cluster distance logic failed. Expected 0 for same class, 1 for different."
     )
 
 
@@ -76,8 +71,8 @@ def structured_cluster_data_2d() -> tuple[NDArray[np.float64], NDArray[np.float6
 
 
 def test_cluster_preserves_separation_in_2d(
-        structured_cluster_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
-        smds_engine: SupervisedMDS,
+    structured_cluster_data_2d: tuple[NDArray[np.float64], NDArray[np.float64]],
+    smds_engine: SupervisedMDS,
 ) -> None:
     """
     Sanity Check (2D -> 2D): Tests that clusters remain separated.
