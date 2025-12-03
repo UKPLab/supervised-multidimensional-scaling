@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
-from sklearn.utils.validation import check_array, check_consistent_length
-from sklearn.utils._param_validation import validate_params
+from sklearn.utils.validation import check_array, check_consistent_length  # type: ignore[import-untyped]
+from sklearn.utils._param_validation import validate_params  # type: ignore[import-untyped]
 
 def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray[np.float64]:
     """
@@ -20,13 +20,13 @@ def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray
     
     P = (P + P.T) / (2 * P.shape[0])
 
-    return np.maximum(P, 1e-12)
+    result: NDArray[np.float64] = np.maximum(P, 1e-12)
+    return result
 
-@validate_params(
+@validate_params(  # type: ignore[misc]
     {
         "d_true": ["array-like"],
         "d_pred": ["array-like"],
-        "sigma": ["float"],
     },
     prefer_skip_nested_validation=True,
 )

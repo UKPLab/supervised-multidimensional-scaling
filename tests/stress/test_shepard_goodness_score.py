@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
 from smds.stress.shepard_goodness_score import shepard_goodness_stress
 
