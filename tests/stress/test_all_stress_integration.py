@@ -94,7 +94,7 @@ def _invoke_metric(
         M_true = _to_matrix(D_true)
         M_pred = _to_matrix(D_pred)
         return float(func(M_true, M_pred, **kwargs))
-    
+
     return float(func(D_true, D_pred))
 
 
@@ -147,7 +147,7 @@ def test_stress_original_range(
     """
     D_high, D_low = original_data
     result = _invoke_metric(metric_func, is_matrix_based, D_high, D_low, sigma=1.0)
-    
+
     min_val, max_val = expected_range
     assert min_val <= result <= max_val, (
         f"[{metric_enum.value}] Result {result} outside expected range {expected_range}"
@@ -180,8 +180,8 @@ def test_stress_scaled_range(
 
     if is_scale_invariant:
         np.testing.assert_allclose(
-            result_original, 
-            result_scaled, 
+            result_original,
+            result_scaled,
             rtol=1e-5,
             err_msg=f"[{metric_enum.value}] Metric failed scale invariance check."
         )
@@ -203,8 +203,8 @@ def test_stress_scaled_range(
 def test_stress_score_range_perfect_preservation(
     metric_enum: StressMetrics,
     metric_func: Callable[..., float],
-    expected_range: tuple[float, float], 
-    is_scale_invariant: bool,  
+    expected_range: tuple[float, float],
+    is_scale_invariant: bool,
     is_matrix_based: bool,
     perfect_preservation_data: tuple[NDArray[np.float64], NDArray[np.float64]],
 ) -> None:
