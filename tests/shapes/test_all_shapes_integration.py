@@ -17,37 +17,34 @@ Arc vs. Chord Mismatch (Geodesic, DiscreteCircular):
 """
 
 import pytest
-from scipy.spatial import procrustes
+from scipy.spatial import procrustes  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 
 # Format: (shape_name, engine_fixture_name, data_fixture_name, score_min, procrustes_max)
 
 SHAPE_TEST_CASES = [
-    ("Chain",           "chain_engine",         "chain_data_10d",           0.90, 0.2),
-    ("Cluster",         "cluster_engine",       "cluster_data_10d",         0.90, 0.1),
-    ("DiscCircular",    "disc_circular_engine", "disc_circular_data_10d",   0.70, 0.2),  # max score 0.87 without noise
-    ("Hierarchical",    "hierarchical_engine",  "hierarchical_data_10d",    0.90, 0.1),
-    ("Circular",        "circular_engine",      "circular_data_10d",        0.80, 0.1),
-    ("Cylindrical",     "cylindrical_engine",   "cylindrical_data_10d",     0.80, 0.1),
-    ("Spherical",       "spherical_engine",     "spherical_data_10d",       0.70, 0.2),
-    ("Geodesic",        "geodesic_engine",      "geodesic_data_10d",        0.70, 0.2),  # max score 0.90 without noise
-    ("Spiral",          "spiral_engine",        "spiral_data_10d",          0.90, 0.1),
+    ("Chain", "chain_engine", "chain_data_10d", 0.90, 0.2),
+    ("Cluster", "cluster_engine", "cluster_data_10d", 0.90, 0.1),
+    ("DiscCircular", "disc_circular_engine", "disc_circular_data_10d", 0.70, 0.2),  # max score 0.87 without noise
+    ("Hierarchical", "hierarchical_engine", "hierarchical_data_10d", 0.90, 0.1),
+    ("Circular", "circular_engine", "circular_data_10d", 0.80, 0.1),
+    ("Cylindrical", "cylindrical_engine", "cylindrical_data_10d", 0.80, 0.1),
+    ("Spherical", "spherical_engine", "spherical_data_10d", 0.70, 0.2),
+    ("Geodesic", "geodesic_engine", "spherical_data_10d", 0.70, 0.2),  # max score 0.90 without noise
+    ("Spiral", "spiral_engine", "spiral_data_10d", 0.90, 0.1),
 ]
 
 
 @pytest.mark.smoke
-@pytest.mark.parametrize(
-    "shape_name, engine_name, data_name, score_min, procrustes_max",
-    SHAPE_TEST_CASES
-)
+@pytest.mark.parametrize("shape_name, engine_name, data_name, score_min, procrustes_max", SHAPE_TEST_CASES)
 def test_shape_smoke_execution(
-        shape_name: str,
-        engine_name: str,
-        data_name: str,
-        score_min: float,
-        procrustes_max: float,
-        request: pytest.FixtureRequest
+    shape_name: str,
+    engine_name: str,
+    data_name: str,
+    score_min: float,
+    procrustes_max: float,
+    request: pytest.FixtureRequest,
 ) -> None:
     """
     Universal Smoke Test:
@@ -69,8 +66,7 @@ def test_shape_smoke_execution(
     n_components = smds_engine.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
-        f"[{shape_name}] Output shape is incorrect. "
-        f"Expected {(n_samples, n_components)}, but got {X_proj.shape}."
+        f"[{shape_name}] Output shape is incorrect. Expected {(n_samples, n_components)}, but got {X_proj.shape}."
     )
     print(f"\n{shape_name}Shape: Smoke Test passed\n")
 
@@ -79,17 +75,15 @@ def test_shape_smoke_execution(
 # THE UNIFIED TEST FUNCTION
 # =============================================================================
 
-@pytest.mark.parametrize(
-    "shape_name, engine_name, data_name, score_min, procrustes_max",
-    SHAPE_TEST_CASES
-)
+
+@pytest.mark.parametrize("shape_name, engine_name, data_name, score_min, procrustes_max", SHAPE_TEST_CASES)
 def test_shape_recovers_structure_from_high_dim(
-        shape_name: str,
-        engine_name: str,
-        data_name: str,
-        score_min: float,
-        procrustes_max: float,
-        request: pytest.FixtureRequest
+    shape_name: str,
+    engine_name: str,
+    data_name: str,
+    score_min: float,
+    procrustes_max: float,
+    request: pytest.FixtureRequest,
 ) -> None:
     """
     Universal Integration Test:
@@ -115,8 +109,5 @@ def test_shape_recovers_structure_from_high_dim(
 
     # Assertion: Score
     score = smds_engine.score(X_high, y)
-    assert score > score_min, (
-        f"[{shape_name}] SMDS score is too low. "
-        f"Expected > {score_min}, but got {score:.4f}."
-    )
+    assert score > score_min, f"[{shape_name}] SMDS score is too low. Expected > {score_min}, but got {score:.4f}."
     print(f"\n{shape_name}Shape: Integration Test passed with \n - Score {score:.2f} \n - Disparity {disparity:.2f}\n")

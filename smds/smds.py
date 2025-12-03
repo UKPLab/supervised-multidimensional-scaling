@@ -3,9 +3,9 @@ import pickle
 from typing import Callable
 
 import numpy as np
-from scipy.linalg import eigh
-from scipy.optimize import minimize
-from sklearn.base import BaseEstimator, TransformerMixin
+from scipy.linalg import eigh  # type: ignore[import-untyped]
+from scipy.optimize import minimize  # type: ignore[import-untyped]
+from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
 
 from smds.stress.stress_metrics import StressMetrics
 from smds.stress.non_metric_stress import non_metric_stress
@@ -14,10 +14,10 @@ from smds.stress.shepard_goodness_score import shepard_goodness_stress
 from smds.stress.kl_divergence import kl_divergence_stress
 from smds.stress.normalized_stress import normalized_stress
 
-class SupervisedMDS(BaseEstimator, TransformerMixin):
+class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
     def __init__(
         self,
-        manifold: Callable,
+        manifold: Callable[[np.ndarray], np.ndarray],
         n_components: int = 2,
         alpha: float = 0.1,
         orthonormal: bool = False,
@@ -46,7 +46,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         Compute ideal pairwise distance matrix D based on labels y and specified self.manifold.
         """
         if callable(self.manifold):
-            D = self.manifold(y)
+            D: np.ndarray = self.manifold(y)
         else:
             raise ValueError("Invalid manifold specification.")
 
@@ -72,7 +72,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         eigvecs = eigvecs[:, idx][:, : self.n_components]
 
         # Embedding computation
-        Y = eigvecs * np.sqrt(np.maximum(eigvals, 0))
+        Y: np.ndarray = eigvecs * np.sqrt(np.maximum(eigvals, 0))
         return Y
 
     def _masked_loss(self, W_flat: np.ndarray, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> float:
@@ -83,9 +83,10 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         X_proj = (W @ X.T).T
         D_pred = np.linalg.norm(X_proj[:, None, :] - X_proj[None, :, :], axis=-1)
         loss = (D_pred - D)[mask]
-        return np.sum(loss**2)
+        result: float = float(np.sum(loss**2))
+        return result
 
-    def fit(self, X: np.ndarray, y: np.ndarray):
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "SupervisedMDS":
         """
         Fit the linear transformation W to match distances induced by labels y.
         Uses classical MDS + closed-form when all distances are defined,
@@ -156,16 +157,18 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             X_centered = X - self._X_mean
         else:
             X_centered = X
-        X_proj = (self.W_ @ X_centered.T).T
+        X_proj: np.ndarray = (self.W_ @ X_centered.T).T
         return X_proj
 
     def _truncated_pinv(self, W: np.ndarray, tol: float = 1e-5) -> np.ndarray:
         U, S, VT = np.linalg.svd(W, full_matrices=False)
         S_inv = np.array([1 / s if s > tol else 0 for s in S])
-        return VT.T @ np.diag(S_inv) @ U.T
+        result: np.ndarray = VT.T @ np.diag(S_inv) @ U.T
+        return result
 
     def _regularized_pinv(self, W: np.ndarray, lambda_: float = 1e-5) -> np.ndarray:
-        return np.linalg.inv(W.T @ W + lambda_ * np.eye(W.shape[1])) @ W.T
+        result: np.ndarray = np.linalg.inv(W.T @ W + lambda_ * np.eye(W.shape[1])) @ W.T
+        return result
 
     def inverse_transform(self, X_proj: np.ndarray) -> np.ndarray:
         """
@@ -190,10 +193,11 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         # W_pinv = self._regularized_pinv(self.W_)
         W_pinv = self._truncated_pinv(self.W_)
 
-        X_centered = (W_pinv @ X_proj.T).T
+        X_centered: np.ndarray = (W_pinv @ X_proj.T).T
 
         if hasattr(self, "_X_mean") and self._X_mean is not None:
-            return X_centered + self._X_mean
+            result: np.ndarray = X_centered + self._X_mean
+            return result
         else:
             return X_centered
 
@@ -208,7 +212,8 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             X_proj: array of shape (n_samples, n_components)
                 The transformed data in the low-dimensional space.
         """
-        return self.fit(X, y).transform(X)
+        result: np.ndarray = self.fit(X, y).transform(X)
+        return result
 
     def score(
         self,
@@ -249,7 +254,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
     
         return score_value
 
-    def save(self, filepath: str):
+    def save(self, filepath: str) -> None:
         """
         Save the model to disk, including learned weights.
         """

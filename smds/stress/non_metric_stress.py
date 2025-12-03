@@ -1,10 +1,10 @@
 import numpy as np
 from numpy.typing import NDArray
-from sklearn.isotonic import IsotonicRegression
-from sklearn.utils.validation import check_array, check_consistent_length
-from sklearn.utils._param_validation import validate_params
+from sklearn.isotonic import IsotonicRegression  # type: ignore[import-untyped]
+from sklearn.utils.validation import check_array, check_consistent_length  # type: ignore[import-untyped]
+from sklearn.utils._param_validation import validate_params  # type: ignore[import-untyped]
 
-@validate_params(
+@validate_params(  # type: ignore[misc]
     {
         "d_true": ["array-like"],
         "d_pred": ["array-like"],

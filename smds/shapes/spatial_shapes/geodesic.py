@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -17,7 +15,7 @@ class GeodesicShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, radius: Optional[float] = 1.0, normalize_labels: Optional[bool] = False):
+    def __init__(self, radius: float = 1.0, normalize_labels: bool = False):
         self.radius = radius
         self._normalize_labels = normalize_labels
 
@@ -48,5 +46,5 @@ class GeodesicShape(BaseShape):
         a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
         a = np.clip(a, 0, 1)  # prevent floating-point error
         c = 2 * np.arcsin(np.sqrt(a))
-        distance = self.radius * c
+        distance: NDArray[np.float64] = self.radius * c
         return distance
