@@ -90,4 +90,3 @@ def test_scale_normalized_stress_negative_values() -> None:
     d_pred = np.array([-1.0, -2.0])
     stress = scale_normalized_stress(d_true, d_pred)
     assert stress < 1e-10
-

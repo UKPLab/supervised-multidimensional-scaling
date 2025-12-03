@@ -39,7 +39,7 @@ def scale_normalized_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.floa
     d_pred = check_array(d_pred, ensure_2d=False, dtype=np.float64)
     check_consistent_length(d_true, d_pred)
 
-    denominator_alpha = np.sum(d_pred ** 2)
+    denominator_alpha = np.sum(d_pred**2)
 
     if denominator_alpha == 0:
         return np.inf
@@ -47,5 +47,5 @@ def scale_normalized_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.floa
     alpha = np.sum(d_true * d_pred) / denominator_alpha
 
     residuals = d_true - (alpha * d_pred)
-    result: float = float(np.sqrt(np.sum(residuals ** 2) / np.sum(d_true ** 2)))
+    result: float = float(np.sqrt(np.sum(residuals**2) / np.sum(d_true**2)))
     return result

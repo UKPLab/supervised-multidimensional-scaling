@@ -46,7 +46,7 @@ def test_normalized_stress_single_element() -> None:
     d_true = np.array([5.0])
     d_pred = np.array([3.0])
     stress = normalized_stress(d_true, d_pred)
-    expected = ((3.0 - 5.0) ** 2) / (5.0 ** 2)
+    expected = ((3.0 - 5.0) ** 2) / (5.0**2)
     assert np.isclose(stress, expected)
 
 
@@ -72,4 +72,3 @@ def test_normalized_stress_mixed_signs() -> None:
     d_pred = np.array([1.0, -2.0])  # One negative
     stress = normalized_stress(d_true, d_pred)
     assert stress > 0.0
-

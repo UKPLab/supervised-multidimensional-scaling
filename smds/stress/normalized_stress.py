@@ -54,7 +54,7 @@ def normalized_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) 
     check_consistent_length(d_true, d_pred)
 
     numerator = np.sum((d_pred - d_true) ** 2)
-    denominator = np.sum(d_true ** 2)
+    denominator = np.sum(d_true**2)
 
     if denominator == 0:
         return np.inf

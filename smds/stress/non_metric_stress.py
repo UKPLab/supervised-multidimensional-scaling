@@ -43,7 +43,7 @@ def non_metric_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) 
     d_hat = ir.fit_transform(d_true, d_pred)
 
     numerator = np.sum((d_hat - d_pred) ** 2)
-    denominator = np.sum(d_pred ** 2)
+    denominator = np.sum(d_pred**2)
 
     if denominator == 0:
         return np.inf

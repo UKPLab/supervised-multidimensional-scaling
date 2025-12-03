@@ -94,4 +94,3 @@ def test_shepard_very_small_values() -> None:
     d_pred = np.array([1e-10, 2e-10, 3e-10])
     score = shepard_goodness_stress(d_true, d_pred)
     assert score == 1.0
-

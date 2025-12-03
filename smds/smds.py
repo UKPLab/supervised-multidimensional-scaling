@@ -238,7 +238,6 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         D_ideal_flat = D_ideal[mask]
         D_pred_flat = D_pred[mask]
 
-        # Compute stress
         if metric == StressMetrics.SCALE_NORMALIZED_STRESS:
             score_value = 1 - scale_normalized_stress(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.NON_METRIC_STRESS:

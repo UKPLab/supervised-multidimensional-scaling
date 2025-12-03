@@ -17,7 +17,7 @@ def original_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
 
 @pytest.fixture
 def scaled_data(
-    original_data: tuple[NDArray[np.float64], NDArray[np.float64]]
+    original_data: tuple[NDArray[np.float64], NDArray[np.float64]],
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Returns the original data, but with the low-dim distances scaled up significantly."""
     D_high, D_low = original_data
@@ -33,4 +33,3 @@ def perfect_preservation_data() -> tuple[NDArray[np.float64], NDArray[np.float64
     X = rng.standard_normal((20, 5))
     D = pdist(X, metric="euclidean")
     return D, D.copy()
-

@@ -8,7 +8,7 @@ def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray
     """
     Helper to convert distance matrix to joint probability matrix using a Gaussian kernel.
     """
-    D_sq = D ** 2
+    D_sq = D**2
     np.fill_diagonal(D_sq, np.inf)
 
     # Gaussian Kernel
@@ -24,6 +24,7 @@ def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray
     result: NDArray[np.float64] = np.maximum(P, 1e-12)
     return result
 
+
 @validate_params(  # type: ignore[misc]
     {
         "d_true": ["array-like"],
@@ -31,11 +32,7 @@ def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray
     },
     prefer_skip_nested_validation=True,
 )
-def kl_divergence_stress(
-    d_true: NDArray[np.float64],
-    d_pred: NDArray[np.float64],
-    sigma: float = 1.0
-) -> float:
+def kl_divergence_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64], sigma: float = 1.0) -> float:
     """
     Compute the Kullback-Leibler (KL) Divergence using Gaussian kernels for both P and Q.
 

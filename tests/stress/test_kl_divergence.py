@@ -25,17 +25,9 @@ def test_kl_divergence_high_distance() -> None:
 
     _ = kl_divergence_stress(M1, M2)
 
-    M_structured = np.array([
-        [0.0, 1.0, 10.0],
-        [1.0, 0.0, 10.0],
-        [10.0, 10.0, 0.0]
-    ])
+    M_structured = np.array([[0.0, 1.0, 10.0], [1.0, 0.0, 10.0], [10.0, 10.0, 0.0]])
 
-    M_inverted = np.array([
-        [0.0, 10.0, 1.0],
-        [10.0, 0.0, 1.0],
-        [1.0, 1.0, 0.0]
-    ])
+    M_inverted = np.array([[0.0, 10.0, 1.0], [10.0, 0.0, 1.0], [1.0, 1.0, 0.0]])
 
     loss_struct = kl_divergence_stress(M_structured, M_inverted)
     assert loss_struct > 1e-4
@@ -43,32 +35,21 @@ def test_kl_divergence_high_distance() -> None:
 
 def test_kl_divergence_small_sigma() -> None:
     """Test with very small sigma parameter."""
-    M = np.array([
-        [0.0, 1.0, 2.0],
-        [1.0, 0.0, 1.0],
-        [2.0, 1.0, 0.0]
-    ])
+    M = np.array([[0.0, 1.0, 2.0], [1.0, 0.0, 1.0], [2.0, 1.0, 0.0]])
     loss = kl_divergence_stress(M, M, sigma=0.01)
     assert loss < 1e-5
 
 
 def test_kl_divergence_large_sigma() -> None:
     """Test with very large sigma parameter."""
-    M = np.array([
-        [0.0, 1.0, 2.0],
-        [1.0, 0.0, 1.0],
-        [2.0, 1.0, 0.0]
-    ])
+    M = np.array([[0.0, 1.0, 2.0], [1.0, 0.0, 1.0], [2.0, 1.0, 0.0]])
     loss = kl_divergence_stress(M, M, sigma=100.0)
     assert loss < 1e-5
 
 
 def test_kl_divergence_minimal_matrix() -> None:
     """Test with minimal 2x2 matrix."""
-    M = np.array([
-        [0.0, 1.0],
-        [1.0, 0.0]
-    ])
+    M = np.array([[0.0, 1.0], [1.0, 0.0]])
     loss = kl_divergence_stress(M, M)
     assert loss < 1e-6
 
@@ -86,36 +67,22 @@ def test_kl_divergence_all_zeros() -> None:
 
 def test_kl_divergence_very_large_distances() -> None:
     """Test with very large distance values."""
-    M = np.array([
-        [0.0, 1e10, 2e10],
-        [1e10, 0.0, 1e10],
-        [2e10, 1e10, 0.0]
-    ])
+    M = np.array([[0.0, 1e10, 2e10], [1e10, 0.0, 1e10], [2e10, 1e10, 0.0]])
     loss = kl_divergence_stress(M, M)
     assert loss < 1e-5
 
 
 def test_kl_divergence_very_small_distances() -> None:
     """Test with very small distance values."""
-    M = np.array([
-        [0.0, 1e-10, 2e-10],
-        [1e-10, 0.0, 1e-10],
-        [2e-10, 1e-10, 0.0]
-    ])
+    M = np.array([[0.0, 1e-10, 2e-10], [1e-10, 0.0, 1e-10], [2e-10, 1e-10, 0.0]])
     loss = kl_divergence_stress(M, M)
     assert loss < 1e-5
 
 
 def test_kl_divergence_non_square_raises_error() -> None:
     """Test that non-square matrices raise ValueError."""
-    M_rect = np.array([
-        [0.0, 1.0, 2.0],
-        [1.0, 0.0, 1.0]
-    ])
-    M_square = np.array([
-        [0.0, 1.0],
-        [1.0, 0.0]
-    ])
+    M_rect = np.array([[0.0, 1.0, 2.0], [1.0, 0.0, 1.0]])
+    M_square = np.array([[0.0, 1.0], [1.0, 0.0]])
     try:
         _ = kl_divergence_stress(M_rect, M_square)
         assert False, "Should have raised ValueError for non-square matrix"
@@ -125,15 +92,8 @@ def test_kl_divergence_non_square_raises_error() -> None:
 
 def test_kl_divergence_different_sizes_raises_error() -> None:
     """Test that mismatched matrix sizes raise error."""
-    M1 = np.array([
-        [0.0, 1.0],
-        [1.0, 0.0]
-    ])
-    M2 = np.array([
-        [0.0, 1.0, 2.0],
-        [1.0, 0.0, 1.0],
-        [2.0, 1.0, 0.0]
-    ])
+    M1 = np.array([[0.0, 1.0], [1.0, 0.0]])
+    M2 = np.array([[0.0, 1.0, 2.0], [1.0, 0.0, 1.0], [2.0, 1.0, 0.0]])
     try:
         _ = kl_divergence_stress(M1, M2)
         assert False, "Should have raised error for mismatched sizes"

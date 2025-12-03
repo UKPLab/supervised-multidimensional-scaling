@@ -78,7 +78,7 @@ def _invoke_metric(
     is_matrix_based: bool,
     D_true: NDArray[np.float64],
     D_pred: NDArray[np.float64],
-    **kwargs: float
+    **kwargs: float,
 ) -> float:
     """
     Helper to invoke the metric function, handling data format differences.
@@ -152,7 +152,7 @@ def test_stress_scaled_range(
             result_original,
             result_scaled,
             rtol=1e-5,
-            err_msg=f"[{metric_enum.value}] Metric failed scale invariance check."
+            err_msg=f"[{metric_enum.value}] Metric failed scale invariance check.",
         )
     else:
         min_val, max_val = expected_range
