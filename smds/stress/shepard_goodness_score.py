@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
+import numpy as np
 
 from smds.stress.base_stress import BaseStress
 
