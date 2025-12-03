@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 from numpy.typing import NDArray
@@ -18,7 +18,7 @@ class HierarchicalShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, level_distances: List[float], normalize_labels: Optional[bool] = False) -> None:
+    def __init__(self, level_distances: List[float], normalize_labels: bool = False) -> None:
         """
         Initialize HierarchicalShape with level distances.
 

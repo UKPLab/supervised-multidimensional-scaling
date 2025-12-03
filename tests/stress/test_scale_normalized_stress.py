@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
 from smds.stress.scale_normalized_stress import scale_normalized_stress
 
