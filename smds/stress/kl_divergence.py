@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.typing import NDArray
-from sklearn.utils.validation import check_array, check_consistent_length  # type: ignore[import-untyped]
 from sklearn.utils._param_validation import validate_params  # type: ignore[import-untyped]
+from sklearn.utils.validation import check_array, check_consistent_length  # type: ignore[import-untyped]
+
 
 def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray[np.float64]:
     """
@@ -9,15 +10,15 @@ def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray
     """
     D_sq = D ** 2
     np.fill_diagonal(D_sq, np.inf)
-    
+
     # Gaussian Kernel
     P = np.exp(-D_sq / (2 * sigma**2))
-    
+
     sum_P = np.sum(P, axis=1, keepdims=True)
-    sum_P = np.maximum(sum_P, 1e-12) 
+    sum_P = np.maximum(sum_P, 1e-12)
 
     P = P / sum_P
-    
+
     P = (P + P.T) / (2 * P.shape[0])
 
     result: NDArray[np.float64] = np.maximum(P, 1e-12)
@@ -60,7 +61,7 @@ def kl_divergence_stress(
     -------
     kl_div : float
         The Kullback-Leibler divergence :math:`KL(P||Q)`.
-        
+
     Notes
     -----
     The divergence is calculated as:
@@ -69,12 +70,13 @@ def kl_divergence_stress(
         KL(P||Q) = \\sum_{i \\neq j} p_{ij} \\log \\frac{p_{ij}}{q_{ij}}
 
     Where both :math:`p_{ij}` and :math:`q_{ij}` are derived using Gaussian kernels:
-    
+
     .. math::
-        q_{ij}^G(\\alpha) = \\frac{\\exp(-\\alpha^2 ||y_i - y_j||^2)}{\\sum_{k \\neq l} \\exp(-\\alpha^2 ||y_k - y_l||^2)}
-    
+        q_{ij}^G(\\alpha) = \\frac{\\exp(-\\alpha^2 ||y_i - y_j||^2)}
+        {\\sum_{k \\neq l} \\exp(-\\alpha^2 ||y_k - y_l||^2)}
+
     (Assuming alpha=1 and incorporated into sigma).
-    
+
     References
     ----------
     Smelser, K., Gunaratne, K., Miller, J., & Kobourov, S. (2025).
