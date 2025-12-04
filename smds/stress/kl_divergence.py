@@ -8,7 +8,10 @@ def _distances_to_probabilities(D: NDArray[np.float64], sigma: float) -> NDArray
     """
     Helper to convert distance matrix to joint probability matrix using a Gaussian kernel.
     """
-    D_sq = D**2
+    D_proc = D.copy()
+    D_proc[D_proc < 0] = np.inf
+
+    D_sq = D_proc**2
     np.fill_diagonal(D_sq, np.inf)
 
     # Gaussian Kernel

@@ -233,6 +233,11 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         n = X_proj.shape[0]
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
+        if metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
+            score_value = kl_divergence_stress(D_ideal, D_pred)
+            score_value = -score_value
+            return score_value
+
         mask = np.triu(np.ones((n, n), dtype=bool), k=1)
         mask = mask & (D_ideal >= 0)
         D_ideal_flat = D_ideal[mask]
@@ -244,9 +249,6 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
             score_value = 1 - non_metric_stress(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.SHEPARD_GOODNESS_SCORE:
             score_value = shepard_goodness_stress(D_ideal_flat, D_pred_flat)
-        elif metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
-            kl_val = kl_divergence_stress(D_ideal, D_pred)
-            score_value = -kl_val
         elif metric == StressMetrics.NORMALIZED_STRESS:
             score_value = 1 - normalized_stress(D_ideal_flat, D_pred_flat)
         else:
