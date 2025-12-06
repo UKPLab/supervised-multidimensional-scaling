@@ -7,8 +7,11 @@ from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
 from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
 
-from smds.stress.non_metric_stress import NonMetricStress
-from smds.stress.scale_normalized_stress import ScaleNormalizedStress
+from smds.stress.kl_divergence import kl_divergence_stress
+from smds.stress.non_metric_stress import non_metric_stress
+from smds.stress.normalized_stress import normalized_stress
+from smds.stress.scale_normalized_stress import scale_normalized_stress
+from smds.stress.shepard_goodness_score import shepard_goodness_stress
 from smds.stress.stress_metrics import StressMetrics
 
 
@@ -230,17 +233,24 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         n = X_proj.shape[0]
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
+        if metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
+            score_value = kl_divergence_stress(D_ideal, D_pred)
+            score_value = -score_value
+            return score_value
+
         mask = np.triu(np.ones((n, n), dtype=bool), k=1)
         mask = mask & (D_ideal >= 0)
         D_ideal_flat = D_ideal[mask]
         D_pred_flat = D_pred[mask]
 
-        # Compute stress
         if metric == StressMetrics.SCALE_NORMALIZED_STRESS:
-            score_value: float = float(1 - ScaleNormalizedStress().compute(D_ideal_flat, D_pred_flat))
+            score_value = 1 - scale_normalized_stress(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.NON_METRIC_STRESS:
-            score_value = float(1 - NonMetricStress().compute(D_ideal_flat, D_pred_flat))
-        # TODO: Add other metrics from the paper here
+            score_value = 1 - non_metric_stress(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.SHEPARD_GOODNESS_SCORE:
+            score_value = shepard_goodness_stress(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.NORMALIZED_STRESS:
+            score_value = 1 - normalized_stress(D_ideal_flat, D_pred_flat)
         else:
             raise ValueError(f"Unknown metric: {metric}")
 
