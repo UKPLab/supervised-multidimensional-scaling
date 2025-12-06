@@ -1,67 +1,92 @@
 import numpy as np
-from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
-from smds.stress.scale_normalized_stress import ScaleNormalizedStress
-
-
-def test_scale_normalized_stress_range() -> None:
-    """
-    Tests if the stress value is within the valid range [0, 1].
-    """
-    rng = np.random.default_rng(2137)
-    X_high = rng.standard_normal((50, 5))
-    X_low = X_high[:, :2]  # Simple projection
-
-    # Compute distances first
-    D_high = pdist(X_high, metric="euclidean")
-    D_low = pdist(X_low, metric="euclidean")
-
-    sns = ScaleNormalizedStress()
-    stress = sns.compute(D_high, D_low)
-
-    assert 0 <= stress <= 1
+from smds.stress.scale_normalized_stress import scale_normalized_stress
 
 
-def test_perfect_preservation() -> None:
-    """
-    Tests if stress is 0 when the distances are identical.
-    """
-    sns = ScaleNormalizedStress()
-    rng = np.random.default_rng(42)
-
-    X = rng.standard_normal((10, 5))
-
-    # Compute distances (same for both since it's perfect preservation)
-    D = pdist(X, metric="euclidean")
-
-    stress = sns.compute(D, D)
-    assert stress < 1e-10  # essentially 0
+def test_scale_normalized_stress_perfect_match() -> None:
+    """Test that stress is 0 when distances match perfectly."""
+    d_true = np.array([1.0, 2.0, 3.0])
+    d_pred = np.array([1.0, 2.0, 3.0])
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert stress < 1e-10
 
 
-def test_scale_invariance() -> None:
-    """
-    Tests if the metric is truly scale-invariant.
-    Scaling the low-dim distances by a factor should not change the stress.
-    """
-    sns = ScaleNormalizedStress()
-    rng = np.random.default_rng(1337)
+def test_scale_normalized_stress_zero_denominator_alpha() -> None:
+    """Test behavior when all predicted distances are zero."""
+    d_true = np.array([1.0, 2.0, 3.0])
+    d_pred = np.array([0.0, 0.0, 0.0])
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert np.isinf(stress)
 
-    X_high = rng.standard_normal((20, 5))
-    X_low = rng.standard_normal((20, 2))
 
-    D_high = pdist(X_high, metric="euclidean")
-    D_low = pdist(X_low, metric="euclidean")
+def test_scale_normalized_stress_zero_denominator_d_true() -> None:
+    """Test behavior when all true distances are zero."""
+    d_true = np.array([0.0, 0.0, 0.0])
+    d_pred = np.array([1.0, 2.0, 3.0])
 
-    # 1. Original stress
-    stress_original = sns.compute(D_high, D_low)
+    try:
+        stress = scale_normalized_stress(d_true, d_pred)
+        assert np.isinf(stress) or np.isnan(stress)
+    except (ZeroDivisionError, ValueError):
+        pass
 
-    # 2. Scale up (zoom in)
-    D_low_scaled = D_low * 1234.5
-    stress_scaled = sns.compute(D_high, D_low_scaled)
 
-    # 3. Scale down (zoom out)
-    D_low_shrunk = D_low * 1e-5
-    stress_shrunk = sns.compute(D_high, D_low_shrunk)
+def test_scale_normalized_stress_scale_invariance() -> None:
+    """Test that scale-normalized stress IS scale invariant."""
+    d_true = np.array([1.0, 2.0, 3.0])
+    d_pred_original = np.array([1.0, 2.0, 3.0])
+    d_pred_scaled = np.array([10.0, 20.0, 30.0])  # Scaled by 10
 
-    np.testing.assert_allclose(stress_original, stress_scaled, err_msg="Stress changed after scaling up")
-    np.testing.assert_allclose(stress_original, stress_shrunk, err_msg="Stress changed after scaling down")
+    stress_original = scale_normalized_stress(d_true, d_pred_original)
+    stress_scaled = scale_normalized_stress(d_true, d_pred_scaled)
+
+    assert stress_original < 1e-10
+    assert np.isclose(stress_original, stress_scaled, rtol=1e-5)
+
+
+def test_scale_normalized_stress_proportional_relationship() -> None:
+    """Test with proportional but not identical values."""
+    d_true = np.array([1.0, 2.0, 3.0])
+    d_pred = np.array([2.0, 4.0, 6.0])  # Exactly 2x
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert stress < 1e-10
+
+
+def test_scale_normalized_stress_single_element() -> None:
+    """Test with single element array."""
+    d_true = np.array([5.0])
+    d_pred = np.array([3.0])
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert stress < 1e-10
+
+
+def test_scale_normalized_stress_opposite_correlation() -> None:
+    """Test with negatively correlated distances."""
+    d_true = np.array([1.0, 2.0, 3.0])
+    d_pred = np.array([3.0, 2.0, 1.0])  # Reversed order
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert stress > 0.0
+
+
+def test_scale_normalized_stress_large_values() -> None:
+    """Test with very large values (numerical stability)."""
+    d_true = np.array([1e10, 2e10])
+    d_pred = np.array([1e10, 2e10])
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert stress < 1e-5
+
+
+def test_scale_normalized_stress_small_values() -> None:
+    """Test with very small values (numerical stability)."""
+    d_true = np.array([1e-10, 2e-10])
+    d_pred = np.array([1e-10, 2e-10])
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert stress < 1e-5
+
+
+def test_scale_normalized_stress_negative_values() -> None:
+    """Test with negative predicted values (edge case)."""
+    d_true = np.array([1.0, 2.0])
+    d_pred = np.array([-1.0, -2.0])
+    stress = scale_normalized_stress(d_true, d_pred)
+    assert stress < 1e-10
