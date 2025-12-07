@@ -25,7 +25,6 @@ class NormalizedStress(BaseStress):
         denominator: float = np.sum(D_high ** 2)
 
         if denominator == 0:
-            # Avoid division by zero if ideal distances are all 0 (e.g. trivial manifold)
             return np.inf
 
         stress: float = numerator / denominator
