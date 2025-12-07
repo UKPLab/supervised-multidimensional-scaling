@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -44,7 +42,7 @@ class LogLinearShape(BaseShape):
         y_flat = y_proc.ravel()
 
         if np.any(y_flat < 0):
-             raise ValueError("Input 'y' for LogLinearShape cannot contain negative values.")
+            raise ValueError("Input 'y' for LogLinearShape cannot contain negative values.")
 
         return y_flat
 

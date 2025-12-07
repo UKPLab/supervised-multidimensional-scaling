@@ -3383,7 +3383,11 @@ wheels = [
 
 [[package]]
 name = "supervised-multidimensional-scaling"
+<<<<<<< HEAD
 version = "0.4.10"
+=======
+version = "0.5.0"
+>>>>>>> 361cde45f369062b15323a8209ab78021148abb8
 source = { editable = "." }
 dependencies = [
     { name = "notebook" },
