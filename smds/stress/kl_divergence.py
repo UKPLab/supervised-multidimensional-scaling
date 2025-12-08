@@ -14,10 +14,10 @@ class KLDivergence(BaseStress):
         """
         Convert a distance matrix to a probability matrix using a Gaussian kernel.
         """
-        D_sq = D ** 2       
+        D_sq = D ** 2
         np.fill_diagonal(D_sq, np.inf)
         P = np.exp(-D_sq / (2 * sigma**2))
-        
+
         sum_P = np.sum(P, axis=1, keepdims=True)
         sum_P = np.maximum(sum_P, 1e-12)
 
