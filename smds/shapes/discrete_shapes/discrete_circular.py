@@ -26,10 +26,10 @@ class DiscreteCircularShape(BaseShape):
 
         Args:
             num_points (Optional[int]): The total number of points on the circle.
-                                        For a 12-hour clock with labels 0-11,
-                                        this would be 12. If None (default), it will
-                                        be inferred from the max value in the data
-                                        (max(y) + 1), which is less robust.
+                                        For a 12-hour clock (0-11), this is 12.
+                                        If None, it is inferred as max(y) + 1.
+            normalize_labels (bool):    Defaults to False. Discrete shapes rely on
+                                        integer steps and should usually not be normalized.
         """
         if num_points is not None and num_points <= 0:
             raise ValueError("num_points must be a positive integer.")
@@ -67,13 +67,20 @@ class DiscreteCircularShape(BaseShape):
             A (n_samples, n_samples) distance matrix representing the shortest
             ring distance between each pair of labels.
         """
-        n = len(y)
-        max_y = np.max(y)
 
-        distance_matrix = np.zeros((n, n), dtype=float)
+        # Determine cycle length: Use self.num_points if available, else infer.
+        if self.num_points is not None:
+            cycle_length = float(self.num_points)
+        else:
+            cycle_length = np.max(y) + 1.0
 
-        for i in range(n):
-            for j in range(n):
-                distance_matrix[i, j] = min(abs(y[i] - y[j]), max_y + 1 - abs(y[i] - y[j]))
+        # Direct absolute difference
+        direct_dist = np.abs(y[:, None] - y[None, :])
+
+        # Wrap-around difference
+        wrap_around_dist = cycle_length - direct_dist
+
+        # Shortest path on the ring
+        distance_matrix: NDArray[np.float64] = np.minimum(direct_dist, wrap_around_dist)
 
         return distance_matrix
