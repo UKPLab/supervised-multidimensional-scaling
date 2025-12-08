@@ -4,6 +4,9 @@ from numpy.typing import NDArray
 
 from smds import SupervisedMDS
 from smds.shapes.continuous_shapes.circular import CircularShape
+from smds.shapes.continuous_shapes.euclidean import EuclideanShape
+from smds.shapes.continuous_shapes.log_linear import LogLinearShape
+from smds.shapes.continuous_shapes.semicircular import SemicircularShape
 from smds.shapes.discrete_shapes.chain import ChainShape
 from smds.shapes.discrete_shapes.cluster import ClusterShape
 from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
@@ -12,9 +15,7 @@ from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
 from smds.shapes.spatial_shapes.geodesic import GeodesicShape
 from smds.shapes.spatial_shapes.spherical import SphericalShape
 from smds.shapes.spiral_shape import SpiralShape
-from smds.shapes.continuous_shapes.log_linear import LogLinearShape
-from smds.shapes.continuous_shapes.euclidean import EuclideanShape
-from smds.shapes.continuous_shapes.semicircular import SemicircularShape
+
 
 def _project_and_shuffle(
     X_latent: NDArray[np.float64], y: NDArray[np.float64], high_dim: int = 10, noise_level: float = 0.5, seed: int = 42
@@ -274,17 +275,17 @@ def spiral_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray
 # LOG LINEAR SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def log_linear_engine():
+def log_linear_engine() -> SupervisedMDS:
     # LogLinear is intrinsically 1D (a line where distance is log-scale)
     return SupervisedMDS(n_components=1, manifold=LogLinearShape(), alpha=0.1)
 
 @pytest.fixture(scope="module")
-def log_linear_data_10d():
+def log_linear_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     # Latent 1D Line (Logarithmic spacing)
     n_points = 50
     y = np.logspace(0, 2, n_points)  # 1 to 100
 
-    latent_1d = np.log(y + 1e-9) 
+    latent_1d = np.log(y + 1e-9)
     X_latent = latent_1d.reshape(-1, 1)
 
     return _project_and_shuffle(X_latent, y)
@@ -294,12 +295,12 @@ def log_linear_data_10d():
 # EUCLIDEAN SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def euclidean_engine():
+def euclidean_engine() -> SupervisedMDS:
     # Euclidean maps to a 1D line
     return SupervisedMDS(n_components=1, manifold=EuclideanShape(), alpha=0.1)
 
 @pytest.fixture(scope="module")
-def euclidean_data_10d():
+def euclidean_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     # Latent 1D Line (Linear spacing)
     n_points = 50
     y = np.linspace(0, 10, n_points).astype(float)
@@ -312,17 +313,17 @@ def euclidean_data_10d():
 # SEMICIRCULAR SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def semicircular_engine():
+def semicircular_engine() -> SupervisedMDS:
     # Semicircle is a 2D arc
     return SupervisedMDS(n_components=2, manifold=SemicircularShape(), alpha=0.1)
 
 @pytest.fixture(scope="module")
-def semicircular_data_10d():
+def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     # Latent 2D Semicircle
     n_points = 50
     y = np.linspace(0, 1, n_points).astype(float)
-    
-    angles = y * np.pi 
+
+    angles = y * np.pi
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
 
     return _project_and_shuffle(X_latent, y)

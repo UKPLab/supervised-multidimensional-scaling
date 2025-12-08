@@ -50,7 +50,7 @@ class LogLinearShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         y_flat = y.ravel()
-        y_log = np.log(y_flat + 1.0) 
+        y_log = np.log(y_flat + 1.0)
         distance_matrix: NDArray[np.float64] = np.abs(y_log[:, None] - y_log[None, :])
 
         return distance_matrix
