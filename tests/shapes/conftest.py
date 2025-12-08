@@ -279,6 +279,7 @@ def log_linear_engine() -> SupervisedMDS:
     # LogLinear is intrinsically 1D (a line where distance is log-scale)
     return SupervisedMDS(n_components=1, manifold=LogLinearShape(), alpha=0.1)
 
+
 @pytest.fixture(scope="module")
 def log_linear_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     # Latent 1D Line (Logarithmic spacing)
@@ -299,6 +300,7 @@ def euclidean_engine() -> SupervisedMDS:
     # Euclidean maps to a 1D line
     return SupervisedMDS(n_components=1, manifold=EuclideanShape(), alpha=0.1)
 
+
 @pytest.fixture(scope="module")
 def euclidean_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     # Latent 1D Line (Linear spacing)
@@ -316,6 +318,7 @@ def euclidean_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDAr
 def semicircular_engine() -> SupervisedMDS:
     # Semicircle is a 2D arc
     return SupervisedMDS(n_components=2, manifold=SemicircularShape(), alpha=0.1)
+
 
 @pytest.fixture(scope="module")
 def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
