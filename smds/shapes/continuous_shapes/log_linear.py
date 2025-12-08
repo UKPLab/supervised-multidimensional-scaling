@@ -17,13 +17,11 @@ class LogLinearShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, epsilon: float = 1e-9, normalize_labels: bool = False):
+    def __init__(self, normalize_labels: bool = False):
         """
         Args:
-            epsilon: Small constant to prevent log(0) errors.
             normalize_labels: Whether to scale inputs to [0, 1].
         """
-        self.epsilon = epsilon
         self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -50,6 +48,7 @@ class LogLinearShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         y_flat = y.ravel()
-        y_log = np.log(y_flat + self.epsilon)
+        y_log = np.log(y_flat + 1.0)
         distance_matrix: NDArray[np.float64] = np.abs(y_log[:, None] - y_log[None, :])
+
         return distance_matrix
