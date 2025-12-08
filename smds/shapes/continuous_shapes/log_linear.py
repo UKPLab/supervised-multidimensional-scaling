@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -19,12 +17,14 @@ class LogLinearShape(BaseShape):
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, normalize_labels: Optional[bool] = False): # Removed epsilon
+    def __init__(self, epsilon: float = 1e-9, normalize_labels: bool = False):
         """
         Args:
+            epsilon: Small constant to prevent log(0) errors.
             normalize_labels: Whether to scale inputs to [0, 1].
         """
-        self._normalize_labels = normalize_labels if normalize_labels is not None else False
+        self.epsilon = epsilon
+        self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
@@ -44,7 +44,7 @@ class LogLinearShape(BaseShape):
         y_flat = y_proc.ravel()
 
         if np.any(y_flat < 0):
-             raise ValueError("Input 'y' for LogLinearShape cannot contain negative values.")
+            raise ValueError("Input 'y' for LogLinearShape cannot contain negative values.")
 
         return y_flat
 
