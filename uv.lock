@@ -3383,9 +3383,11 @@ wheels = [
 
 [[package]]
 name = "supervised-multidimensional-scaling"
-version = "0.5.2"
+version = "0.5.3"
 source = { editable = "." }
 dependencies = [
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings" },
     { name = "notebook" },
     { name = "numpy" },
     { name = "scikit-learn" },
@@ -3422,6 +3424,8 @@ pipeline = [
 
 [package.metadata]
 requires-dist = [
+    { name = "mkdocs-material", specifier = ">=9.7.0" },
+    { name = "mkdocstrings", specifier = ">=0.30.1" },
     { name = "notebook", specifier = ">=7.4.7" },
     { name = "numpy", specifier = ">=2.3.4" },
     { name = "scikit-learn", specifier = ">=1.7.2" },

@@ -8,7 +8,6 @@ theme:
 plugins:
   - search
   - mkdocstrings:
-      project_name: smds
       handlers:
         python:
           options:
