@@ -1,4 +1,5 @@
 site_name: smds
+site_url: https://ukplab.github.io/smds
 nav:
   - Home: index.md
 
