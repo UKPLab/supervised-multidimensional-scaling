@@ -3388,6 +3388,7 @@ source = { editable = "." }
 dependencies = [
     { name = "mkdocs-material" },
     { name = "mkdocstrings" },
+    { name = "mkdocstrings-python" },
     { name = "notebook" },
     { name = "numpy" },
     { name = "scikit-learn" },
@@ -3426,6 +3427,7 @@ pipeline = [
 requires-dist = [
     { name = "mkdocs-material", specifier = ">=9.7.0" },
     { name = "mkdocstrings", specifier = ">=0.30.1" },
+    { name = "mkdocstrings-python", specifier = ">=1.19.0" },
     { name = "notebook", specifier = ">=7.4.7" },
     { name = "numpy", specifier = ">=2.3.4" },
     { name = "scikit-learn", specifier = ">=1.7.2" },

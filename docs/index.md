@@ -1,21 +1,27 @@
-# Welcome to MkDocs
+# SMDS by Shape Wizards
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling ([SMDS](https://arxiv.org/html/2510.01025v1)) for automatic
+feature manifold discovery in LLMs.
 
-## Commands
+Install with uv:
+```shell
+uv add supervised-multidimensional-scaling
+```
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+Install with uv using the `pip` interface:
+```shell
+uv pip install supervised-multidimensional-scaling
+```
 
-## Project layout
+Install with pip:
+```shell
+pip install supervised-multidimensional-scaling
+```
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
 
 ## Docs
 
 ::: smds
+options:
+members: true
+show_submodules: true
