@@ -1,9 +1,12 @@
 [project]
 name = "supervised-multidimensional-scaling"
-version = "0.5.3"
+version = "0.5.4"
 description = "A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling (SMDS) for automatic feature manifold discovery in LLMs."
 requires-python = ">=3.12"
 dependencies = [
+    "mkdocs-material>=9.7.0",
+    "mkdocstrings>=0.30.1",
+    "mkdocstrings-python>=1.19.0",
     "notebook>=7.4.7",
     "numpy>=2.3.4",
     "scikit-learn>=1.7.2",

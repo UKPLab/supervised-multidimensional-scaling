@@ -1,4 +1,4 @@
-.PHONY: all install test test-cov coverage format format-check lint clean help
+.PHONY: all install test test-cov coverage format format-check lint clean build-docs help
 
 PM := uv
 RUN := $(PM) run
@@ -37,6 +37,9 @@ clean: ## Remove coverage reports and cache files
 	rm -rf .mypy_cache/
 	rm -rf .ruff_cache/
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+
+build-docs:  ## Build documentation website
+	mkdocs build
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
