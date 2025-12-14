@@ -104,6 +104,38 @@ class ManifoldDiscovery(BaseEstimator):  # type: ignore[misc]
         config_str: str = f"{manifold_name}_{json.dumps(params, sort_keys=True)}_{fold_idx}_{X_hash}"
         return hashlib.md5(config_str.encode()).hexdigest()
 
+    def _load_cached_result(self, result_file: str) -> Optional[float]:
+        """Load a cached result from disk. Returns score if found, None otherwise."""
+        if not os.path.exists(result_file):
+            return None
+        try:
+            with open(result_file, "rb") as f:
+                result_data: Dict[str, Any] = pickle.load(f)
+            score = result_data.get("score")
+            return float(score) if score is not None else None
+        except (pickle.UnpicklingError, KeyError, OSError, ValueError, TypeError):
+            return None
+
+    def _save_result(
+        self,
+        result_file: str,
+        manifold_name: str,
+        params: Dict[str, Any],
+        fold_idx: int,
+        score: float,
+        run_hash: str,
+    ) -> None:
+        """Save a result to disk."""
+        result_data = {
+            "manifold": manifold_name,
+            "params": params,
+            "fold": fold_idx,
+            "score": score,
+            "hash": run_hash,
+        }
+        with open(result_file, "wb") as f:
+            pickle.dump(result_data, f)
+
     def _process_fold(
         self,
         manifold: BaseShape,
@@ -122,11 +154,9 @@ class ManifoldDiscovery(BaseEstimator):  # type: ignore[misc]
         run_hash = self._compute_hash(manifold_name, params, fold_idx, X_hash)
         result_file = os.path.join(self.save_path, f"{run_hash}.pkl")
 
-        if os.path.exists(result_file):
-            with open(result_file, "rb") as f:
-                result_data = pickle.load(f)
-            score = result_data["score"]
-            return score, result_file
+        cached_score = self._load_cached_result(result_file)
+        if cached_score is not None:
+            return cached_score, result_file
 
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
@@ -136,20 +166,73 @@ class ManifoldDiscovery(BaseEstimator):  # type: ignore[misc]
         try:
             smds.fit(X_train, y_train)
             score = smds.score(X_test, y_test)
-
-            result_data = {
-                "manifold": manifold_name,
-                "params": params,
-                "fold": fold_idx,
-                "score": score,
-                "hash": run_hash,
-            }
-            with open(result_file, "wb") as f:
-                pickle.dump(result_data, f)
+            self._save_result(result_file, manifold_name, params, fold_idx, score, run_hash)
             return score, result_file
-
         except Exception:
             return np.nan, result_file
+
+    def _process_manifold_results(
+        self,
+        manifold_name: str,
+        params: Dict[str, Any],
+        manifold: BaseShape,
+        results: List[Tuple[float, str]],
+        cache_files: List[str],
+    ) -> None:
+        """Process and store results for a single manifold."""
+        fold_scores = []
+        for fold_idx, (score, result_file) in enumerate(results):
+            fold_scores.append(score)
+            if result_file not in cache_files:
+                cache_files.append(result_file)
+            if not np.isnan(score):
+                print(f"  Fold {fold_idx + 1}/{self.k_folds}: Score: {score:.4f}")
+            else:
+                print(f"  Fold {fold_idx + 1}/{self.k_folds}: Failed")
+
+        avg_score = np.nanmean(fold_scores)
+        self.results_.append(
+            {
+                "manifold": manifold_name,
+                "params": params,
+                "fold_scores": fold_scores,
+                "average_score": avg_score,
+                "estimator": manifold,
+            }
+        )
+
+    def _select_best_estimator(self, X: np.ndarray, y: np.ndarray) -> None:
+        """Select and refit the best estimator based on results."""
+        valid_results = [r for r in self.results_ if not np.isnan(r["average_score"])]
+
+        if not valid_results:
+            print("No valid results found (all scores NaN or failures).")
+            return
+
+        valid_results.sort(key=lambda x: x["average_score"], reverse=True)
+        best_result = valid_results[0]
+
+        self.best_score_ = best_result["average_score"]
+        self.best_params_ = best_result["params"]
+        self.best_manifold_name_ = best_result["manifold"]
+
+        print(f"\nRefitting best model: {self.best_manifold_name_} with score {self.best_score_:.4f}")
+
+        best_manifold = best_result["estimator"]
+        self.best_estimator_ = SupervisedMDS(manifold=best_manifold, n_components=self.n_components)
+        self.best_estimator_.fit(X, y)
+
+    def _cleanup_cache_files(self, cache_files: List[str]) -> None:
+        """Remove cache files if cleanup is enabled."""
+        if not self.cleanup_cache:
+            return
+
+        for cache_file in cache_files:
+            try:
+                if os.path.exists(cache_file):
+                    os.remove(cache_file)
+            except OSError:
+                pass
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "ManifoldDiscovery":
         """
@@ -166,13 +249,12 @@ class ManifoldDiscovery(BaseEstimator):  # type: ignore[misc]
             os.makedirs(self.save_path)
 
         X_hash = self._hash_data(X)
-        manifolds_to_run = self.manifolds
         cache_files: List[str] = []
 
         kf = KFold(n_splits=self.k_folds, shuffle=True, random_state=self.random_state)
         fold_splits = list(kf.split(X))
 
-        for manifold in manifolds_to_run:
+        for manifold in self.manifolds:
             manifold_name = manifold.__class__.__name__
             params = manifold.get_params()
 
@@ -193,55 +275,11 @@ class ManifoldDiscovery(BaseEstimator):  # type: ignore[misc]
                 for fold_idx, (train_index, test_index) in enumerate(fold_splits)
             )
 
-            fold_scores = []
-            for fold_idx, (score, result_file) in enumerate(results):
-                fold_scores.append(score)
-                if result_file not in cache_files:
-                    cache_files.append(result_file)
-                if not np.isnan(score):
-                    print(f"  Fold {fold_idx + 1}/{self.k_folds}: Score: {score:.4f}")
-                else:
-                    print(f"  Fold {fold_idx + 1}/{self.k_folds}: Failed")
-
-            avg_score = np.nanmean(fold_scores)
-            self.results_.append(
-                {
-                    "manifold": manifold_name,
-                    "params": params,
-                    "fold_scores": fold_scores,
-                    "average_score": avg_score,
-                    "estimator": manifold,
-                }
-            )
+            self._process_manifold_results(manifold_name, params, manifold, results, cache_files)
 
         self._save_summary()
-
-        valid_results = [r for r in self.results_ if not np.isnan(r["average_score"])]
-
-        if valid_results:
-            valid_results.sort(key=lambda x: x["average_score"], reverse=True)
-            best_result = valid_results[0]
-
-            self.best_score_ = best_result["average_score"]
-            self.best_params_ = best_result["params"]
-            self.best_manifold_name_ = best_result["manifold"]
-
-            print(f"\nRefitting best model: {self.best_manifold_name_} with score {self.best_score_:.4f}")
-
-            best_manifold = best_result["estimator"]
-
-            self.best_estimator_ = SupervisedMDS(manifold=best_manifold, n_components=self.n_components)
-            self.best_estimator_.fit(X, y)
-        else:
-            print("No valid results found (all scores NaN or failures).")
-
-        if self.cleanup_cache:
-            for cache_file in cache_files:
-                try:
-                    if os.path.exists(cache_file):
-                        os.remove(cache_file)
-                except OSError:
-                    pass
+        self._select_best_estimator(X, y)
+        self._cleanup_cache_files(cache_files)
 
         return self
 
