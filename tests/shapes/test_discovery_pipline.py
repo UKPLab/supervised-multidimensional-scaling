@@ -19,7 +19,7 @@ def test_pipeline_returns_dataframe(cluster_data_10d: tuple[NDArray, NDArray, ND
     X, y, _ = cluster_data_10d
     shapes = [ClusterShape(), CircularShape()]
 
-    results = discover_manifolds(X, y, shapes=shapes, n_folds=2)
+    results = discover_manifolds(X, y, shapes=shapes, n_folds=2) # ToDo: disable save_results = flase
 
     assert isinstance(results, pd.DataFrame)
     expected_cols = ["shape", "params", "mean_test_score", "std_test_score"]
@@ -40,7 +40,7 @@ def test_cluster_wins_on_cluster_data(cluster_data_10d: tuple[NDArray, NDArray, 
         SpiralShape(),
     ]
 
-    results = discover_manifolds(X, y, shapes=shapes, n_folds=5)
+    results = discover_manifolds(X, y, shapes=shapes, n_folds=5) # ToDo: disable save_results = flase
 
     # Sort by score descending
     results = results.sort_values("mean_test_score", ascending=False)
@@ -55,7 +55,7 @@ def test_circular_wins_on_circular_data(circular_data_10d: tuple[NDArray, NDArra
     X, y, _ = circular_data_10d
 
     results = discover_manifolds(X, y, n_folds=5)
-    results = results.sort_values("mean_test_score", ascending=False)
+    results = results.sort_values("mean_test_score", ascending=False) # ToDo: disable save_results = flase
 
     winner = results.iloc[0]["shape"]
 
