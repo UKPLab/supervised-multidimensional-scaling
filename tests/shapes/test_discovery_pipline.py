@@ -1,18 +1,12 @@
-import pytest
 import pandas as pd
-import numpy as np
 from numpy.typing import NDArray
 
 # We will implement this function later
-from smds.discovery_pipline import discover_manifolds
+from smds.pipeline.discovery_pipeline import discover_manifolds
 
 # Import Shapes to test
 from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.discrete_shapes.chain import ChainShape
 from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
-from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
-from smds.shapes.base_shape import BaseShape
 from smds.shapes.spiral_shape import SpiralShape
 
 

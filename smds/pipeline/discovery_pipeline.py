@@ -1,3 +1,6 @@
+from datetime import datetime
+import os
+
 import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
@@ -7,8 +10,6 @@ from sklearn.model_selection import cross_validate  # type: ignore[import-untype
 from smds import SupervisedMDS
 from smds.shapes.base_shape import BaseShape
 
-# Default shapes list (lazy import or define here)
-# For MVP, we can require the user to pass shapes or define a small default set
 from smds.shapes.continuous_shapes.circular import CircularShape
 from smds.shapes.continuous_shapes.euclidean import EuclideanShape
 from smds.shapes.continuous_shapes.log_linear import LogLinearShape
@@ -20,6 +21,9 @@ from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
 from smds.shapes.spatial_shapes.geodesic import GeodesicShape
 from smds.shapes.spatial_shapes.spherical import SphericalShape
 from smds.shapes.spiral_shape import SpiralShape
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
 
 DEFAULT_SHAPES = [
     ChainShape(),
@@ -41,7 +45,9 @@ def discover_manifolds(
         y: NDArray[np.float64],
         shapes: Optional[List[BaseShape]] = None,
         n_folds: int = 5,
-        n_jobs: int = -1
+        n_jobs: int = -1,
+        save_results: bool = True,
+        save_path: Optional[str] = None
 ) -> pd.DataFrame:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation.
@@ -52,6 +58,8 @@ def discover_manifolds(
         shapes: List of Shape objects to test. Defaults to a standard set.
         n_folds: Number of Cross-Validation folds.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
+        save_results:
+        save_path:
 
     Returns:
         pd.DataFrame containing the results, sorted by mean score.
@@ -60,6 +68,33 @@ def discover_manifolds(
         shapes = DEFAULT_SHAPES
 
     results_list = []
+
+    # -----------------------------
+    # Setup Saving / Resume Logic
+    # -----------------------------
+
+    if save_results:
+        os.makedirs(SAVE_DIR, exist_ok=True)
+
+        if save_path is None:
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            save_path = os.path.join(
+                SAVE_DIR, f"results_{timestamp}.csv"
+            )
+
+        # Create file with header if it doesn't exist
+        if not os.path.exists(save_path):
+            pd.DataFrame(columns=[
+                "shape",
+                "params",
+                "mean_test_score",
+                "std_test_score",
+                "fold_scores",
+                "error",
+            ]).to_csv(save_path, index=False)
+
+    print("CWD:", os.getcwd())
+    print("Saving to:", save_path)
 
     # Detect User Input Dimension
     user_y_ndim = np.asarray(y).ndim
@@ -98,30 +133,44 @@ def discover_manifolds(
             mean_score = np.mean(cv_results['test_score'])
             std_score = np.std(cv_results['test_score'])
 
-            results_list.append({
+            row = {
                 "shape": shape_name,
-                "params": shape.__dict__,  # Captures config like threshold=1.1
+                "params": shape.__dict__,
                 "mean_test_score": mean_score,
                 "std_test_score": std_score,
-                "fold_scores": cv_results['test_score']  # Optional: keep raw scores
-            })
+                "fold_scores": cv_results["test_score"],
+                "error": None,
+            }
 
         except ValueError as e:
 
             # Data Mismatch (e.g. 1D y vs 2D Shape)
             # This is expected behavior when running "all shapes" on specific data.
             print(f"Skipping {shape_name}: Incompatible Data Format. ({str(e)})")
+            continue
 
         except Exception as e:
             # Unexpected Crash (Algorithm Bug)
             print(f"Skipping {shape_name}: {e}")
-            results_list.append({
+            row = {
                 "shape": shape_name,
                 "params": shape.__dict__,
                 "mean_test_score": np.nan,
                 "std_test_score": np.nan,
-                "error": str(e)
-            })
+                "fold_scores": None,
+                "error": str(e),
+            }
+
+        results_list.append(row)
+
+        # Incremental Append (Fail-Safe)
+        if save_results:
+            pd.DataFrame([row]).to_csv(
+                save_path,
+                mode="a",
+                header=False,
+                index=False,
+            )
 
     # 4. Create DataFrame
     df = pd.DataFrame(results_list)
