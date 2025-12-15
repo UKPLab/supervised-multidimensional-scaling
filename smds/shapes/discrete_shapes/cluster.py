@@ -13,6 +13,8 @@ class ClusterShape(BaseShape):
     and 1 for points in different categories.
     """
 
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels

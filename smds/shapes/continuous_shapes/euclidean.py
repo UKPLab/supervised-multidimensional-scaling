@@ -12,6 +12,8 @@ class EuclideanShape(BaseShape):
     Formula: d(i, j) = |yi - yj|
     """
 
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels

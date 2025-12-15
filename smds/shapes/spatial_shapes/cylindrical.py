@@ -11,6 +11,8 @@ class CylindricalShape(BaseShape):
     Maps latitude to vertical height and longitude to angle around a cylinder of radius r.
     """
 
+    y_ndim = 2
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels
