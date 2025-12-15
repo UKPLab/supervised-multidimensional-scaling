@@ -69,6 +69,10 @@ def chain_engine() -> SupervisedMDS:
 
 @pytest.fixture(scope="module")
 def chain_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    # Note: Even though this is called a "chain", the data also forms a discrete circle
+    # and which is also a line (eucledian).
+    # Truly chain-specific data (where the chain score is highest compared to all other
+    # shapes) may need to be found separately, if it exists at all.
     n_points = 20
 
     # Latent 2D Circle (Chain topology)
