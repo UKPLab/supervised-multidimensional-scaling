@@ -11,7 +11,6 @@ class CylindricalShape(BaseShape):
     Maps latitude to vertical height and longitude to angle around a cylinder of radius r.
     """
 
-    # Dimensionality of the input labels 'y'.
     y_ndim = 2
 
     @property

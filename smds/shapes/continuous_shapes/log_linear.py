@@ -13,7 +13,6 @@ class LogLinearShape(BaseShape):
     Formula: d(i, j) = |log(yi) - log(yj)|
     """
 
-    # Dimensionality of the input labels 'y'.
     y_ndim = 1
 
     @property
