@@ -16,7 +16,6 @@ class DiscreteCircularShape(BaseShape):
     where adjacent categories are placed next to each other.
     """
 
-    # Dimensionality of the input labels 'y'.
     y_ndim = 1
     # NOTE: This still enforces float64 as per the BaseShape contract.
     # For a "discrete" shape, one might expect integers.

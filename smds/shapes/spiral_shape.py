@@ -12,7 +12,6 @@ class SpiralShape(BaseShape):
     num_turns: Number of complete rotations
     """
 
-    # Dimensionality of the input labels 'y'.
     y_ndim = 1
 
     @property

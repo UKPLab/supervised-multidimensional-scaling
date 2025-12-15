@@ -12,7 +12,6 @@ class EuclideanShape(BaseShape):
     Formula: d(i, j) = |yi - yj|
     """
 
-    # Dimensionality of the input labels 'y'.
     y_ndim = 1
 
     @property

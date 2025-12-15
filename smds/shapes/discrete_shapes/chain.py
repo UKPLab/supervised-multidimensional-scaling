@@ -13,7 +13,6 @@ class ChainShape(BaseShape):
     undefined (-1.0).
     """
 
-    # Dimensionality of the input labels 'y'.
     y_ndim = 1
 
     @property

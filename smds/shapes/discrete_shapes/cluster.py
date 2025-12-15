@@ -13,7 +13,6 @@ class ClusterShape(BaseShape):
     and 1 for points in different categories.
     """
 
-    # Dimensionality of the input labels 'y'.
     y_ndim = 1
 
     @property
