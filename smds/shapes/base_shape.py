@@ -15,7 +15,10 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
     def y_ndim(self) -> int:
         """
         Dimensionality of the input labels 'y'.
-        Should be set to 1 for 1D arrays or 2 for 2D matrices.
+
+        Examples:
+        y_ndim = 1: Needs a list of labels (Months, Clusters, etc.)
+        y_ndim = 2: Needs a table of labels (Lat/Lon, Multi-level Hierarchy)
         """
         pass
 
