@@ -10,6 +10,8 @@ class SphericalShape(BaseShape):
 
     Maps each coordinate into a 3D point on a sphere of radius r.
     """
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 2
 
     @property
     def normalize_labels(self) -> bool:

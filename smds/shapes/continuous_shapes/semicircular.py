@@ -9,6 +9,8 @@ class SemicircularShape(BaseShape):
     Implements the Semicircular shape.
 
     """
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 1
 
     @property
     def normalize_labels(self) -> bool:

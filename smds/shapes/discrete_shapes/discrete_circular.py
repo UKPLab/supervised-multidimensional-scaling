@@ -15,6 +15,10 @@ class DiscreteCircularShape(BaseShape):
     hours on a clock. The resulting projection should form a ring or polygon
     where adjacent categories are placed next to each other.
     """
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 1
+    # NOTE: This still enforces float64 as per the BaseShape contract.
+    # For a "discrete" shape, one might expect integers.
 
     @property
     def normalize_labels(self) -> bool:
@@ -35,26 +39,6 @@ class DiscreteCircularShape(BaseShape):
             raise ValueError("num_points must be a positive integer.")
         self.num_points = num_points
         self._normalize_labels = normalize_labels
-
-    def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        """
-        Validate that y is a 1D array of numeric labels.
-        This follows the pattern from HierarchicalShape but is adapted for 1D data.
-        """
-        # NOTE: This still enforces float64 as per the BaseShape contract.
-        # For a "discrete" shape, one might expect integers.
-        y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
-
-        if y_proc.size == 0:
-            raise ValueError("Input 'y' cannot be empty.")
-
-        if y_proc.ndim != 1:
-            raise ValueError(
-                f"Input 'y' for DiscreteCircularShape must be 1-dimensional (n_samples,), "
-                f"but got shape {y_proc.shape} with {y_proc.ndim} dimensions."
-            )
-
-        return y_proc
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """

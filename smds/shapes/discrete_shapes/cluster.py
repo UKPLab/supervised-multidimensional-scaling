@@ -12,6 +12,8 @@ class ClusterShape(BaseShape):
     membership. The ideal distance is 0 for points within the same category
     and 1 for points in different categories.
     """
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 1
 
     @property
     def normalize_labels(self) -> bool:

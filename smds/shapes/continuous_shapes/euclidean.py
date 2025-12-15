@@ -11,6 +11,8 @@ class EuclideanShape(BaseShape):
     Reference: Table 1 in "Shape Happens" paper (referred to as 'linear').
     Formula: d(i, j) = |yi - yj|
     """
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 1
 
     @property
     def normalize_labels(self) -> bool:
