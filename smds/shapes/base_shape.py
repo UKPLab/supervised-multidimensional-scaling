@@ -12,6 +12,15 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
 
     @property
     @abstractmethod
+    def y_ndim(self) -> int:
+        """
+        Dimensionality of the input labels 'y'.
+        Should be set to 1 for 1D arrays or 2 for 2D matrices.
+        """
+        pass
+
+    @property
+    @abstractmethod
     def normalize_labels(self) -> bool:
         """
         Flag to normalize labels.
@@ -64,9 +73,9 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
         if y_proc.size == 0:
             raise ValueError("Input 'y' cannot be empty.")
 
-        if y_proc.ndim != 1:
+        if y_proc.ndim != self.y_ndim:
             raise ValueError(
-                f"Input 'y' must be 1-dimensional (n_samples,), "
+                f"Input 'y' must be {self.y_ndim}-dimensional (n_samples,), "
                 f"but got shape {y_proc.shape} with {y_proc.ndim} dimensions."
             )
 

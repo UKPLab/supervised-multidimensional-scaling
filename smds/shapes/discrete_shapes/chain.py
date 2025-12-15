@@ -13,6 +13,9 @@ class ChainShape(BaseShape):
     undefined (-1.0).
     """
 
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels
@@ -30,20 +33,6 @@ class ChainShape(BaseShape):
             raise ValueError("threshold must be positive.")
         self.threshold = threshold
         self._normalize_labels = normalize_labels
-
-    def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        """Validate that y is a 1D array of numeric labels."""
-        y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
-
-        if y_proc.size == 0:
-            raise ValueError("Input 'y' cannot be empty.")
-
-        if y_proc.ndim != 1:
-            raise ValueError(
-                f"Input 'y' for ChainShape must be 1-dimensional (n_samples,), "
-                f"but got shape {y_proc.shape} with {y_proc.ndim} dimensions."
-            )
-        return y_proc
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """

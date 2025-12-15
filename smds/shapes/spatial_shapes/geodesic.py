@@ -11,6 +11,9 @@ class GeodesicShape(BaseShape):
     Straight-line distances between points in Euclidean space that lie on a sphere.
     """
 
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 2
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels

@@ -14,6 +14,9 @@ class HierarchicalShape(BaseShape):
     hierarchical level at which they differ. Each level has an associated distance value.
     """
 
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 2
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels

@@ -12,6 +12,9 @@ class CircularShape(BaseShape):
     on a circle, where the distance wraps around (e.g., 0.9 and 0.1 are close).
     """
 
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels

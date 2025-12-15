@@ -13,6 +13,9 @@ class LogLinearShape(BaseShape):
     Formula: d(i, j) = |log(yi) - log(yj)|
     """
 
+    # Dimensionality of the input labels 'y'.
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels
