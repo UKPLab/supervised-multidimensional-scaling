@@ -61,7 +61,22 @@ def discover_manifolds(
 
     results_list = []
 
-    for shape in shapes:
+    # Detect User Input Dimension
+    user_y_ndim = np.asarray(y).ndim
+
+    # Filter list of shapes before we start
+    valid_shapes = [
+        s for s in shapes
+        if s.y_ndim == user_y_ndim
+    ]
+
+    # Inform the user
+    skipped = len(shapes) - len(valid_shapes)
+    if skipped > 0:
+        print(f"Filtering: Kept {len(valid_shapes)} shapes, "
+              f"skipped {skipped} due to dimension mismatch (Expected {user_y_ndim}D).")
+
+    for shape in valid_shapes:
         shape_name = shape.__class__.__name__
 
         # 1. Create the Estimator
@@ -114,5 +129,7 @@ def discover_manifolds(
     # Sort by best score
     if not df.empty and "mean_test_score" in df.columns:
         df = df.sort_values("mean_test_score", ascending=False).reset_index(drop=True)
+
+    #print(df.to_string())
 
     return df

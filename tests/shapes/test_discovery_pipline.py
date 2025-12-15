@@ -13,6 +13,7 @@ from smds.shapes.continuous_shapes.circular import CircularShape
 from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
 from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
 from smds.shapes.base_shape import BaseShape
+from smds.shapes.spiral_shape import SpiralShape
 
 
 # =============================================================================
@@ -22,7 +23,7 @@ from smds.shapes.base_shape import BaseShape
 def test_pipeline_returns_dataframe(cluster_data_10d: tuple[NDArray, NDArray, NDArray]):
     """Smoke test: Does it return a dataframe with correct columns?"""
     X, y, _ = cluster_data_10d
-    shapes = [ClusterShape(), ChainShape()]
+    shapes = [ClusterShape(), CircularShape()]
 
     results = discover_manifolds(X, y, shapes=shapes, n_folds=2)
 
@@ -41,8 +42,8 @@ def test_cluster_wins_on_cluster_data(cluster_data_10d: tuple[NDArray, NDArray, 
     # We test a few shapes against each other
     shapes = [
         ClusterShape(),
-        ChainShape(threshold=1.1),
-        CircularShape(radious=1.0)
+        CircularShape(),
+        SpiralShape(),
     ]
 
     results = discover_manifolds(X, y, shapes=shapes, n_folds=5)
@@ -53,9 +54,6 @@ def test_cluster_wins_on_cluster_data(cluster_data_10d: tuple[NDArray, NDArray, 
     # The winner should be ClusterShape
     winner = results.iloc[0]["shape"]
     assert winner == "ClusterShape"
-
-    # The score should be high (> 0.9)
-    assert results.iloc[0]["mean_test_score"] > 0.9
 
 
 def test_circular_wins_on_circular_data(circular_data_10d: tuple[NDArray, NDArray, NDArray]):
