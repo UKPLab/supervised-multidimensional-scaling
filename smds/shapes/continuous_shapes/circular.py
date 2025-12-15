@@ -11,6 +11,7 @@ class CircularShape(BaseShape):
     Transforms continuous values into pairwise distances assuming they lie
     on a circle, where the distance wraps around (e.g., 0.9 and 0.1 are close).
     """
+
     # Dimensionality of the input labels 'y'.
     y_ndim = 1
 

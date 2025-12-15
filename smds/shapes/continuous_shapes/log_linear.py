@@ -12,6 +12,7 @@ class LogLinearShape(BaseShape):
     Reference: Table 1 in "Shape Happens" paper.
     Formula: d(i, j) = |log(yi) - log(yj)|
     """
+
     # Dimensionality of the input labels 'y'.
     y_ndim = 1
 

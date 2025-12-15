@@ -12,6 +12,7 @@ class ChainShape(BaseShape):
     items have a defined distance. Distances between non-neighbors are marked as
     undefined (-1.0).
     """
+
     # Dimensionality of the input labels 'y'.
     y_ndim = 1
 

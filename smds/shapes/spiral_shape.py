@@ -11,6 +11,7 @@ class SpiralShape(BaseShape):
     growth_rate: Rate at which spiral expands per radian
     num_turns: Number of complete rotations
     """
+
     # Dimensionality of the input labels 'y'.
     y_ndim = 1
 
