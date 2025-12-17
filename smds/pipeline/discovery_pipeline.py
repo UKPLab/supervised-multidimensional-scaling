@@ -1,4 +1,5 @@
 import os
+import shutil
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -54,6 +55,7 @@ def discover_manifolds(
     save_path: Optional[str] = None,
     experiment_name: str = "results",
     create_visualization: bool = True,
+    clear_cache: bool = False,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation.
@@ -73,6 +75,7 @@ def discover_manifolds(
         save_path: Specific path to save results. If None, generates one based on timestamp.
         experiment_name: Label to include in the generated filename.
         create_visualization: Whether to create a visualization of the results as an image file.
+        clear_cache: Whether to delete all cache files after successful completion.
 
     Returns:
         A tuple containing:
@@ -205,5 +208,10 @@ def discover_manifolds(
 
     if save_results and save_path is not None and create_visualization:
         create_plots(X, y, df, valid_shapes, save_path, experiment_name)
+
+    if clear_cache:
+        if os.path.exists(CACHE_DIR):
+            shutil.rmtree(CACHE_DIR)
+            print(f"Cache cleared: {CACHE_DIR}")
 
     return df, save_path
