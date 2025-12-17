@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import numpy as np
-import pandas as pd # type: ignore[import-untyped]
+import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
 
@@ -22,8 +22,11 @@ from smds.shapes.spatial_shapes.geodesic import GeodesicShape
 from smds.shapes.spatial_shapes.spherical import SphericalShape
 from smds.shapes.spiral_shape import SpiralShape
 
+from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
+CACHE_DIR = os.path.join(SAVE_DIR, ".cache")
 
 DEFAULT_SHAPES = [
     ChainShape(),
@@ -53,6 +56,11 @@ def discover_manifolds(
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation.
 
+    Features caching mechanism: Completed shapes are cached and can be recovered after
+    a pipeline crash. Each shape's results are hashed based on data, shape parameters,
+    and fold configuration. If the pipeline crashes, re-running with the same parameters
+    will load cached results instead of recomputing.
+
     Args:
         X: High-dimensional data (n_samples, n_features).
         y: Labels (n_samples,).
@@ -67,28 +75,31 @@ def discover_manifolds(
         A tuple containing:
         - pd.DataFrame: The aggregated results, sorted by mean score.
         - Optional[str]: The path to the saved CSV file, or None if saving was disabled.
+
+    Note:
+        Cache files are stored in saved_results/.cache/ and are automatically used
+        when re-running the pipeline with identical data and parameters.
     """
     if shapes is None:
         shapes = DEFAULT_SHAPES
 
     results_list = []
 
-    # Configure persistence and resume logic
+    data_hash = hash_data(X, y)
+    os.makedirs(CACHE_DIR, exist_ok=True)
+
     if save_results:
         os.makedirs(SAVE_DIR, exist_ok=True)
 
         if save_path is None:
-            # Create a unique, descriptive filename
             timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            unique_id = uuid.uuid4().hex[:6]  # Short 6-char unique hash
+            unique_id = uuid.uuid4().hex[:6]
 
-            # Clean experiment name (remove spaces/slashes)
             safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
 
             filename = f"{safe_name}_{timestamp}_{unique_id}.csv"
             save_path = os.path.join(SAVE_DIR, filename)
 
-        # Create file with header if it doesn't exist
         if not os.path.exists(save_path):
             pd.DataFrame(
                 columns=[
@@ -117,11 +128,20 @@ def discover_manifolds(
 
     for shape in valid_shapes:
         shape_name = shape.__class__.__name__
+        params = shape.__dict__
+
+        shape_hash = compute_shape_hash(shape_name, params, data_hash, n_folds)
+        cache_file = os.path.join(CACHE_DIR, f"{shape_hash}.pkl")
+
+        cached_result = load_cached_shape_result(cache_file)
+        if cached_result is not None:
+            print(f"Loading cached result for {shape_name}")
+            row = cached_result
+            results_list.append(row)
+            continue
 
         estimator = SupervisedMDS(n_components=2, manifold=shape)
 
-        # Run Cross-Validation
-        # This handles splitting, training, testing, and scoring automatically.
         try:
             cv_results = cross_validate(
                 estimator,
@@ -129,7 +149,7 @@ def discover_manifolds(
                 y,
                 cv=n_folds,
                 n_jobs=n_jobs,
-                scoring=None,  # Uses estimator.score() by default
+                scoring=None,
                 return_train_score=False,
             )
 
@@ -138,34 +158,35 @@ def discover_manifolds(
 
             row = {
                 "shape": shape_name,
-                "params": shape.__dict__,
+                "params": params,
                 "mean_test_score": mean_score,
                 "std_test_score": std_score,
-                "fold_scores": cv_results["test_score"],
+                "fold_scores": cv_results["test_score"].tolist(),
                 "error": None,
             }
 
+            save_shape_result(cache_file, row)
+            print(f"Computed and cached {shape_name}")
+
         except ValueError as e:
-            # Data Mismatch (e.g. 1D y vs 2D Shape)
-            # This is expected behavior when running "all shapes" on specific data.
             print(f"Skipping {shape_name}: Incompatible Data Format. ({str(e)})")
             continue
 
         except Exception as e:
-            # Unexpected Crash
             print(f"Skipping {shape_name}: {e}")
             row = {
                 "shape": shape_name,
-                "params": shape.__dict__,
+                "params": params,
                 "mean_test_score": np.nan,
                 "std_test_score": np.nan,
                 "fold_scores": None,
                 "error": str(e),
             }
 
+            save_shape_result(cache_file, row)
+
         results_list.append(row)
 
-        # Incrementally write result to disk
         if save_results and save_path is not None:
             pd.DataFrame([row]).to_csv(
                 save_path,

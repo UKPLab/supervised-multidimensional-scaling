@@ -139,4 +139,5 @@ sketch*
 supervised_multidimensional_scaling/sketch*
 
 # Manifold Discovery Results
-discovery_results/
+.cache/
+saved_results/

@@ -7,9 +7,9 @@ or directly via `uv run streamlit run smds/pipeline/dashboard.py`.
 import os
 import sys
 
-import altair as alt
-import pandas as pd # type: ignore[import-untyped]
-import streamlit as st
+import altair as alt  # type: ignore[import-not-found]
+import pandas as pd  # type: ignore[import-untyped]
+import streamlit as st  # type: ignore[import-not-found]
 
 # Locate results directory relative to this script
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
