@@ -45,6 +45,11 @@ dev = [
     "seaborn>=0.13.2",
     "torch>=2.9.0",
     "transformers>=4.57.1",
+    "altair>=6.4.0",
+    "streamlit>=1.40.1",
+    "streamlit-altair>=1.1.0",
+    "streamlit-plotly>=0.2.0",
+    "streamlit-plotly-events>=0.1.0",
 ]
 pipeline = [
     "scipy-stubs>=1.16.3.0",
