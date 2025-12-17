@@ -2,7 +2,7 @@
 name = "supervised-multidimensional-scaling"
 version = "0.5.5"
 description = "A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling (SMDS) for automatic feature manifold discovery in LLMs."
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "matplotlib>=3.10.7",
     "mkdocs-material>=9.7.0",
@@ -45,11 +45,8 @@ dev = [
     "seaborn>=0.13.2",
     "torch>=2.9.0",
     "transformers>=4.57.1",
-    "altair>=6.4.0",
+    "altair>=6.0.0",
     "streamlit>=1.40.1",
-    "streamlit-altair>=1.1.0",
-    "streamlit-plotly>=0.2.0",
-    "streamlit-plotly-events>=0.1.0",
 ]
 pipeline = [
     "scipy-stubs>=1.16.3.0",

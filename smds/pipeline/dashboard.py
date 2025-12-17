@@ -7,9 +7,9 @@ or directly via `uv run streamlit run smds/pipeline/dashboard.py`.
 import os
 import sys
 
-import altair as alt  # type: ignore[import-not-found]
+import altair as alt
 import pandas as pd  # type: ignore[import-untyped]
-import streamlit as st  # type: ignore[import-not-found]
+import streamlit as st
 
 # Locate results directory relative to this script
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -85,8 +85,16 @@ def main() -> None:
 
         st.markdown(display_name)
 
+        if df.empty:
+            st.error("⚠️ This CSV file is empty. No results to display.")
+            return
+
         # Sort results to determine the winner
         df_sorted = df.sort_values("mean_test_score", ascending=False).reset_index(drop=True)
+
+        if len(df_sorted) == 0:
+            st.error("⚠️ No valid results found in this file.")
+            return
 
         best_shape = df_sorted.iloc[0]["shape"]
         best_score = df_sorted.iloc[0]["mean_test_score"]
