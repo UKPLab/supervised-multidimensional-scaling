@@ -58,7 +58,7 @@ def discover_manifolds(
     clear_cache: bool = False,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
-    Evaluates a list of Shape hypotheses on the given data using Cross-Validation.
+    Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
 
     Features caching mechanism: Completed shapes are cached and can be recovered after
     a pipeline crash. Each shape's results are hashed based on data, shape parameters,
@@ -69,7 +69,8 @@ def discover_manifolds(
         X: High-dimensional data (n_samples, n_features).
         y: Labels (n_samples,).
         shapes: List of Shape objects to test. Defaults to a standard set if None.
-        n_folds: Number of Cross-Validation folds.
+        n_folds: Number of Cross-Validation folds. If 0, Cross-Validation is skipped and
+                 the model is fit and scored directly on all data.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
         save_results: Whether to persist results to a CSV file.
         save_path: Specific path to save results. If None, generates one based on timestamp.
@@ -149,25 +150,33 @@ def discover_manifolds(
         estimator = SupervisedMDS(n_components=2, manifold=shape)
 
         try:
-            cv_results = cross_validate(
-                estimator,
-                X,
-                y,
-                cv=n_folds,
-                n_jobs=n_jobs,
-                scoring=None,
-                return_train_score=False,
-            )
+            if n_folds == 0:
+                estimator.fit(X, y)
+                score = estimator.score(X, y)
+                mean_score = score
+                std_score = 0.0
+                fold_scores = [score]
+            else:
+                cv_results = cross_validate(
+                    estimator,
+                    X,
+                    y,
+                    cv=n_folds,
+                    n_jobs=n_jobs,
+                    scoring=None,
+                    return_train_score=False,
+                )
 
-            mean_score = np.mean(cv_results["test_score"])
-            std_score = np.std(cv_results["test_score"])
+                mean_score = np.mean(cv_results["test_score"])
+                std_score = np.std(cv_results["test_score"])
+                fold_scores = cv_results["test_score"].tolist()
 
             row = {
                 "shape": shape_name,
                 "params": params,
                 "mean_test_score": mean_score,
                 "std_test_score": std_score,
-                "fold_scores": cv_results["test_score"].tolist(),
+                "fold_scores": fold_scores,
                 "error": None,
             }
 
