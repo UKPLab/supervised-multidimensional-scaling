@@ -1,15 +1,15 @@
-from datetime import datetime
 import os
-
-import pandas as pd
-import numpy as np
-from numpy.typing import NDArray
+import uuid
+from datetime import datetime
 from typing import List, Optional
+
+import numpy as np
+import pandas as pd # type: ignore[import-untyped]
+from numpy.typing import NDArray
 from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.base_shape import BaseShape
-
 from smds.shapes.continuous_shapes.circular import CircularShape
 from smds.shapes.continuous_shapes.euclidean import EuclideanShape
 from smds.shapes.continuous_shapes.log_linear import LogLinearShape
@@ -41,97 +41,100 @@ DEFAULT_SHAPES = [
 
 
 def discover_manifolds(
-        X: NDArray[np.float64],
-        y: NDArray[np.float64],
-        shapes: Optional[List[BaseShape]] = None,
-        n_folds: int = 5,
-        n_jobs: int = -1,
-        save_results: bool = True,
-        save_path: Optional[str] = None
-) -> pd.DataFrame:
+    X: NDArray[np.float64],
+    y: NDArray[np.float64],
+    shapes: Optional[List[BaseShape]] = None,
+    n_folds: int = 5,
+    n_jobs: int = -1,
+    save_results: bool = True,
+    save_path: Optional[str] = None,
+    experiment_name: str = "results",
+) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation.
 
     Args:
         X: High-dimensional data (n_samples, n_features).
         y: Labels (n_samples,).
-        shapes: List of Shape objects to test. Defaults to a standard set.
+        shapes: List of Shape objects to test. Defaults to a standard set if None.
         n_folds: Number of Cross-Validation folds.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
-        save_results:
-        save_path:
+        save_results: Whether to persist results to a CSV file.
+        save_path: Specific path to save results. If None, generates one based on timestamp.
+        experiment_name: Label to include in the generated filename.
 
     Returns:
-        pd.DataFrame containing the results, sorted by mean score.
+        A tuple containing:
+        - pd.DataFrame: The aggregated results, sorted by mean score.
+        - Optional[str]: The path to the saved CSV file, or None if saving was disabled.
     """
     if shapes is None:
         shapes = DEFAULT_SHAPES
 
     results_list = []
 
-    # -----------------------------
-    # Setup Saving / Resume Logic
-    # -----------------------------
-
+    # Configure persistence and resume logic
     if save_results:
         os.makedirs(SAVE_DIR, exist_ok=True)
 
         if save_path is None:
+            # Create a unique, descriptive filename
             timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            save_path = os.path.join(
-                SAVE_DIR, f"results_{timestamp}.csv"
-            )
+            unique_id = uuid.uuid4().hex[:6]  # Short 6-char unique hash
+
+            # Clean experiment name (remove spaces/slashes)
+            safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
+
+            filename = f"{safe_name}_{timestamp}_{unique_id}.csv"
+            save_path = os.path.join(SAVE_DIR, filename)
 
         # Create file with header if it doesn't exist
         if not os.path.exists(save_path):
-            pd.DataFrame(columns=[
-                "shape",
-                "params",
-                "mean_test_score",
-                "std_test_score",
-                "fold_scores",
-                "error",
-            ]).to_csv(save_path, index=False)
+            pd.DataFrame(
+                columns=[
+                    "shape",
+                    "params",
+                    "mean_test_score",
+                    "std_test_score",
+                    "fold_scores",
+                    "error",
+                ]
+            ).to_csv(save_path, index=False)
 
-    print("CWD:", os.getcwd())
     print("Saving to:", save_path)
 
-    # Detect User Input Dimension
+    # Filter shapes based on input dimension compatibility
     user_y_ndim = np.asarray(y).ndim
 
-    # Filter list of shapes before we start
-    valid_shapes = [
-        s for s in shapes
-        if s.y_ndim == user_y_ndim
-    ]
+    valid_shapes = [s for s in shapes if s.y_ndim == user_y_ndim]
 
-    # Inform the user
     skipped = len(shapes) - len(valid_shapes)
     if skipped > 0:
-        print(f"Filtering: Kept {len(valid_shapes)} shapes, "
-              f"skipped {skipped} due to dimension mismatch (Expected {user_y_ndim}D).")
+        print(
+            f"Filtering: Kept {len(valid_shapes)} shapes, "
+            f"skipped {skipped} due to dimension mismatch (Expected {user_y_ndim}D)."
+        )
 
     for shape in valid_shapes:
         shape_name = shape.__class__.__name__
 
-        # 1. Create the Estimator
-        # We wrap the shape in the Engine
         estimator = SupervisedMDS(n_components=2, manifold=shape)
 
-        # 2. Run Cross-Validation
+        # Run Cross-Validation
         # This handles splitting, training, testing, and scoring automatically.
         try:
             cv_results = cross_validate(
-                estimator, X, y,
+                estimator,
+                X,
+                y,
                 cv=n_folds,
                 n_jobs=n_jobs,
                 scoring=None,  # Uses estimator.score() by default
-                return_train_score=False
+                return_train_score=False,
             )
 
-            # 3. Aggregate Results
-            mean_score = np.mean(cv_results['test_score'])
-            std_score = np.std(cv_results['test_score'])
+            mean_score = np.mean(cv_results["test_score"])
+            std_score = np.std(cv_results["test_score"])
 
             row = {
                 "shape": shape_name,
@@ -143,14 +146,13 @@ def discover_manifolds(
             }
 
         except ValueError as e:
-
             # Data Mismatch (e.g. 1D y vs 2D Shape)
             # This is expected behavior when running "all shapes" on specific data.
             print(f"Skipping {shape_name}: Incompatible Data Format. ({str(e)})")
             continue
 
         except Exception as e:
-            # Unexpected Crash (Algorithm Bug)
+            # Unexpected Crash
             print(f"Skipping {shape_name}: {e}")
             row = {
                 "shape": shape_name,
@@ -163,8 +165,8 @@ def discover_manifolds(
 
         results_list.append(row)
 
-        # Incremental Append (Fail-Safe)
-        if save_results:
+        # Incrementally write result to disk
+        if save_results and save_path is not None:
             pd.DataFrame([row]).to_csv(
                 save_path,
                 mode="a",
@@ -172,13 +174,9 @@ def discover_manifolds(
                 index=False,
             )
 
-    # 4. Create DataFrame
     df = pd.DataFrame(results_list)
 
-    # Sort by best score
     if not df.empty and "mean_test_score" in df.columns:
         df = df.sort_values("mean_test_score", ascending=False).reset_index(drop=True)
 
-    #print(df.to_string())
-
-    return df
+    return df, save_path

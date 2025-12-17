@@ -92,7 +92,7 @@ def cluster_engine() -> SupervisedMDS:
 
 
 @pytest.fixture(scope="module")
-def cluster_data_10d():
+def cluster_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     rng = np.random.default_rng(42)
     n = 100
     # 3 Clusters
