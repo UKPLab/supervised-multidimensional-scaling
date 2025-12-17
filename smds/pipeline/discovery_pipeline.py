@@ -23,6 +23,7 @@ from smds.shapes.spatial_shapes.spherical import SphericalShape
 from smds.shapes.spiral_shape import SpiralShape
 
 from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
+from .helpers.plots import create_plots
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
@@ -52,6 +53,7 @@ def discover_manifolds(
     save_results: bool = True,
     save_path: Optional[str] = None,
     experiment_name: str = "results",
+    create_visualization: bool = True,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation.
@@ -70,6 +72,7 @@ def discover_manifolds(
         save_results: Whether to persist results to a CSV file.
         save_path: Specific path to save results. If None, generates one based on timestamp.
         experiment_name: Label to include in the generated filename.
+        create_visualization: Whether to create a visualization of the results as an image file.
 
     Returns:
         A tuple containing:
@@ -199,5 +202,8 @@ def discover_manifolds(
 
     if not df.empty and "mean_test_score" in df.columns:
         df = df.sort_values("mean_test_score", ascending=False).reset_index(drop=True)
+
+    if save_results and save_path is not None and create_visualization:
+        create_plots(X, y, df, valid_shapes, save_path, experiment_name)
 
     return df, save_path
