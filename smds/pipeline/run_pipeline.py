@@ -9,7 +9,7 @@ from smds.pipeline import open_dashboard
 from smds.pipeline.discovery_pipeline import discover_manifolds
 
 # Configuration
-AUTO_OPEN_DASHBOARD = False
+AUTO_OPEN_DASHBOARD = True
 
 
 def run_demo() -> None:
@@ -21,7 +21,14 @@ def run_demo() -> None:
     print("Starting Manifold Discovery...")
 
     # Execute Pipeline
-    df, saved_file_path = discover_manifolds(X, y, experiment_name="Discovery_Demo", save_results=False, create_visualization=False, clear_cache=True)
+    df, saved_file_path = discover_manifolds(
+        X,
+        y,
+        experiment_name="Discovery_Demo",
+        save_results=True,
+        create_visualization=True,
+        clear_cache=True
+    )
 
     print(f"\nAnalysis Complete. Winner: {df.iloc[0]['shape']}")
 

@@ -13,6 +13,7 @@ from smds.pipeline.discovery_pipeline import discover_manifolds
 from smds.shapes.continuous_shapes.circular import CircularShape
 from smds.shapes.discrete_shapes.cluster import ClusterShape
 from smds.shapes.spiral_shape import SpiralShape
+from smds.stress.stress_metrics import StressMetrics
 
 
 @pytest.mark.smoke
@@ -34,9 +35,17 @@ def test_pipeline_returns_dataframe(
     )
 
     assert isinstance(results, pd.DataFrame)
-    expected_cols = ["shape", "params", "mean_test_score", "std_test_score"]
-    # Check schema
-    assert all(col in results.columns for col in expected_cols)
+
+    expected_metric_cols = []
+    for metric in StressMetrics:
+        expected_metric_cols.append(f"mean_{metric.value}")
+        expected_metric_cols.append(f"std_{metric.value}")
+        expected_metric_cols.append(f"fold_{metric.value}")
+
+    expected_cols = ["shape", "params", "error"] + expected_metric_cols
+    missing_cols = [col for col in expected_cols if col not in results.columns]
+    assert not missing_cols, f"DataFrame is missing expected columns: {missing_cols}. Found: {results.columns.tolist()}"
+
     # Check row count
     assert len(results) == 2
 
@@ -65,7 +74,7 @@ def test_cluster_wins_on_cluster_data(
     )
 
     # Sort by score descending
-    results = results.sort_values("mean_test_score", ascending=False)
+    results = results.sort_values("mean_scale_normalized_stress", ascending=False)
 
     # The winner should be ClusterShape
     winner = results.iloc[0]["shape"]
@@ -88,7 +97,7 @@ def test_circular_wins_on_circular_data(
         clear_cache=True
     )
 
-    results = results.sort_values("mean_test_score", ascending=False)
+    results = results.sort_values("mean_scale_normalized_stress", ascending=False)
 
     winner = results.iloc[0]["shape"]
     assert winner == "CircularShape"

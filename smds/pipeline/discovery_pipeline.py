@@ -2,7 +2,7 @@ import os
 import shutil
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Callable
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
+from smds.stress.stress_metrics import StressMetrics
 from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes.circular import CircularShape
 from smds.shapes.continuous_shapes.euclidean import EuclideanShape
@@ -55,7 +56,7 @@ def discover_manifolds(
     save_path: Optional[str] = None,
     experiment_name: str = "results",
     create_visualization: bool = True,
-    clear_cache: bool = False,
+    clear_cache: bool = True,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
@@ -95,6 +96,12 @@ def discover_manifolds(
     data_hash = hash_data(X, y)
     os.makedirs(CACHE_DIR, exist_ok=True)
 
+    metric_columns = []
+    for m in StressMetrics:
+        metric_columns.extend([f"mean_{m.value}", f"std_{m.value}", f"fold_{m.value}"])
+
+    csv_headers = ["shape", "params"] + metric_columns + ["error"]
+
     if save_results:
         os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -108,18 +115,17 @@ def discover_manifolds(
             save_path = os.path.join(SAVE_DIR, filename)
 
         if not os.path.exists(save_path):
-            pd.DataFrame(
-                columns=[
-                    "shape",
-                    "params",
-                    "mean_test_score",
-                    "std_test_score",
-                    "fold_scores",
-                    "error",
-                ]
-            ).to_csv(save_path, index=False)
+            pd.DataFrame(columns=csv_headers).to_csv(save_path, index=False)
 
     print("Saving to:", save_path)
+
+    # Construct the scoring map for cross_validate
+    scoring_map: Dict[str, Callable] = {}
+
+    for metric in StressMetrics:
+        def make_scorer(m):
+            return lambda estimator, x_data, y_data: estimator.score(x_data, y_data, metric=m)
+        scoring_map[metric.value] = make_scorer(metric)
 
     # Filter shapes based on input dimension compatibility
     user_y_ndim = np.asarray(y).ndim
@@ -159,23 +165,29 @@ def discover_manifolds(
                 y,
                 cv=n_folds,
                 n_jobs=n_jobs,
-                scoring=None,
+                scoring=scoring_map,
                 return_train_score=False,
             )
 
-            mean_score = np.mean(cv_results["test_score"])
-            std_score = np.std(cv_results["test_score"])
-            fold_scores = cv_results["test_score"].tolist()
 
             row = {
                 "shape": shape_name,
                 "params": params,
-                "mean_test_score": mean_score,
-                "std_test_score": std_score,
-                "fold_scores": fold_scores,
-                "error": None,
             }
 
+            for metric in StressMetrics:
+                metric_key = metric.value
+                cv_key = f"test_{metric_key}"
+
+                if cv_key in cv_results:
+                    scores = cv_results[cv_key]
+                    row[f"mean_{metric_key}"] = np.mean(scores)
+                    row[f"std_{metric_key}"] = np.std(scores)
+                    row[f"fold_{metric_key}"] = scores.tolist()
+                else:
+                    row[f"mean_{metric_key}"] = np.nan
+
+            row["error"] = None
             save_shape_result(cache_file, row)
             print(f"Computed and cached {shape_name}")
 
@@ -185,21 +197,20 @@ def discover_manifolds(
 
         except Exception as e:
             print(f"Skipping {shape_name}: {e}")
-            row = {
-                "shape": shape_name,
-                "params": params,
-                "mean_test_score": np.nan,
-                "std_test_score": np.nan,
-                "fold_scores": None,
-                "error": str(e),
-            }
+            row = {"shape": shape_name, "params": params}
+            for m in StressMetrics:
+                row[f"mean_{m.value}"] = np.nan
+                row[f"std_{m.value}"] = np.nan
+                row[f"fold_{m.value}"] = []
+
+            row["error"] = str(e)
 
             save_shape_result(cache_file, row)
 
         results_list.append(row)
 
         if save_results and save_path is not None:
-            pd.DataFrame([row]).to_csv(
+            pd.DataFrame([row], columns=csv_headers).to_csv(
                 save_path,
                 mode="a",
                 header=False,
@@ -208,8 +219,11 @@ def discover_manifolds(
 
     df = pd.DataFrame(results_list)
 
-    if not df.empty and "mean_test_score" in df.columns:
-        df = df.sort_values("mean_test_score", ascending=False).reset_index(drop=True)
+    # Sort by the primary metric
+    primary_metric = f"mean_{StressMetrics.SCALE_NORMALIZED_STRESS.value}"
+
+    if not df.empty and primary_metric in df.columns:
+        df = df.sort_values(primary_metric, ascending=False).reset_index(drop=True)
 
     if save_results and save_path is not None and create_visualization:
         create_plots(X, y, df, valid_shapes, save_path, experiment_name)
@@ -217,6 +231,6 @@ def discover_manifolds(
     if clear_cache:
         if os.path.exists(CACHE_DIR):
             shutil.rmtree(CACHE_DIR)
-            print(f"Cache cleared: {CACHE_DIR}")
+            print(f"Cache cleared")
 
     return df, save_path
