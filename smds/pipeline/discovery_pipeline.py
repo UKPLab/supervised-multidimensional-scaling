@@ -133,6 +133,9 @@ def discover_manifolds(
             f"skipped {skipped} due to dimension mismatch (Expected {user_y_ndim}D)."
         )
 
+    if X.shape[0] < 100:
+        print("[WARNING] Less than 100 datapoints in X might lead to noisy results")
+
     for shape in valid_shapes:
         shape_name = shape.__class__.__name__
         params = shape.__dict__
@@ -150,26 +153,19 @@ def discover_manifolds(
         estimator = SupervisedMDS(n_components=2, manifold=shape)
 
         try:
-            if n_folds == 0:
-                estimator.fit(X, y)
-                score = estimator.score(X, y)
-                mean_score = score
-                std_score = 0.0
-                fold_scores = [score]
-            else:
-                cv_results = cross_validate(
-                    estimator,
-                    X,
-                    y,
-                    cv=n_folds,
-                    n_jobs=n_jobs,
-                    scoring=None,
-                    return_train_score=False,
-                )
+            cv_results = cross_validate(
+                estimator,
+                X,
+                y,
+                cv=n_folds,
+                n_jobs=n_jobs,
+                scoring=None,
+                return_train_score=False,
+            )
 
-                mean_score = np.mean(cv_results["test_score"])
-                std_score = np.std(cv_results["test_score"])
-                fold_scores = cv_results["test_score"].tolist()
+            mean_score = np.mean(cv_results["test_score"])
+            std_score = np.std(cv_results["test_score"])
+            fold_scores = cv_results["test_score"].tolist()
 
             row = {
                 "shape": shape_name,

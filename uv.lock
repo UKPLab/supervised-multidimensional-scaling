@@ -2984,6 +2984,7 @@ name = "supervised-multidimensional-scaling"
 version = "0.5.5"
 source = { editable = "." }
 dependencies = [
+    { name = "altair" },
     { name = "matplotlib" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings" },
@@ -2993,6 +2994,7 @@ dependencies = [
     { name = "pandas" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "streamlit" },
     { name = "zadu" },
 ]
 
@@ -3027,6 +3029,7 @@ pipeline = [
 
 [package.metadata]
 requires-dist = [
+    { name = "altair", specifier = ">=6.0.0" },
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "mkdocs-material", specifier = ">=9.7.0" },
     { name = "mkdocstrings", specifier = ">=0.30.1" },
@@ -3036,6 +3039,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "scikit-learn", specifier = ">=1.7.2" },
     { name = "scipy", specifier = ">=1.16.3" },
+    { name = "streamlit", specifier = ">=1.52.2" },
     { name = "zadu", specifier = ">=0.3.1" },
 ]
 
