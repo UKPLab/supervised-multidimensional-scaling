@@ -1,4 +1,5 @@
 site_name: smds
+site_url: https://ukplab.github.io/smds
 nav:
   - Home: index.md
 
@@ -8,7 +9,6 @@ theme:
 plugins:
   - search
   - mkdocstrings:
-      project_name: smds
       handlers:
         python:
           options:

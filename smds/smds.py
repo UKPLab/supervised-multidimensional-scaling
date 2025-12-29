@@ -3,19 +3,22 @@ import pickle
 from typing import Callable, Optional, Union
 
 import numpy as np
-from scipy.linalg import eigh
-from scipy.optimize import minimize
-from sklearn.base import BaseEstimator, TransformerMixin
+from scipy.linalg import eigh  # type: ignore[import-untyped]
+from scipy.optimize import minimize  # type: ignore[import-untyped]
+from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
 
-from smds.stress.non_metric_stress import NonMetricStress
-from smds.stress.scale_normalized_stress import ScaleNormalizedStress
+from smds.stress.kl_divergence import kl_divergence_stress
+from smds.stress.non_metric_stress import non_metric_stress
+from smds.stress.normalized_stress import normalized_stress
+from smds.stress.scale_normalized_stress import scale_normalized_stress
+from smds.stress.shepard_goodness_score import shepard_goodness_stress
 from smds.stress.stress_metrics import StressMetrics
 
 
-class SupervisedMDS(BaseEstimator, TransformerMixin):
+class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
     def __init__(
         self,
-        manifold: Optional[Callable] = None,
+        manifold: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         n_components: int = 2,
         alpha: float = 0.1,
         orthonormal: bool = False,
@@ -50,7 +53,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
                 "direct embedding (Y parameter) in fit()."
             )
         if callable(self.manifold):
-            D = self.manifold(y)
+            D: np.ndarray = self.manifold(y)
         else:
             raise ValueError("Invalid manifold specification.")
 
@@ -76,7 +79,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         eigvecs = eigvecs[:, idx][:, : self.n_components]
 
         # Embedding computation
-        Y = eigvecs * np.sqrt(np.maximum(eigvals, 0))
+        Y: np.ndarray = eigvecs * np.sqrt(np.maximum(eigvals, 0))
         return Y
 
     def _masked_loss(self, W_flat: np.ndarray, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> float:
@@ -87,14 +90,15 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         X_proj = (W @ X.T).T
         D_pred = np.linalg.norm(X_proj[:, None, :] - X_proj[None, :, :], axis=-1)
         loss = (D_pred - D)[mask]
-        return np.sum(loss**2)
+        result: float = float(np.sum(loss**2))
+        return result
 
     def fit(
         self,
         X: np.ndarray,
         y: Optional[np.ndarray] = None,
         Y: Optional[np.ndarray] = None,
-    ):
+    ) -> "SupervisedMDS":
         """
         Fit the linear transformation W to match distances induced by labels y.
         If Y is provided, it will be used to directly match a provided target embedding Y.
@@ -193,16 +197,18 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             X_centered = X - self._X_mean
         else:
             X_centered = X
-        X_proj = (self.W_ @ X_centered.T).T
+        X_proj: np.ndarray = (self.W_ @ X_centered.T).T
         return X_proj
 
     def _truncated_pinv(self, W: np.ndarray, tol: float = 1e-5) -> np.ndarray:
         U, S, VT = np.linalg.svd(W, full_matrices=False)
         S_inv = np.array([1 / s if s > tol else 0 for s in S])
-        return VT.T @ np.diag(S_inv) @ U.T
+        result: np.ndarray = VT.T @ np.diag(S_inv) @ U.T
+        return result
 
     def _regularized_pinv(self, W: np.ndarray, lambda_: float = 1e-5) -> np.ndarray:
-        return np.linalg.inv(W.T @ W + lambda_ * np.eye(W.shape[1])) @ W.T
+        result: np.ndarray = np.linalg.inv(W.T @ W + lambda_ * np.eye(W.shape[1])) @ W.T
+        return result
 
     def inverse_transform(self, X_proj: np.ndarray) -> np.ndarray:
         """
@@ -227,10 +233,11 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         # W_pinv = self._regularized_pinv(self.W_)
         W_pinv = self._truncated_pinv(self.W_)
 
-        X_centered = (W_pinv @ X_proj.T).T
+        X_centered: np.ndarray = (W_pinv @ X_proj.T).T
 
         if hasattr(self, "_X_mean") and self._X_mean is not None:
-            return X_centered + self._X_mean
+            result: np.ndarray = X_centered + self._X_mean
+            return result
         else:
             return X_centered
 
@@ -253,7 +260,8 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
             X_proj: array of shape (n_samples, n_components)
                 The transformed data in the low-dimensional space.
         """
-        return self.fit(X, y=y, Y=Y).transform(X)
+        result: np.ndarray = self.fit(X, y=y, Y=Y).transform(X)
+        return result
 
     def score(
         self,
@@ -299,23 +307,30 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):
         X_proj = self.transform(X)
         D_pred = np.linalg.norm(X_proj[:, np.newaxis, :] - X_proj[np.newaxis, :, :], axis=-1)
 
+        if metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
+            score_value = kl_divergence_stress(D_ideal, D_pred)
+            score_value = -score_value
+            return score_value
+
         mask = np.triu(np.ones((n, n), dtype=bool), k=1)
         mask = mask & (D_ideal >= 0)
         D_ideal_flat = D_ideal[mask]
         D_pred_flat = D_pred[mask]
 
-        # Compute stress
         if metric == StressMetrics.SCALE_NORMALIZED_STRESS:
-            score_value = 1 - ScaleNormalizedStress().compute(D_ideal_flat, D_pred_flat)
+            score_value = 1 - scale_normalized_stress(D_ideal_flat, D_pred_flat)
         elif metric == StressMetrics.NON_METRIC_STRESS:
-            score_value = 1 - NonMetricStress().compute(D_ideal_flat, D_pred_flat)
-        # TODO: Add other metrics from the paper here
+            score_value = 1 - non_metric_stress(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.SHEPARD_GOODNESS_SCORE:
+            score_value = shepard_goodness_stress(D_ideal_flat, D_pred_flat)
+        elif metric == StressMetrics.NORMALIZED_STRESS:
+            score_value = 1 - normalized_stress(D_ideal_flat, D_pred_flat)
         else:
             raise ValueError(f"Unknown metric: {metric}")
 
         return score_value
 
-    def save(self, filepath: str):
+    def save(self, filepath: str) -> None:
         """
         Save the model to disk, including learned weights.
         """

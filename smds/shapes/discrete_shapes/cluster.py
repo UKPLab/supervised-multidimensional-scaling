@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -15,11 +13,13 @@ class ClusterShape(BaseShape):
     and 1 for points in different categories.
     """
 
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, normalize_labels: Optional[bool] = False):
+    def __init__(self, normalize_labels: bool = False):
         self._normalize_labels = normalize_labels
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:

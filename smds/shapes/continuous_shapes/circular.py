@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -14,11 +12,13 @@ class CircularShape(BaseShape):
     on a circle, where the distance wraps around (e.g., 0.9 and 0.1 are close).
     """
 
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, radious: Optional[float] = 1.0, normalize_labels: Optional[bool] = True):
+    def __init__(self, radious: float = 1.0, normalize_labels: bool = True):
         self.radious = radious
         self._normalize_labels = normalize_labels
 

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -15,12 +13,13 @@ class ChainShape(BaseShape):
     undefined (-1.0).
     """
 
+    y_ndim = 1
+
     @property
     def normalize_labels(self) -> bool:
         return self._normalize_labels
 
-    def __init__(self, normalize_labels: Optional[bool] = False, threshold: float = 2.0):
-        self._normalize_labels = normalize_labels
+    def __init__(self, threshold: float = 2.0, normalize_labels: bool = False):
         """
         Initialize the ChainShape.
 
@@ -32,20 +31,7 @@ class ChainShape(BaseShape):
         if threshold <= 0:
             raise ValueError("threshold must be positive.")
         self.threshold = threshold
-
-    def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        """Validate that y is a 1D array of numeric labels."""
-        y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
-
-        if y_proc.size == 0:
-            raise ValueError("Input 'y' cannot be empty.")
-
-        if y_proc.ndim != 1:
-            raise ValueError(
-                f"Input 'y' for ChainShape must be 1-dimensional (n_samples,), "
-                f"but got shape {y_proc.shape} with {y_proc.ndim} dimensions."
-            )
-        return y_proc
+        self._normalize_labels = normalize_labels
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
@@ -57,10 +43,6 @@ class ChainShape(BaseShape):
         wrap_around_dist = cycle_length - direct_dist
         base_distances = np.minimum(direct_dist, wrap_around_dist)
 
-        distance_matrix = np.where(
-            base_distances < self.threshold,
-            base_distances,
-            -1.0
-        )
+        distance_matrix = np.where(base_distances < self.threshold, base_distances, -1.0)
 
         return distance_matrix
