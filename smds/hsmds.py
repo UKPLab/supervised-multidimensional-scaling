@@ -1,4 +1,4 @@
-from typing import Union, Callable, Optional
+from typing import Callable, Optional
 import numpy as np
 from sklearn.base import BaseEstimator
 from smds import SupervisedMDS
@@ -19,7 +19,8 @@ class HybridSMDS(SupervisedMDS):
                  alpha: float = 0.1,
                  orthonormal: bool = False,
                  radius: float = 6371,
-                 reducer: Optional[BaseEstimator] = None):
+                 reducer: Optional[BaseEstimator] = None,
+                 bypass_mds: bool = False):
         
         super().__init__(manifold=manifold,
                          n_components=n_components,
@@ -31,6 +32,7 @@ class HybridSMDS(SupervisedMDS):
             raise ValueError("HybridSMDS requires a reducer object (e.g. PLSRegression).")
 
         self.reducer = reducer
+        self.bypass_mds = bypass_mds
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> "HybridSMDS":
         """
@@ -48,46 +50,34 @@ class HybridSMDS(SupervisedMDS):
         X = np.asarray(X)
         y = np.asarray(y)
 
-        # --- LOGIK FÜR ISSUE #53 / #65 ---
-        # Prüfen, ob y bereits die Zielkoordinaten sind
-        is_direct_embedding = (y.ndim == 2) and (y.shape[1] == self.n_components)
-
-        if is_direct_embedding:
-            # Fall B: Direkte Eingabe der Koordinaten (Shape)
-            # Wir überspringen _compute_ideal_distances und _classical_mds
+        if self.bypass_mds:
+            if y.ndim != 2 or y.shape[1] != self.n_components:
+                raise ValueError(
+                    f"When bypass_mds=True, y must be target coordinates with shape "
+                    f"(n_samples, {self.n_components}). Got shape {y.shape}."
+                )
             Y = y
-            
-            # Validierung: Dimensionen müssen stimmen
-            if Y.shape[0] != X.shape[0]:
-                raise ValueError(f"Shape mismatch: X has {X.shape[0]} samples, but target Y has {Y.shape[0]}.")
-                
-            self.Y_ = Y  # Speichere das direkt übergebene Target
+            self.Y_ = Y
             
         else:
-            # Fall A: Standard Supervised MDS Flow (Labels -> Distanzen -> MDS -> Y)
-            y = y.squeeze()
+            if hasattr(self.manifold, 'y_ndim') and self.manifold.y_ndim == 1 and y.ndim > 1:
+                y = y.squeeze()
             
-            # Berechne ideale Distanzen
             distances = self._compute_ideal_distances(y)
 
-            # Check auf negative Distanzen
             if isinstance(distances, np.ndarray) and np.any(distances < 0):
                 raise ValueError("HybridSMDS: does not support incomplete distance matrices.")
 
-            # Erzeuge Embedding via MDS
             Y = self._classical_mds(distances)
             self.Y_ = Y
 
-        # --- ENDE LOGIK #53 ---
-
-        # 3. Trainiere den Reducer: X -> Y
         self.reducer.fit(X, Y)
 
         return self
 
     def transform(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
         if not hasattr(self.reducer, "transform"):
-             raise RuntimeError("This reducer is not fitted or does not support transform.")
+            raise RuntimeError("This reducer is not fitted or does not support transform.")
         X_proj: NDArray[np.float64] = self.reducer.transform(X)
         return X_proj
 
