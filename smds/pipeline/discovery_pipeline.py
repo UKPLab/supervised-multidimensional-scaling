@@ -26,6 +26,7 @@ from smds.shapes.spiral_shape import SpiralShape
 
 from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
 from .helpers.plots import create_plots
+from .helpers.interactive_plots import generate_interactive_plot
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
@@ -50,6 +51,7 @@ def discover_manifolds(
     X: NDArray[np.float64],
     y: NDArray[np.float64],
     shapes: Optional[List[BaseShape]] = None,
+    smds_components: int = 2,
     n_folds: int = 5,
     n_jobs: int = -1,
     save_results: bool = True,
@@ -57,7 +59,7 @@ def discover_manifolds(
     experiment_name: str = "results",
     create_visualization: bool = True,
     clear_cache: bool = True,
-) -> tuple[pd.DataFrame, Optional[str]]:
+    ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
 
@@ -69,6 +71,7 @@ def discover_manifolds(
     Args:
         X: High-dimensional data (n_samples, n_features).
         y: Labels (n_samples,).
+        smds_components: Tells SMDS on how many dimensions to map
         shapes: List of Shape objects to test. Defaults to a standard set if None.
         n_folds: Number of Cross-Validation folds. If 0, Cross-Validation is skipped and
                  the model is fit and scored directly on all data.
@@ -100,7 +103,11 @@ def discover_manifolds(
     for m in StressMetrics:
         metric_columns.extend([f"mean_{m.value}", f"std_{m.value}", f"fold_{m.value}"])
 
-    csv_headers = ["shape", "params"] + metric_columns + ["error"]
+    csv_headers = ["shape", "params"] + metric_columns + ["error", "plot_path"]
+
+    experiment_dir = None
+    plots_dir = None
+    unique_suffix = ""
 
     if save_results:
         os.makedirs(SAVE_DIR, exist_ok=True)
@@ -111,8 +118,22 @@ def discover_manifolds(
 
             safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
 
-            filename = f"{safe_name}_{timestamp}_{unique_id}.csv"
-            save_path = os.path.join(SAVE_DIR, filename)
+            # Create a unique folder for this experiment
+            unique_suffix = f"{safe_name}_{timestamp}_{unique_id}"
+            experiment_dir = os.path.join(SAVE_DIR, unique_suffix)
+            plots_dir = os.path.join(experiment_dir, "plots")
+
+            os.makedirs(experiment_dir, exist_ok=True)
+            os.makedirs(plots_dir, exist_ok=True)
+
+            filename = f"{unique_suffix}.csv"
+            save_path = os.path.join(experiment_dir, filename)
+
+        else:
+            experiment_dir = os.path.dirname(os.path.abspath(save_path))
+            plots_dir = os.path.join(experiment_dir, "plots")
+            if not os.path.exists(plots_dir):
+                os.makedirs(plots_dir, exist_ok=True)
 
         if not os.path.exists(save_path):
             pd.DataFrame(columns=csv_headers).to_csv(save_path, index=False)
@@ -156,7 +177,7 @@ def discover_manifolds(
             results_list.append(row)
             continue
 
-        estimator = SupervisedMDS(n_components=2, manifold=shape)
+        estimator = SupervisedMDS(n_components=smds_components, manifold=shape)
 
         try:
             cv_results = cross_validate(
@@ -188,6 +209,30 @@ def discover_manifolds(
                     row[f"mean_{metric_key}"] = np.nan
 
             row["error"] = None
+
+            # Generate Interactive Plot
+            if save_results and plots_dir is not None:
+                try:
+                    full_estimator = SupervisedMDS(n_components=smds_components, manifold=shape)
+                    X_embedded = full_estimator.fit_transform(X, y)
+
+                    plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name
+
+                    plot_filename = generate_interactive_plot(
+                        X_embedded=X_embedded,
+                        y=y,
+                        shape_name=plot_name_prefix,
+                        save_dir=plots_dir
+                    )
+
+                    row["plot_path"] = os.path.join("plots", plot_filename)
+
+                except Exception as plot_e:
+                    print(f"Warning: Failed to generate interactive plot for {shape_name}: {plot_e}")
+                    row["plot_path"] = None
+            else:
+                row["plot_path"] = None
+
             save_shape_result(cache_file, row)
             print(f"Computed and cached {shape_name}")
 
@@ -204,6 +249,7 @@ def discover_manifolds(
                 row[f"fold_{m.value}"] = []
 
             row["error"] = str(e)
+            row["plot_path"] = None
 
             save_shape_result(cache_file, row)
 

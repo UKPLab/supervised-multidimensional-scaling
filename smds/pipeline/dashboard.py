@@ -7,9 +7,10 @@ or directly via `uv run streamlit run smds/pipeline/dashboard.py`.
 import os
 import sys
 
-import altair as alt
+import plotly.graph_objects as go
 import pandas as pd  # type: ignore[import-untyped]
 import streamlit as st
+import streamlit.components.v1 as components
 
 from smds.pipeline.helpers.styling import (
     SHAPE_COLORS,
@@ -58,35 +59,44 @@ def main() -> None:
         st.error(f"Results directory not found: {RESULTS_DIR}")
         return
 
-    files = [f for f in os.listdir(RESULTS_DIR) if f.endswith(".csv")]
-    files.sort(reverse=True)
+    # Scan for experiment directories
+    experiments = [d for d in os.listdir(RESULTS_DIR) if os.path.isdir(os.path.join(RESULTS_DIR, d))]
+    experiments.sort(reverse=True)
 
     # Logic to handle pre-selection
     default_index = 0
-    if preselected_file in files:
-        default_index = files.index(preselected_file)
+    if preselected_file in experiments:
+        default_index = experiments.index(preselected_file)
 
-    selected_file = st.sidebar.selectbox(
+    selected_exp_dir = st.sidebar.selectbox(
         "Select Experiment",
-        files,
-        index=default_index,  # Auto-select the specific file!
+        experiments,
+        index=default_index,  # Auto-select the specific experiment folder
     )
 
-    if selected_file:
-        file_path = os.path.join(RESULTS_DIR, selected_file)
+    if selected_exp_dir:
+        exp_path = os.path.join(RESULTS_DIR, selected_exp_dir)
+
+        csv_files = [f for f in os.listdir(exp_path) if f.endswith(".csv")]
+
+        if not csv_files:
+            st.error(f"No CSV results found in {selected_exp_dir}")
+            return
+
+        file_path = os.path.join(exp_path, csv_files[0])
         df = load_data(file_path)
 
-        # Attempt to parse metadata from filename: {Experiment}_{Date}_{Time}_{UUID}.csv
-        display_name = selected_file
+        # Attempt to parse metadata from directory name: {Experiment}_{Date}_{Time}_{UUID}
+        display_name = selected_exp_dir
         try:
-            name_parts = selected_file.replace(".csv", "").split("_")
+            name_parts = selected_exp_dir.split("_")
             if len(name_parts) >= 4:
                 time_str = name_parts[-2]
                 date_str = name_parts[-3]
                 exp_name = "_".join(name_parts[:-3])
 
                 formatted_time = f"{time_str[:2]}:{time_str[2:4]}:{time_str[4:]}"
-                display_name = f"🧪 **{exp_name}** | 📅 {date_str} {formatted_time} | 📄 `{selected_file}`"
+                display_name = f"🧪 **{exp_name}** | 📅 {date_str} {formatted_time} | 📂 `{selected_exp_dir}`"
         except Exception:
             # Fallback to filename if parsing structure doesn't match
             pass
@@ -100,18 +110,35 @@ def main() -> None:
         # Identify available metrics
         metric_cols = [c for c in df.columns if c.startswith("mean_")]
 
-        # Default to Scale Normalized Stress if available, else first metric
-        default_metric_ix = 0
-        preferred_metric = "mean_scale_normalized_stress"
-        if preferred_metric in metric_cols:
-            default_metric_ix = metric_cols.index(preferred_metric)
+        if not metric_cols:
+            st.error("⚠️ No metric columns found in the CSV. The file format might be incompatible.")
+            st.write("Available columns:", df.columns.tolist())
+            return
 
-        selected_metric = st.selectbox(
-            "Select Metric to Visualize",
-            metric_cols,
-            index=default_metric_ix,
-            format_func=lambda x: x.replace("mean_", "").replace("_", " ").title()
-        )
+        # Layout
+        # 1. Container for the "Winner" stats at the top
+        top_stats_container = st.container()
+
+        # 2. Main columns: Chart (Left) and Interactive Viz (Right)
+        col_chart, col_viz = st.columns([1.2, 1])
+
+        with col_chart:
+            # Create a placeholder for the chart so it appears ABOVE the selector
+            chart_placeholder = st.empty()
+
+            # Default to Scale Normalized Stress if available, else first metric
+            default_metric_ix = 0
+            preferred_metric = "mean_scale_normalized_stress"
+            if preferred_metric in metric_cols:
+                default_metric_ix = metric_cols.index(preferred_metric)
+
+            # Render the selector
+            selected_metric = st.selectbox(
+                "Select Metric to Visualize",
+                metric_cols,
+                index=default_metric_ix,
+                format_func=lambda x: x.replace("mean_", "").replace("_", " ").title()
+            )
 
         # Sort results based on the selected metric
         df_sorted = df.sort_values(selected_metric, ascending=False).reset_index(drop=True)
@@ -123,20 +150,14 @@ def main() -> None:
         best_shape = df_sorted.iloc[0]["shape"]
         best_score = df_sorted.iloc[0][selected_metric]
 
-        col1, col2 = st.columns(2)
-        col1.metric("Winner", best_shape)
-        col2.metric("Best Score", f"{best_score:.4f}")
+        with top_stats_container:
+            c1, c2 = st.columns(2)
+            c1.metric("Winner", best_shape)
+            c2.metric("Best Score", f"{best_score:.4f}")
 
         df_sorted["display_name"] = df_sorted["shape"].apply(lambda x: x.replace("Shape", ""))
 
-        # 2. Calculate Error Bars
         std_col = selected_metric.replace("mean_", "std_")
-        if std_col in df_sorted.columns:
-            df_sorted["lower"] = df_sorted[selected_metric] - df_sorted[std_col]
-            df_sorted["upper"] = df_sorted[selected_metric] + df_sorted[std_col]
-        else:
-            df_sorted["lower"] = df_sorted[selected_metric]
-            df_sorted["upper"] = df_sorted[selected_metric]
 
         # Categorical Coloring Logic
         category_map = {
@@ -152,70 +173,83 @@ def main() -> None:
 
         df_sorted["category"] = df_sorted["shape"].apply(get_category)
 
-        present_categories = df_sorted["category"].unique()
-        scale_domain = []
-        scale_range = []
+        # Map categories to colors
+        cat_to_hex = {v: k for k, v in category_map.items()}
+        colors = df_sorted["category"].map(cat_to_hex).fillna(COL_DEFAULT).tolist()
 
-        for hex_code, cat_name in category_map.items():
-            if cat_name in present_categories:
-                scale_domain.append(cat_name)
-                scale_range.append(hex_code)
+        # Create Plotly Bar Chart
+        fig = go.Figure()
 
-        # Altair Chart
-        sorted_names = df_sorted["display_name"].tolist()
-
-        base = alt.Chart(df_sorted).encode(
-            y=alt.Y(
-                "display_name",
-                sort=sorted_names,
-                title="Shape Hypothesis"
+        fig.add_trace(go.Bar(
+            x=df_sorted[selected_metric],
+            y=df_sorted["display_name"],
+            orientation='h',
+            error_x=dict(
+                type='data',
+                array=df_sorted[std_col] if std_col in df_sorted.columns else None,
+                visible=True if std_col in df_sorted.columns else False,
+                color='white',
+                thickness=1.5,
+                width=3
             ),
-        )
-
-        # Bar Chart
-        bars = base.mark_bar().encode(
-            x=alt.X(selected_metric, title=selected_metric.replace("mean_", "").replace("_", " ").title()),
-            color=alt.Color(
-                "category",
-                scale=alt.Scale(domain=scale_domain, range=scale_range),
-                legend=alt.Legend(title="Shape Category")
+            text=df_sorted[selected_metric].apply(lambda x: f"{x:.4f}"),
+            textposition='auto',
+            insidetextanchor='middle',
+            marker=dict(color=colors),
+            hovertemplate=(
+                    "<b>%{y}</b><br>" +
+                    "Score: %{x:.4f}<br>" +
+                    "Category: %{customdata}<extra></extra>"
             ),
-            tooltip=["shape", "category", selected_metric, std_col, "params"] if std_col in df_sorted.columns else [
-                "shape", selected_metric]
+            customdata=df_sorted["category"]
+        ))
+
+        fig.update_layout(
+            title="Shape Hypothesis Ranking",
+            xaxis_title=selected_metric.replace("mean_", "").replace("_", " ").title(),
+            yaxis=dict(
+                title="",
+                autorange="reversed"  # Puts the winner at the top
+            ),
+            height=max(500, len(df_sorted) * 40),
+            margin=dict(l=0, r=0, t=40, b=0),
+            showlegend=False
         )
 
-        # Error Bar Line
-        error_rule = base.mark_rule(color="white").encode(
-            x="lower",
-            x2="upper"
-        )
+        # Render Plotly Chart into the Placeholder (Left Column, Top)
+        with chart_placeholder:
+            event = st.plotly_chart(
+                fig,
+                key=f"bar_chart_{selected_metric}",
+                on_select="rerun",
+                width="stretch"
+            )
 
-        error_cap_lower = base.mark_tick(color="white", thickness=1.5, size=10).encode(
-            x="lower"
-        )
-        error_cap_upper = base.mark_tick(color="white", thickness=1.5, size=10).encode(
-            x="upper"
-        )
+        # Determine which shape is selected
+        selected_shape_row = df_sorted.iloc[0]  # Default to the winner (top row)
+        # Handle Selection Event
+        if event and event.selection and event.selection.point_indices:
+            idx = event.selection.point_indices[0]
+            selected_shape_row = df_sorted.iloc[idx]
 
-        # Value Labels
-        text_labels = base.mark_text(
-            align="center",
-            baseline="middle",
-            color="white",
-            fontWeight="bold"
-        ).transform_calculate(
-            mid_x=f"datum['{selected_metric}'] / 2"
-        ).encode(
-            x=alt.X("mid_x:Q"),
-            text=alt.Text(selected_metric, format=".4f")
-        )
+        with col_viz:
+            st.subheader(f"{selected_shape_row['display_name']} Shape")
 
-        # Combine all layers
-        final_chart = (bars + error_rule + error_cap_lower + error_cap_upper + text_labels).properties(
-            height=max(400, len(df_sorted) * 30)
-        )
+            # Check if plot path exists
+            plot_rel_path = selected_shape_row.get("plot_path")
 
-        st.altair_chart(final_chart, theme="streamlit", width='stretch')
+            if pd.isna(plot_rel_path) or not plot_rel_path:
+                st.info("No interactive plot available for this shape.")
+            else:
+                full_plot_path = os.path.join(exp_path, plot_rel_path)
+
+                if os.path.exists(full_plot_path):
+                    with open(full_plot_path, 'r', encoding='utf-8') as f:
+                        html_content = f.read()
+
+                    components.html(html_content, height=600, scrolling=False)
+                else:
+                    st.warning(f"Plot file missing: {plot_rel_path}")
 
         # Detailed Data Table
         st.subheader("Detailed Results")
