@@ -9,7 +9,7 @@ import sys
 from typing import Any
 
 import pandas as pd  # type: ignore[import-untyped]
-import plotly.graph_objects as go # type: ignore[import-untyped]
+import plotly.graph_objects as go  # type: ignore[import-untyped]
 import streamlit as st
 import streamlit.components.v1 as components
 
