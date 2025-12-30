@@ -22,12 +22,7 @@ def run_demo() -> None:
 
     # Execute Pipeline
     df, saved_file_path = discover_manifolds(
-        X,
-        y,
-        experiment_name="Discovery_Demo",
-        save_results=True,
-        create_visualization=True,
-        clear_cache=True
+        X, y, experiment_name="Discovery_Demo", save_results=True, create_visualization=True, clear_cache=True
     )
 
     print(f"\nAnalysis Complete. Winner: {df.iloc[0]['shape']}")

@@ -24,19 +24,17 @@ SHAPE_COLORS = {
     "LogLinearShape": COL_CONTINUOUS,
     "SemicircularShape": COL_CONTINUOUS,
     "SpiralShape": COL_CONTINUOUS,
-
     # Discrete Shapes
     "ChainShape": COL_DISCRETE,
     "ClusterShape": COL_DISCRETE,
     "DiscreteCircularShape": COL_DISCRETE,
     "HierarchicalShape": COL_DISCRETE,
-
     # Spatial Shapes
     "CylindricalShape": COL_SPATIAL,
     "GeodesicShape": COL_SPATIAL,
     "SphericalShape": COL_SPATIAL,
-
 }
+
 
 def get_shape_color(shape_name: str) -> str:
     """

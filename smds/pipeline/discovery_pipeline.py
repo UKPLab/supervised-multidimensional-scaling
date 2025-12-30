@@ -2,7 +2,7 @@ import os
 import shutil
 import uuid
 from datetime import datetime
-from typing import List, Optional, Dict, Callable
+from typing import Callable, Dict, List, Optional, Any
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
@@ -10,7 +10,6 @@ from numpy.typing import NDArray
 from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
-from smds.stress.stress_metrics import StressMetrics
 from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes.circular import CircularShape
 from smds.shapes.continuous_shapes.euclidean import EuclideanShape
@@ -23,10 +22,11 @@ from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
 from smds.shapes.spatial_shapes.geodesic import GeodesicShape
 from smds.shapes.spatial_shapes.spherical import SphericalShape
 from smds.shapes.spiral_shape import SpiralShape
+from smds.stress.stress_metrics import StressMetrics
 
 from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
-from .helpers.plots import create_plots
 from .helpers.interactive_plots import generate_interactive_plot
+from .helpers.plots import create_plots
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
@@ -59,7 +59,7 @@ def discover_manifolds(
     experiment_name: str = "results",
     create_visualization: bool = True,
     clear_cache: bool = True,
-    ) -> tuple[pd.DataFrame, Optional[str]]:
+) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
 
@@ -141,11 +141,16 @@ def discover_manifolds(
     print("Saving to:", save_path)
 
     # Construct the scoring map for cross_validate
-    scoring_map: Dict[str, Callable] = {}
+
+    # Define a type alias for clarity: (estimator, X, y) -> float
+    ScorerFunc = Callable[[Any, Any, Any], float]
+    scoring_map: Dict[str, ScorerFunc] = {}
 
     for metric in StressMetrics:
-        def make_scorer(m):
-            return lambda estimator, x_data, y_data: estimator.score(x_data, y_data, metric=m)
+        def make_scorer(m: StressMetrics) -> ScorerFunc:
+            # estimator.score returns a float
+            return lambda estimator, x_data, y_data: float(estimator.score(x_data, y_data, metric=m))
+
         scoring_map[metric.value] = make_scorer(metric)
 
     # Filter shapes based on input dimension compatibility
@@ -190,7 +195,6 @@ def discover_manifolds(
                 return_train_score=False,
             )
 
-
             row = {
                 "shape": shape_name,
                 "params": params,
@@ -219,10 +223,7 @@ def discover_manifolds(
                     plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name
 
                     plot_filename = generate_interactive_plot(
-                        X_embedded=X_embedded,
-                        y=y,
-                        shape_name=plot_name_prefix,
-                        save_dir=plots_dir
+                        X_embedded=X_embedded, y=y, shape_name=plot_name_prefix, save_dir=plots_dir
                     )
 
                     row["plot_path"] = os.path.join("plots", plot_filename)
@@ -277,6 +278,6 @@ def discover_manifolds(
     if clear_cache:
         if os.path.exists(CACHE_DIR):
             shutil.rmtree(CACHE_DIR)
-            print(f"Cache cleared")
+            print("Cache cleared")
 
     return df, save_path

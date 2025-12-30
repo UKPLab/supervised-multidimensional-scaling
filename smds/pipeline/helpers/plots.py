@@ -1,10 +1,10 @@
-import os
 import math
+import os
 from typing import List
 
 import matplotlib
-import matplotlib.patheffects as path_effects
 import matplotlib.patches as mpatches
+import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
@@ -12,15 +12,9 @@ import seaborn as sns  # type: ignore[import-untyped]
 from matplotlib import gridspec
 
 from smds import SupervisedMDS
+from smds.pipeline.helpers.styling import COL_CONTINUOUS, COL_DEFAULT, COL_DISCRETE, COL_SPATIAL, get_shape_color
 from smds.shapes.base_shape import BaseShape
 from smds.stress.stress_metrics import StressMetrics
-from smds.pipeline.helpers.styling import (
-    get_shape_color,
-    COL_CONTINUOUS,
-    COL_DISCRETE,
-    COL_SPATIAL,
-    COL_DEFAULT
-)
 
 matplotlib.use("Agg")
 
@@ -81,19 +75,13 @@ def create_plots(
 
     # Calculate Figure Size
     fig_height = 9
-    fig_width = 8 + (4.5 * n_cols_bars) # scatter + (grid_cell_width * amount)
+    fig_width = 8 + (4.5 * n_cols_bars)  # scatter + (grid_cell_width * amount)
 
     fig = plt.figure(figsize=(fig_width, fig_height))
 
     fig.suptitle(f"Experiment: {experiment_name.replace('_', ' ')}", fontsize=24, fontweight="bold", y=0.98)
 
-    gs = gridspec.GridSpec(
-        n_rows_bars,
-        total_cols,
-        width_ratios=width_ratios,
-        wspace=0.4,
-        hspace=0.3
-    )
+    gs = gridspec.GridSpec(n_rows_bars, total_cols, width_ratios=width_ratios, wspace=0.4, hspace=0.3)
 
     # Plot Best Manifold Scatter
     ax_scatter = fig.add_subplot(gs[:, 0])
@@ -142,9 +130,9 @@ def create_plots(
             sns.despine(ax=ax_scatter)
 
         except Exception as e:
-            ax_scatter.text(0.5, 0.5, f"Error plotting: {e}", ha='center', va='center')
+            ax_scatter.text(0.5, 0.5, f"Error plotting: {e}", ha="center", va="center")
     else:
-        ax_scatter.text(0.5, 0.5, "Best shape object missing", ha='center', va='center')
+        ax_scatter.text(0.5, 0.5, "Best shape object missing", ha="center", va="center")
 
     # Metric Grid
     for idx, col_name in enumerate(metric_cols):
@@ -176,7 +164,7 @@ def create_plots(
             ax=ax_bar,
             orient="h",
             hue="display_name",
-            legend=False
+            legend=False,
         )
 
         if has_std:
@@ -187,7 +175,7 @@ def create_plots(
                 fmt="none",
                 c="black",
                 capsize=3,
-                linewidth=1
+                linewidth=1,
             )
 
         ax_bar.set_title(display_title, fontsize=11, fontweight="bold")
@@ -197,8 +185,10 @@ def create_plots(
         # Add labels if not too crowded
         if len(local_df) < 25:
             for i, (score, std) in enumerate(
-                    zip(local_df[col_name], local_df[std_col] if has_std else [0] * len(local_df))):
-                if pd.isna(score): continue
+                zip(local_df[col_name], local_df[std_col] if has_std else [0] * len(local_df))
+            ):
+                if pd.isna(score):
+                    continue
 
                 label = f"{score:.3f}"
                 # place text inside or outside based on value
@@ -217,7 +207,7 @@ def create_plots(
             COL_CONTINUOUS: "Continuous Shape",
             COL_DISCRETE: "Discrete Shape",
             COL_SPATIAL: "Spatial Shape",
-            COL_DEFAULT: "Other"
+            COL_DEFAULT: "Other",
         }
 
         # Identify which colors are actually used
@@ -239,7 +229,7 @@ def create_plots(
                 fontsize=10,
                 frameon=True,
                 facecolor="white",
-                framealpha=0.9
+                framealpha=0.9,
             )
 
     # Save

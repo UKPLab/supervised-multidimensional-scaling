@@ -6,19 +6,14 @@ or directly via `uv run streamlit run smds/pipeline/dashboard.py`.
 
 import os
 import sys
+from typing import Any
 
-import plotly.graph_objects as go
 import pandas as pd  # type: ignore[import-untyped]
+import plotly.graph_objects as go # type: ignore[import-untyped]
 import streamlit as st
 import streamlit.components.v1 as components
 
-from smds.pipeline.helpers.styling import (
-    SHAPE_COLORS,
-    COL_DEFAULT,
-    COL_CONTINUOUS,
-    COL_DISCRETE,
-    COL_SPATIAL
-)
+from smds.pipeline.helpers.styling import COL_CONTINUOUS, COL_DEFAULT, COL_DISCRETE, COL_SPATIAL, SHAPE_COLORS
 
 # Locate results directory relative to this script
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -137,7 +132,7 @@ def main() -> None:
                 "Select Metric to Visualize",
                 metric_cols,
                 index=default_metric_ix,
-                format_func=lambda x: x.replace("mean_", "").replace("_", " ").title()
+                format_func=lambda x: x.replace("mean_", "").replace("_", " ").title(),
             )
 
         # Sort results based on the selected metric
@@ -164,10 +159,10 @@ def main() -> None:
             COL_CONTINUOUS: "Continuous",
             COL_DISCRETE: "Discrete",
             COL_SPATIAL: "Spatial",
-            COL_DEFAULT: "Other"
+            COL_DEFAULT: "Other",
         }
 
-        def get_category(shape_name):
+        def get_category(shape_name: str) -> str:
             hex_color = SHAPE_COLORS.get(shape_name, COL_DEFAULT)
             return category_map.get(hex_color, "Other")
 
@@ -180,56 +175,51 @@ def main() -> None:
         # Create Plotly Bar Chart
         fig = go.Figure()
 
-        fig.add_trace(go.Bar(
-            x=df_sorted[selected_metric],
-            y=df_sorted["display_name"],
-            orientation='h',
-            error_x=dict(
-                type='data',
-                array=df_sorted[std_col] if std_col in df_sorted.columns else None,
-                visible=True if std_col in df_sorted.columns else False,
-                color='white',
-                thickness=1.5,
-                width=3
-            ),
-            text=df_sorted[selected_metric].apply(lambda x: f"{x:.4f}"),
-            textposition='auto',
-            insidetextanchor='middle',
-            marker=dict(color=colors),
-            hovertemplate=(
-                    "<b>%{y}</b><br>" +
-                    "Score: %{x:.4f}<br>" +
-                    "Category: %{customdata}<extra></extra>"
-            ),
-            customdata=df_sorted["category"]
-        ))
+        fig.add_trace(
+            go.Bar(
+                x=df_sorted[selected_metric],
+                y=df_sorted["display_name"],
+                orientation="h",
+                error_x=dict(
+                    type="data",
+                    array=df_sorted[std_col] if std_col in df_sorted.columns else None,
+                    visible=True if std_col in df_sorted.columns else False,
+                    color="white",
+                    thickness=1.5,
+                    width=3,
+                ),
+                text=df_sorted[selected_metric].apply(lambda x: f"{x:.4f}"),
+                textposition="auto",
+                insidetextanchor="middle",
+                marker=dict(color=colors),
+                hovertemplate=("<b>%{y}</b><br>" + "Score: %{x:.4f}<br>" + "Category: %{customdata}<extra></extra>"),
+                customdata=df_sorted["category"],
+            )
+        )
 
         fig.update_layout(
             title="Shape Hypothesis Ranking",
             xaxis_title=selected_metric.replace("mean_", "").replace("_", " ").title(),
             yaxis=dict(
                 title="",
-                autorange="reversed"  # Puts the winner at the top
+                autorange="reversed",  # Puts the winner at the top
             ),
             height=max(500, len(df_sorted) * 40),
             margin=dict(l=0, r=0, t=40, b=0),
-            showlegend=False
+            showlegend=False,
         )
 
         # Render Plotly Chart into the Placeholder (Left Column, Top)
         with chart_placeholder:
-            event = st.plotly_chart(
-                fig,
-                key=f"bar_chart_{selected_metric}",
-                on_select="rerun",
-                width="stretch"
-            )
+            event = st.plotly_chart(fig, key=f"bar_chart_{selected_metric}", on_select="rerun", width="stretch")
 
         # Determine which shape is selected
         selected_shape_row = df_sorted.iloc[0]  # Default to the winner (top row)
         # Handle Selection Event
-        if event and event.selection and event.selection.point_indices:
-            idx = event.selection.point_indices[0]
+        event_any: Any = event
+
+        if event_any and event_any.selection and event_any.selection.point_indices:
+            idx = event_any.selection.point_indices[0]
             selected_shape_row = df_sorted.iloc[idx]
 
         with col_viz:
@@ -244,7 +234,7 @@ def main() -> None:
                 full_plot_path = os.path.join(exp_path, plot_rel_path)
 
                 if os.path.exists(full_plot_path):
-                    with open(full_plot_path, 'r', encoding='utf-8') as f:
+                    with open(full_plot_path, "r", encoding="utf-8") as f:
                         html_content = f.read()
 
                     components.html(html_content, height=600, scrolling=False)
@@ -253,10 +243,7 @@ def main() -> None:
 
         # Detailed Data Table
         st.subheader("Detailed Results")
-        st.dataframe(
-            df_sorted.style.highlight_max(axis=0, subset=[selected_metric]),
-            width='stretch'
-        )
+        st.dataframe(df_sorted.style.highlight_max(axis=0, subset=[selected_metric]), width="stretch")
 
         # Error Report
         if "error" in df_sorted.columns and df_sorted["error"].notna().any():
