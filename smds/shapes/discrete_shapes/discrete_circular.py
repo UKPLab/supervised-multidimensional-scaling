@@ -60,7 +60,7 @@ class DiscreteCircularShape(BaseShape):
 
         # Direct absolute difference
         direct_dist = np.abs(y[:, None] - y[None, :])
-        
+
         # Reduce modulo cycle_length to handle labels outside [0, cycle_length-1]
         direct_dist = np.mod(direct_dist, cycle_length)
 
