@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from smds.shapes.base_shape import BaseShape
+from smds.shapes import BaseShape
 
 
 class DiscreteCircularShape(BaseShape):

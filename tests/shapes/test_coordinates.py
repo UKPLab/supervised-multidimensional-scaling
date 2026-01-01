@@ -3,8 +3,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 from numpy.typing import NDArray
 
-from smds.shapes.coordinates.cartesian_coordinates import CartesianCoordinates
-from smds.shapes.coordinates.polar_coordinates import PolarCoordinates
+from smds.shapes.coordinates import CartesianCoordinates, PolarCoordinates
 
 
 def test_cartesian_identity() -> None:

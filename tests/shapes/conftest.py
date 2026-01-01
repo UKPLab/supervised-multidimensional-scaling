@@ -3,18 +3,9 @@ import pytest
 from numpy.typing import NDArray
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.continuous_shapes.euclidean import EuclideanShape
-from smds.shapes.continuous_shapes.log_linear import LogLinearShape
-from smds.shapes.continuous_shapes.semicircular import SemicircularShape
-from smds.shapes.discrete_shapes.chain import ChainShape
-from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
-from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
-from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
-from smds.shapes.spatial_shapes.geodesic import GeodesicShape
-from smds.shapes.spatial_shapes.spherical import SphericalShape
-from smds.shapes.spiral_shape import SpiralShape
+from smds.shapes.continuous_shapes import CircularShape, EuclideanShape, LogLinearShape, SemicircularShape, SpiralShape
+from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 
 
 def _project_and_shuffle(

@@ -7,12 +7,14 @@ from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
 from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
 
-from smds.stress.kl_divergence import kl_divergence_stress
-from smds.stress.non_metric_stress import non_metric_stress
-from smds.stress.normalized_stress import normalized_stress
-from smds.stress.scale_normalized_stress import scale_normalized_stress
-from smds.stress.shepard_goodness_score import shepard_goodness_stress
-from smds.stress.stress_metrics import StressMetrics
+from smds.stress import (
+    StressMetrics,
+    kl_divergence_stress,
+    non_metric_stress,
+    normalized_stress,
+    scale_normalized_stress,
+    shepard_goodness_stress,
+)
 
 
 class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
