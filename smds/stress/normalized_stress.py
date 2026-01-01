@@ -41,8 +41,6 @@ def normalized_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) 
 
         S = \\frac{\\sum (d_{pred} - d_{true})^2}{\\sum d_{true}^2}
 
-    Note that typically 'Normalized Stress' includes a square root operation.
-    This implementation returns the squared variant (variance explained ratio).
 
     References
     ----------
@@ -58,6 +56,6 @@ def normalized_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) 
 
     if denominator == 0:
         return np.inf
-    result: float = float(numerator / denominator)
+    result: float = float(np.sqrt(numerator / denominator))
 
     return result

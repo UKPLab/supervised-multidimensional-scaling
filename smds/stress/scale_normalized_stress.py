@@ -47,5 +47,10 @@ def scale_normalized_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.floa
     alpha = np.sum(d_true * d_pred) / denominator_alpha
 
     residuals = d_true - (alpha * d_pred)
-    result: float = float(np.sqrt(np.sum(residuals**2) / np.sum(d_true**2)))
+    denominator_d_true = np.sum(d_true**2)
+
+    if denominator_d_true == 0:
+        return np.inf
+
+    result: float = float(np.sqrt(np.sum(residuals**2) / denominator_d_true))
     return result

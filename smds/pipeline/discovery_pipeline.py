@@ -147,6 +147,7 @@ def discover_manifolds(
     scoring_map: Dict[str, ScorerFunc] = {}
 
     for metric in StressMetrics:
+
         def make_scorer(m: StressMetrics) -> ScorerFunc:
             # estimator.score returns a float
             return lambda estimator, x_data, y_data: float(estimator.score(x_data, y_data, metric=m))

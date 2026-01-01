@@ -1,3 +1,4 @@
+import math
 import os
 import pickle
 from typing import Callable
@@ -235,7 +236,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
 
         if metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
             score_value = kl_divergence_stress(D_ideal, D_pred)
-            score_value = -score_value
+            score_value = math.exp(-score_value)
             return score_value
 
         mask = np.triu(np.ones((n, n), dtype=bool), k=1)
