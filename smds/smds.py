@@ -265,7 +265,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
         check_is_fitted(self)
         metric: StressMetrics = self._validate_and_convert_metric(self.metric)
-        X, y = self._validate_X_y(X, y, reset=False)
+        X, y = self._validate_data(X, y, reset=False)
         D_ideal = self._compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
