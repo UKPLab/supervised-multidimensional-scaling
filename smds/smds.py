@@ -100,6 +100,34 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         result: float = float(np.sum(loss**2))
         return result
 
+    def _validate_data(self, X: np.ndarray, y: np.ndarray, reset: bool = True) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Validate and process X and y based on the manifold's expected y dimensionality.
+        """
+        expected_y_ndim = getattr(self.manifold, "y_ndim", 1)
+
+        if expected_y_ndim == 1:
+            X, y = validate_data(self, X, y, reset=reset)
+            type_of_target(y, raise_unknown=True)
+            y = np.asarray(y).squeeze()
+            if y.ndim == 0:
+                y = y.reshape(1)
+        else:
+            X = check_array(X)
+            y = np.asarray(y)
+            if y.ndim != expected_y_ndim:
+                raise ValueError(
+                    f"Input 'y' must be {expected_y_ndim}-dimensional, "
+                    f"but got shape {y.shape} with {y.ndim} dimensions."
+                )
+            if X.shape[0] != y.shape[0]:
+                raise ValueError(
+                    f"X and y must have the same number of samples. "
+                    f"Got X.shape[0]={X.shape[0]} and y.shape[0]={y.shape[0]}."
+                )
+
+        return X, y
+
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SupervisedMDS":
         """
         Fit the linear transformation W to match distances induced by labels y.
@@ -114,15 +142,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Returns:
             self: returns an instance of self.
         """
-        X, y = validate_data(self, X, y)
-        type_of_target(y, raise_unknown=True)
+        X, y = self._validate_data(X, y)
 
         if X.shape[0] == 1:
             raise ValueError("Found array with n_samples=1. SupervisedMDS requires at least 2 samples.")
-
-        y = np.asarray(y).squeeze()
-        if y.ndim == 0:
-            y = y.reshape(1)
         if self.orthonormal and self.alpha != 0:
             print("Warning: orthonormal=True and alpha!=0. alpha will be ignored.")
         D = self._compute_ideal_distances(y)
@@ -242,8 +265,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
         check_is_fitted(self)
         metric: StressMetrics = self._validate_and_convert_metric(self.metric)
-        X, y = validate_data(self, X, y, reset=False)
-        y = np.asarray(y).squeeze()
+        X, y = self._validate_X_y(X, y, reset=False)
         D_ideal = self._compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
