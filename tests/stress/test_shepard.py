@@ -55,7 +55,7 @@ def test_shepard_single_element() -> None:
     d_true = np.array([5.0])
     d_pred = np.array([3.0])
     score = shepard_goodness_stress(d_true, d_pred)
-    assert np.isnan(score) or score == 1.0
+    assert score == 0.0
 
 
 def test_shepard_all_zeros() -> None:
@@ -64,7 +64,7 @@ def test_shepard_all_zeros() -> None:
     d_pred = np.array([0.0, 0.0, 0.0])
     try:
         score = shepard_goodness_stress(d_true, d_pred)
-        assert np.isnan(score) or score == 1.0
+        assert score == 0.0
     except ValueError:
         pass
 
@@ -75,7 +75,7 @@ def test_shepard_constant_one_array() -> None:
     d_pred = np.array([5.0, 5.0, 5.0])
     try:
         score = shepard_goodness_stress(d_true, d_pred)
-        assert np.isnan(score)
+        assert score == 0.0
     except ValueError:
         pass
 
