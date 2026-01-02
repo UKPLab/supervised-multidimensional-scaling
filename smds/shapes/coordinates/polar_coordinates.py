@@ -1,8 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from smds.shapes.coordinates.base_coordinates import BaseCoordinates
-from smds.shapes.coordinates.cartesian_coordinates import CartesianCoordinates
+from smds.shapes.coordinates import BaseCoordinates, CartesianCoordinates
 
 
 class PolarCoordinates(BaseCoordinates):

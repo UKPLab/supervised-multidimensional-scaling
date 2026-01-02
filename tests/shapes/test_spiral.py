@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from scipy.stats import spearmanr  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
-from smds.shapes.spiral_shape import SpiralShape
+from smds.shapes.continuous_shapes import SpiralShape
 
 
 @pytest.fixture

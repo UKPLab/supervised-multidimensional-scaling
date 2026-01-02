@@ -1,6 +1,6 @@
 import numpy as np
 
-from smds.stress.kl_divergence import kl_divergence_stress
+from smds.stress import kl_divergence_stress
 
 
 def test_kl_divergence_perfect_match() -> None:

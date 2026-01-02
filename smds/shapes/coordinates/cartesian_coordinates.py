@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.distance import pdist, squareform  # type: ignore[import-untyped]
 
-from smds.shapes.coordinates.base_coordinates import BaseCoordinates
+from smds.shapes.coordinates import BaseCoordinates
 
 
 class CartesianCoordinates(BaseCoordinates):
