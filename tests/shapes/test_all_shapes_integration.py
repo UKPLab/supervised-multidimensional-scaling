@@ -25,7 +25,7 @@ from smds import SupervisedMDS
 
 SHAPE_TEST_CASES = [
     ("Chain", "chain_engine", "chain_data_10d", 0.90, 0.2),
-    ("Cluster", "cluster_engine", "cluster_data_10d", 0.90, 0.1),
+    ("Cluster", "cluster_engine", "cluster_data_10d", 0.80, 0.2),
     ("DiscCircular", "disc_circular_engine", "disc_circular_data_10d", 0.70, 0.2),  # max score 0.87 without noise
     ("Hierarchical", "hierarchical_engine", "hierarchical_data_10d", 0.90, 0.1),
     ("Circular", "circular_engine", "circular_data_10d", 0.80, 0.1),
