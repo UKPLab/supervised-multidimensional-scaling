@@ -28,7 +28,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         alpha: float = 0.1,
         orthonormal: bool = False,
         radius: float = 6371,
-        metric: str = "scale_normalized_stress",
     ):
         """
         Parameters:
@@ -44,7 +43,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         self.alpha = alpha
         self.orthonormal = orthonormal
         self.radius = radius
-        self.metric = metric
 
     def _validate_and_convert_metric(self, metric: str | StressMetrics) -> StressMetrics:
         """
@@ -263,10 +261,11 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         self,
         X: np.ndarray,
         y: np.ndarray,
+        metric: str | StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS,
     ) -> float:
         """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
         check_is_fitted(self)
-        metric: StressMetrics = self._validate_and_convert_metric(self.metric)
+        metric = self._validate_and_convert_metric(metric)
         X, y = self._validate_data(X, y, reset=False)
         D_ideal = self._compute_ideal_distances(y)
 
@@ -293,8 +292,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             score_value = float(shepard_goodness_stress(D_ideal_flat, D_pred_flat))
         elif metric == StressMetrics.NORMALIZED_STRESS:
             score_value = float(1 - normalized_stress(D_ideal_flat, D_pred_flat))
-        else:
-            raise ValueError(f"Unknown metric: {self.metric}")
 
         return score_value
 
