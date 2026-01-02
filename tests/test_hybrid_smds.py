@@ -93,6 +93,8 @@ def test_string_manifold_with_2d_input_single_point(mock_reducer: MockReducer, X
         n = y.shape[0]
         return np.ones((n, n), dtype=np.float64)
 
+    string_manifold.y_ndim = 2  # type: ignore[attr-defined]
+
     y = np.array([[45.0, 10.0]], dtype=np.float64)
 
     hsmds = HybridSMDS(manifold=string_manifold, reducer=mock_reducer, n_components=2)
@@ -112,6 +114,8 @@ def test_string_manifold_with_2d_input_multiple_points(reducer: PLSRegression, X
         n = y.shape[0]
         return np.ones((n, n), dtype=np.float64)
 
+    string_manifold.y_ndim = 2  # type: ignore[attr-defined]
+
     y = np.array([[45.0, 10.0], [46.0, 11.0], [47.0, 12.0]], dtype=np.float64)
 
     hsmds = HybridSMDS(manifold=string_manifold, reducer=reducer, n_components=2)
@@ -120,7 +124,7 @@ def test_string_manifold_with_2d_input_multiple_points(reducer: PLSRegression, X
 
 
 def test_string_manifold_with_1d_input(reducer: PLSRegression, X_small: NDArray[np.float64]) -> None:
-    """Test that string manifolds don't squeeze (n, 1) input."""
+    """Test that 1D string manifolds correctly squeeze (n, 1) input to (n,)."""
 
     def string_manifold(y: NDArray[np.float64]) -> NDArray[np.float64]:
         if y.ndim != 1:
@@ -128,12 +132,14 @@ def test_string_manifold_with_1d_input(reducer: PLSRegression, X_small: NDArray[
         n = len(y)
         return np.ones((n, n), dtype=np.float64)
 
-    y = np.array([[1], [2], [3]], dtype=np.float64)  # Shape: (3, 1)
+    string_manifold.y_ndim = 1  # type: ignore[attr-defined]
+
+    y = np.array([[1], [2], [3]], dtype=np.float64)  # Shape: (3, 1) - will be squeezed to (3,)
 
     hsmds = HybridSMDS(manifold=string_manifold, reducer=reducer, n_components=2)
 
-    with pytest.raises(ValueError, match="Expected 1D input"):
-        hsmds.fit(X_small[:3], y)
+    hsmds.fit(X_small[:3], y)
+    assert hsmds.Y_.shape[0] == 3
 
 
 # =============================================================================
@@ -292,6 +298,8 @@ def test_squeeze_logic_validation_string_manifold(mock_reducer: MockReducer) -> 
             raise ValueError(f"Expected 2D input (n_samples, 2), got shape {y.shape}")
         n = y.shape[0]
         return np.ones((n, n), dtype=np.float64)
+
+    string_manifold_2d.y_ndim = 2  # type: ignore[attr-defined]
 
     y = np.array([[45.0, 10.0]], dtype=np.float64)
     X = np.random.randn(1, 5).astype(np.float64)
