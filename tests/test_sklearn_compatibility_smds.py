@@ -28,4 +28,4 @@ def test_sklearn_compatibility() -> None:
     try:
         check_estimator(estimator)
     except (AssertionError, ValueError, TypeError, AttributeError) as e:
-        pytest.fail(f"❌ Error in check_estimator: {e}")
+        pytest.fail(f"Error in check_estimator: {e}")
