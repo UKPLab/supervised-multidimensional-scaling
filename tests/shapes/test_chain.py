@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 from numpy.typing import NDArray
 
-from smds.shapes.discrete_shapes.chain import ChainShape
+from smds.shapes.discrete_shapes import ChainShape
 
 
 def test_chain_init_validation() -> None:

@@ -3,18 +3,9 @@ import pytest
 from numpy.typing import NDArray
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.continuous_shapes.euclidean import EuclideanShape
-from smds.shapes.continuous_shapes.log_linear import LogLinearShape
-from smds.shapes.continuous_shapes.semicircular import SemicircularShape
-from smds.shapes.discrete_shapes.chain import ChainShape
-from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
-from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
-from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
-from smds.shapes.spatial_shapes.geodesic import GeodesicShape
-from smds.shapes.spatial_shapes.spherical import SphericalShape
-from smds.shapes.spiral_shape import SpiralShape
+from smds.shapes.continuous_shapes import CircularShape, EuclideanShape, LogLinearShape, SemicircularShape, SpiralShape
+from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 
 
 def _project_and_shuffle(
@@ -69,6 +60,10 @@ def chain_engine() -> SupervisedMDS:
 
 @pytest.fixture(scope="module")
 def chain_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    # Note: Even though this is called a "chain", the data also forms a discrete circle
+    # and which is also a line (eucledian).
+    # Truly chain-specific data (where the chain score is highest compared to all other
+    # shapes) may need to be found separately, if it exists at all.
     n_points = 20
 
     # Latent 2D Circle (Chain topology)
@@ -90,13 +85,14 @@ def cluster_engine() -> SupervisedMDS:
 @pytest.fixture(scope="module")
 def cluster_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     rng = np.random.default_rng(42)
-    n_per_cluster = 25
+    n = 100
+    # 3 Clusters
+    c1 = rng.standard_normal((n, 2)) + [0, 10]
+    c2 = rng.standard_normal((n, 2)) + [-8.66, -5]
+    c3 = rng.standard_normal((n, 2)) + [8.66, -5]
 
-    # Latent 2D Clusters
-    c1 = rng.standard_normal((n_per_cluster, 2)) - 10
-    c2 = rng.standard_normal((n_per_cluster, 2)) + 10
-    X_latent = np.vstack([c1, c2])
-    y = np.array([0.0] * n_per_cluster + [1.0] * n_per_cluster)
+    X_latent = np.vstack([c1, c2, c3])
+    y = np.array([0.0] * n + [1.0] * n + [2.0] * n)
 
     return _project_and_shuffle(X_latent, y)
 
@@ -160,7 +156,7 @@ def circular_engine() -> SupervisedMDS:
 @pytest.fixture(scope="module")
 def circular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """Generates 10D data with a latent Continuous Circle."""
-    n_points = 50
+    n_points = 100
     y = np.linspace(0, 1, n_points, endpoint=False).astype(float)
 
     # Latent 2D Circle

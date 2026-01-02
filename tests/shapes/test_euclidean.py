@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes.euclidean import EuclideanShape
+from smds.shapes.continuous_shapes import EuclideanShape
 
 
 @pytest.fixture

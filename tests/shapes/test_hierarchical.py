@@ -3,7 +3,7 @@ import pytest
 from numpy.typing import NDArray
 
 from smds import SupervisedMDS
-from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
+from smds.shapes.discrete_shapes import HierarchicalShape
 
 
 @pytest.fixture

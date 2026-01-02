@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from smds.shapes.base_shape import BaseShape
+from smds.shapes import BaseShape
 
 
 class DiscreteCircularShape(BaseShape):
@@ -60,6 +60,9 @@ class DiscreteCircularShape(BaseShape):
 
         # Direct absolute difference
         direct_dist = np.abs(y[:, None] - y[None, :])
+
+        # Reduce modulo cycle_length to handle labels outside [0, cycle_length-1]
+        direct_dist = np.mod(direct_dist, cycle_length)
 
         # Wrap-around difference
         wrap_around_dist = cycle_length - direct_dist

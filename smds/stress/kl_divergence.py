@@ -60,22 +60,7 @@ def kl_divergence_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64
     Returns
     -------
     kl_div : float
-        The Kullback-Leibler divergence :math:`KL(P||Q)`.
-
-    Notes
-    -----
-    The divergence is calculated as:
-
-    .. math::
-        KL(P||Q) = \\sum_{i \\neq j} p_{ij} \\log \\frac{p_{ij}}{q_{ij}}
-
-    Where both :math:`p_{ij}` and :math:`q_{ij}` are derived using Gaussian kernels:
-
-    .. math::
-        q_{ij}^G(\\alpha) = \\frac{\\exp(-\\alpha^2 ||y_i - y_j||^2)}
-        {\\sum_{k \\neq l} \\exp(-\\alpha^2 ||y_k - y_l||^2)}
-
-    (Assuming alpha=1 and incorporated into sigma).
+        The Kullback-Leibler divergence sum(P * log(P / Q)).
 
     References
     ----------

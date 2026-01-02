@@ -2,9 +2,7 @@ import numpy as np
 import pytest
 
 from smds import SupervisedMDS
-from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
-from smds.shapes.spatial_shapes.geodesic import GeodesicShape
-from smds.shapes.spatial_shapes.spherical import SphericalShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 
 
 @pytest.fixture

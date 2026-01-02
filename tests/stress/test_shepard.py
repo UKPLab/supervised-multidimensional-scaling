@@ -1,6 +1,6 @@
 import numpy as np
 
-from smds.stress.shepard_goodness_score import shepard_goodness_stress
+from smds.stress import shepard_goodness_stress
 
 
 def test_shepard_perfect_correlation() -> None:
