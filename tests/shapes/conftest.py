@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 from numpy.typing import NDArray
-from sklearn.decomposition import PCA  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.continuous_shapes import (
@@ -343,6 +342,7 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 def klein_bottle_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=4, manifold=KleinBottleShape(), alpha=0.1)
 
+
 @pytest.fixture(scope="module")
 def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
@@ -360,12 +360,12 @@ def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
     v = v_raw * 2 * np.pi
 
     R = 3
-    P = 1 
+    P = 1
 
     x1 = (R + P * np.cos(v)) * np.cos(u)
     x2 = (R + P * np.cos(v)) * np.sin(u)
-    x3 = P * np.sin(v) * np.cos(u/2)
-    x4 = P * np.sin(v) * np.sin(u/2)
+    x3 = P * np.sin(v) * np.cos(u / 2)
+    x4 = P * np.sin(v) * np.sin(u / 2)
 
     X_latent = np.stack([x1, x2, x3, x4], axis=1)
 
