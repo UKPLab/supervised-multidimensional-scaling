@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes.klein_bottle import KleinBottleShape
+from smds.shapes.continuous_shapes import KleinBottleShape
 
 
 @pytest.fixture

@@ -50,7 +50,6 @@ class KleinBottleShape(BaseShape):
         if n_features > 2:
             n_components = 2
             if n_samples < n_components:
-
                 y_new = np.zeros((n_samples, 2))
                 y_new[:, : min(n_features, 2)] = y_proc[:, : min(n_features, 2)]
                 y_proc = y_new

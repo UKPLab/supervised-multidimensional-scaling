@@ -10,9 +10,8 @@ import pytest
 from numpy.typing import NDArray
 
 from smds.pipeline.discovery_pipeline import discover_manifolds
-from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.spiral_shape import SpiralShape
+from smds.shapes.continuous_shapes import CircularShape, SpiralShape
+from smds.shapes.discrete_shapes import ClusterShape
 from smds.stress.stress_metrics import StressMetrics
 
 

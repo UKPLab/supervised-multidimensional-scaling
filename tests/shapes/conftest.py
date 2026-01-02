@@ -3,7 +3,14 @@ import pytest
 from numpy.typing import NDArray
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes import CircularShape, EuclideanShape, KleinBottleShape, LogLinearShape, SemicircularShape, SpiralShape
+from smds.shapes.continuous_shapes import (
+    CircularShape,
+    EuclideanShape,
+    KleinBottleShape,
+    LogLinearShape,
+    SemicircularShape,
+    SpiralShape,
+)
 from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 

@@ -11,17 +11,16 @@ from sklearn.model_selection import cross_validate  # type: ignore[import-untype
 
 from smds import SupervisedMDS
 from smds.shapes.base_shape import BaseShape
-from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.continuous_shapes.euclidean import EuclideanShape
-from smds.shapes.continuous_shapes.log_linear import LogLinearShape
-from smds.shapes.continuous_shapes.semicircular import SemicircularShape
-from smds.shapes.discrete_shapes.chain import ChainShape
-from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
-from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
-from smds.shapes.spatial_shapes.geodesic import GeodesicShape
-from smds.shapes.spatial_shapes.spherical import SphericalShape
-from smds.shapes.spiral_shape import SpiralShape
+from smds.shapes.continuous_shapes import (
+    CircularShape,
+    EuclideanShape,
+    KleinBottleShape,
+    LogLinearShape,
+    SemicircularShape,
+    SpiralShape,
+)
+from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 from smds.stress.stress_metrics import StressMetrics
 
 from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
@@ -44,6 +43,7 @@ DEFAULT_SHAPES = [
     LogLinearShape(),
     EuclideanShape(),
     SemicircularShape(),
+    KleinBottleShape(),
 ]
 
 
