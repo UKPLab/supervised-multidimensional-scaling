@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
-from smds.shapes.discrete_shapes.cluster import ClusterShape
+from smds.shapes.discrete_shapes import ClusterShape
 
 
 def test_cluster_input_validation() -> None:

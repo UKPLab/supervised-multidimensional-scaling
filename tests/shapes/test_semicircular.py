@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes.semicircular import SemicircularShape
+from smds.shapes.continuous_shapes import SemicircularShape
 
 
 @pytest.fixture

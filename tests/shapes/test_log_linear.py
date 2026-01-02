@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes.log_linear import LogLinearShape
+from smds.shapes.continuous_shapes import LogLinearShape
 
 
 @pytest.fixture

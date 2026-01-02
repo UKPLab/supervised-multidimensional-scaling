@@ -1,6 +1,6 @@
 import numpy as np
 
-from smds.stress.scale_normalized_stress import scale_normalized_stress
+from smds.stress import scale_normalized_stress
 
 
 def test_scale_normalized_stress_perfect_match() -> None:

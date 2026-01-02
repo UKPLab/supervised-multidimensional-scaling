@@ -1,8 +1,8 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from smds.shapes.base_shape import BaseShape
-from smds.shapes.coordinates.polar_coordinates import PolarCoordinates
+from smds.shapes import BaseShape
+from smds.shapes.coordinates import PolarCoordinates
 
 
 class SpiralShape(BaseShape):
