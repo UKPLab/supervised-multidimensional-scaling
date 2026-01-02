@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 from smds import SupervisedMDS
 from smds.shapes.continuous_shapes.circular import CircularShape
 from smds.shapes.continuous_shapes.euclidean import EuclideanShape
+from smds.shapes.continuous_shapes.klein_bottle import KleinBottleShape
 from smds.shapes.continuous_shapes.log_linear import LogLinearShape
 from smds.shapes.continuous_shapes.semicircular import SemicircularShape
 from smds.shapes.discrete_shapes.chain import ChainShape
@@ -333,5 +334,39 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 
     angles = y * np.pi
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# KLEIN BOTTLE SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def klein_bottle_engine() -> SupervisedMDS:
+    return SupervisedMDS(n_components=2, manifold=KleinBottleShape(), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Generates 10D data with a latent 2D Klein Bottle structure.
+    The Klein Bottle is a non-orientable 2D surface.
+    """
+    n_samples = 50
+    rng = np.random.default_rng(42)
+
+    u = rng.uniform(0, 1, n_samples)
+    v = rng.uniform(0, 1, n_samples)
+    y = np.stack([u, v], axis=1)
+
+    theta = u * 2 * np.pi
+    phi = v * 2 * np.pi
+
+    radius = 2.0
+    x_coord = (radius + np.cos(theta / 2) * np.sin(phi) - np.sin(theta / 2) * np.sin(2 * phi)) * np.cos(theta)
+    y_coord = (radius + np.cos(theta / 2) * np.sin(phi) - np.sin(theta / 2) * np.sin(2 * phi)) * np.sin(theta)
+    z_coord = np.sin(theta / 2) * np.sin(phi) + np.cos(theta / 2) * np.sin(2 * phi)
+
+    X_latent = np.stack([x_coord, y_coord, z_coord], axis=1)
 
     return _project_and_shuffle(X_latent, y)
