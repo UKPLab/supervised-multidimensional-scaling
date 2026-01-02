@@ -9,10 +9,10 @@ import pandas as pd  # type: ignore[import-untyped]
 import pytest
 from numpy.typing import NDArray
 
-from smds.pipeline.discovery_pipeline import discover_manifolds
+from smds.pipeline import discover_manifolds
 from smds.shapes.continuous_shapes import CircularShape, SpiralShape
 from smds.shapes.discrete_shapes import ClusterShape
-from smds.stress.stress_metrics import StressMetrics
+from smds.stress import StressMetrics
 
 
 @pytest.mark.smoke
