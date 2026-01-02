@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from numpy.typing import NDArray
+from sklearn.decomposition import PCA  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.continuous_shapes import (
@@ -340,30 +341,32 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 # =============================================================================
 @pytest.fixture(scope="module")
 def klein_bottle_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=KleinBottleShape(), alpha=0.1)
-
+    return SupervisedMDS(n_components=4, manifold=KleinBottleShape(), alpha=0.1)
 
 @pytest.fixture(scope="module")
 def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
-    Generates 10D data with a latent 2D Klein Bottle structure.
-    The Klein Bottle is a non-orientable 2D surface.
+    Generates 10D data with a latent 4D Klein Bottle structure.
+    Using 4D ensures the topology is mathematically valid (intersection-free).
     """
     n_samples = 50
     rng = np.random.default_rng(42)
 
-    u = rng.uniform(0, 1, n_samples)
-    v = rng.uniform(0, 1, n_samples)
-    y = np.stack([u, v], axis=1)
+    u_raw = rng.uniform(0, 1, n_samples)
+    v_raw = rng.uniform(0, 1, n_samples)
+    y = np.stack([u_raw, v_raw], axis=1)
 
-    theta = u * 2 * np.pi
-    phi = v * 2 * np.pi
+    u = u_raw * 2 * np.pi
+    v = v_raw * 2 * np.pi
 
-    radius = 2.0
-    x_coord = (radius + np.cos(theta / 2) * np.sin(phi) - np.sin(theta / 2) * np.sin(2 * phi)) * np.cos(theta)
-    y_coord = (radius + np.cos(theta / 2) * np.sin(phi) - np.sin(theta / 2) * np.sin(2 * phi)) * np.sin(theta)
-    z_coord = np.sin(theta / 2) * np.sin(phi) + np.cos(theta / 2) * np.sin(2 * phi)
+    R = 3
+    P = 1 
 
-    X_latent = np.stack([x_coord, y_coord, z_coord], axis=1)
+    x1 = (R + P * np.cos(v)) * np.cos(u)
+    x2 = (R + P * np.cos(v)) * np.sin(u)
+    x3 = P * np.sin(v) * np.cos(u/2)
+    x4 = P * np.sin(v) * np.sin(u/2)
+
+    X_latent = np.stack([x1, x2, x3, x4], axis=1)
 
     return _project_and_shuffle(X_latent, y)
