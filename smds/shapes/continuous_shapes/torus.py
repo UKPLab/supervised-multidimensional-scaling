@@ -90,4 +90,5 @@ class TorusShape(BaseShape):
 
         dist_sq = (r1 * circ_diff_u) ** 2 + (r2 * circ_diff_v) ** 2
 
-        return np.sqrt(dist_sq)
+        result: NDArray[np.float64] = np.sqrt(dist_sq)
+        return result
