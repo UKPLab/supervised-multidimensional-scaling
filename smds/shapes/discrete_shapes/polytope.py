@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse.csgraph import shortest_path
-from sklearn.neighbors import kneighbors_graph
+from scipy.sparse.csgraph import shortest_path  # type: ignore[import-untyped]
+from sklearn.neighbors import kneighbors_graph  # type: ignore[import-untyped]
 
 from smds.shapes.base_shape import BaseShape
 
@@ -25,13 +25,25 @@ class PolytopeShape(BaseShape):
                            - Too large: Short-circuits the manifold (shortcuts).
     """
 
-    def __init__(self, n_neighbors: int = 5):
+    def __init__(self, n_neighbors: int = 5, normalize_labels: bool = True):
         self.n_neighbors = n_neighbors
+        self._normalize_labels_flag = normalize_labels
+
+    @property
+    def y_ndim(self) -> int:
+        return 3
+
+    @property
+    def normalize_labels(self) -> bool:
+        return self._normalize_labels_flag
+
+    def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
+        y_proc = np.asarray(y, dtype=np.float64)
+        if y_proc.ndim == 1:
+            y_proc = y_proc.reshape(-1, 1)
+        return y_proc
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        """
-        Computes the Graph Geodesic distance (Shortest Path) between all points.
-        """
         y_proc = np.asarray(y, dtype=np.float64)
         n_samples = y_proc.shape[0]
 
@@ -43,5 +55,5 @@ class PolytopeShape(BaseShape):
 
         dist_matrix = shortest_path(csgraph=graph, method="auto", directed=False)
 
-        result: NDArray[np.float64] = dist_matrix
+        result: NDArray[np.float64] = np.asarray(dist_matrix, dtype=np.float64)
         return result
