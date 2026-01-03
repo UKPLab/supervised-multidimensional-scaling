@@ -14,6 +14,7 @@ from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes import (
     CircularShape,
     EuclideanShape,
+    KleinBottleShape,
     LogLinearShape,
     SemicircularShape,
     SpiralShape,
@@ -42,6 +43,7 @@ DEFAULT_SHAPES = [
     LogLinearShape(),
     EuclideanShape(),
     SemicircularShape(),
+    KleinBottleShape(),
 ]
 
 

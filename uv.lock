@@ -3507,7 +3507,7 @@ wheels = [
 
 [[package]]
 name = "supervised-multidimensional-scaling"
-version = "0.5.7"
+version = "0.5.9"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },

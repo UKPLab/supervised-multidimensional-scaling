@@ -3,7 +3,14 @@ import pytest
 from numpy.typing import NDArray
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes import CircularShape, EuclideanShape, LogLinearShape, SemicircularShape, SpiralShape
+from smds.shapes.continuous_shapes import (
+    CircularShape,
+    EuclideanShape,
+    KleinBottleShape,
+    LogLinearShape,
+    SemicircularShape,
+    SpiralShape,
+)
 from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 
@@ -324,5 +331,42 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 
     angles = y * np.pi
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# KLEIN BOTTLE SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def klein_bottle_engine() -> SupervisedMDS:
+    return SupervisedMDS(n_components=4, manifold=KleinBottleShape(), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Generates 10D data with a latent 4D Klein Bottle structure.
+    Using 4D ensures the topology is mathematically valid (intersection-free).
+    """
+    n_samples = 50
+    rng = np.random.default_rng(42)
+
+    u_raw = rng.uniform(0, 1, n_samples)
+    v_raw = rng.uniform(0, 1, n_samples)
+    y = np.stack([u_raw, v_raw], axis=1)
+
+    u = u_raw * 2 * np.pi
+    v = v_raw * 2 * np.pi
+
+    R = 3
+    P = 1
+
+    x1 = (R + P * np.cos(v)) * np.cos(u)
+    x2 = (R + P * np.cos(v)) * np.sin(u)
+    x3 = P * np.sin(v) * np.cos(u / 2)
+    x4 = P * np.sin(v) * np.sin(u / 2)
+
+    X_latent = np.stack([x1, x2, x3, x4], axis=1)
 
     return _project_and_shuffle(X_latent, y)
