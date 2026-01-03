@@ -18,7 +18,7 @@ from smds.shapes.continuous_shapes import (
     SemicircularShape,
     SpiralShape,
 )
-from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape
+from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, PolytopeShape
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 from smds.stress.stress_metrics import StressMetrics
 
@@ -42,6 +42,7 @@ DEFAULT_SHAPES = [
     LogLinearShape(),
     EuclideanShape(),
     SemicircularShape(),
+    PolytopeShape(),
 ]
 
 

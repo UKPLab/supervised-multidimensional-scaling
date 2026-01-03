@@ -326,3 +326,37 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
 
     return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# POLYTOPE SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def polytope_engine() -> SupervisedMDS:
+    from smds.shapes.discrete_shapes import PolytopeShape
+
+    return SupervisedMDS(n_components=2, manifold=PolytopeShape(n_neighbors=15), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def polytope_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Generates a Swiss Roll dataset embedded in 10D.
+    """
+
+    n_samples = 800
+    rng = np.random.default_rng(42)
+
+    t = 1.5 * np.pi * (1 + 2 * rng.uniform(0, 1, n_samples))
+
+    h = 5 * rng.uniform(0, 1, n_samples)
+
+    x = t * np.cos(t)
+    y_coord = h
+    z = t * np.sin(t)
+
+    y = np.stack([x, y_coord, z], axis=1)
+
+    X_latent = np.stack([t, h], axis=1)
+
+    return _project_and_shuffle(X_latent, y)
