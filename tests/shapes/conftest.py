@@ -335,7 +335,7 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 def polytope_engine() -> SupervisedMDS:
     from smds.shapes.discrete_shapes import PolytopeShape
 
-    return SupervisedMDS(n_components=2, manifold=PolytopeShape(n_neighbors=12), alpha=0.1)
+    return SupervisedMDS(n_components=2, manifold=PolytopeShape(n_neighbors=15), alpha=0.1)
 
 
 @pytest.fixture(scope="module")
@@ -343,11 +343,13 @@ def polytope_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArr
     """
     Generates a Swiss Roll dataset embedded in 10D.
     """
-    n_samples = 400
+
+    n_samples = 800
     rng = np.random.default_rng(42)
 
     t = 1.5 * np.pi * (1 + 2 * rng.uniform(0, 1, n_samples))
-    h = 21 * rng.uniform(0, 1, n_samples)
+
+    h = 5 * rng.uniform(0, 1, n_samples)
 
     x = t * np.cos(t)
     y_coord = h
