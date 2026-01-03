@@ -55,5 +55,5 @@ class PolytopeShape(BaseShape):
 
         dist_matrix = shortest_path(csgraph=graph, method="auto", directed=False)
 
-        result: NDArray[np.float64] = np.asarray(dist_matrix, dtype=np.float64)
+        result = np.asarray(dist_matrix, dtype=np.float64)
         return result

@@ -355,6 +355,6 @@ def polytope_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArr
 
     y = np.stack([x, y_coord, z], axis=1)
 
-    X_latent = y.copy()
+    X_latent = np.stack([t, h], axis=1)
 
     return _project_and_shuffle(X_latent, y)
