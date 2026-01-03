@@ -4,20 +4,21 @@ from sklearn.decomposition import PCA  # type: ignore[import-untyped]
 
 from smds.shapes.base_shape import BaseShape
 
+
 class TorusShape(BaseShape):
     """
     Manifold hypothesis representing a Flat Torus topology.
     This shape assumes the data lies on the product of two circles (T1 x T1).
 
     Logic:
-    1. Dimensionality Reduction: Projects input 'y' to 2 dimensions via PCA 
+    1. Dimensionality Reduction: Projects input 'y' to 2 dimensions via PCA
        (or padding) to capture the two independent cycles.
     2. Parametrization: Maps these 2 dimensions to the unit square [0, 1] x [0, 1].
-    3. Distance Calculation: Computes pairwise distances respecting the Torus 
+    3. Distance Calculation: Computes pairwise distances respecting the Torus
        identifications (periodic boundary conditions in both directions):
        - Top/Bottom edges match: (u, 0) ~ (u, 1)
        - Left/Right edges match: (0, v) ~ (1, v)
-    
+
     Hyperparameters:
         radii: A tuple (r1, r2) weighting the two cyclic dimensions.
                Default is (1.0, 1.0) (Flat Clifford Torus).
@@ -59,7 +60,7 @@ class TorusShape(BaseShape):
             else:
                 pca = PCA(n_components=2)
                 y_proc = pca.fit_transform(y_proc)
-        
+
         elif n_features < 2:
             zeros = np.zeros((n_samples, 2 - n_features))
             y_proc = np.hstack([y_proc, zeros])
@@ -73,7 +74,7 @@ class TorusShape(BaseShape):
         """
         u = y[:, 0]
         v = y[:, 1]
-        
+
         r1, r2 = self._radii
 
         u1 = u.reshape(-1, 1)
@@ -87,6 +88,6 @@ class TorusShape(BaseShape):
         circ_diff_u = np.minimum(diff_u, 1.0 - diff_u)
         circ_diff_v = np.minimum(diff_v, 1.0 - diff_v)
 
-        dist_sq = (r1 * circ_diff_u)**2 + (r2 * circ_diff_v)**2
+        dist_sq = (r1 * circ_diff_u) ** 2 + (r2 * circ_diff_v) ** 2
 
         return np.sqrt(dist_sq)

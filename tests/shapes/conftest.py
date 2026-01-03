@@ -3,7 +3,14 @@ import pytest
 from numpy.typing import NDArray
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes import CircularShape, EuclideanShape, LogLinearShape, SemicircularShape, SpiralShape, TorusShape
+from smds.shapes.continuous_shapes import (
+    CircularShape,
+    EuclideanShape,
+    LogLinearShape,
+    SemicircularShape,
+    SpiralShape,
+    TorusShape,
+)
 from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 
@@ -327,12 +334,14 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 
     return _project_and_shuffle(X_latent, y)
 
+
 # =============================================================================
 # TORUS SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
 def torus_engine() -> SupervisedMDS:
     return SupervisedMDS(n_components=3, manifold=TorusShape(), alpha=0.1)
+
 
 @pytest.fixture(scope="module")
 def torus_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
