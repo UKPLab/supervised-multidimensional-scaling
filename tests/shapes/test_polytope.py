@@ -7,7 +7,6 @@ from smds.shapes.discrete_shapes import PolytopeShape
 
 @pytest.fixture
 def engine() -> SupervisedMDS:
-    # We use PolytopeShape with 10 neighbors
     return SupervisedMDS(n_components=2, manifold=PolytopeShape(n_neighbors=10), alpha=0.1)
 
 
@@ -29,8 +28,8 @@ def y_swiss_roll() -> np.typing.NDArray[np.float64]:
     y = h
     z = t * np.sin(t)
 
-    # Shape: (100, 3)
-    return np.concatenate((x, y, z)).T
+    res = np.concatenate((x, y, z)).T
+    return np.asarray(res, dtype=np.float64)
 
 
 def test_polytope_smoke(
