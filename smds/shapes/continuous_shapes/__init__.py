@@ -4,4 +4,4 @@ from .log_linear import LogLinearShape
 from .semicircular import SemicircularShape
 from .spiral_shape import SpiralShape
 
-__all__ = ["CircularShape", "EuclideanShape", "LogLinearShape", "SemicircularShape", "SpiralShape"]
+__all__ = ["CircularShape", "EuclideanShape", "LogLinearShape", "SemicircularShape", "SpiralShape", "TorusShape"]

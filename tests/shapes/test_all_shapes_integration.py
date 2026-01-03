@@ -36,6 +36,7 @@ SHAPE_TEST_CASES = [
     ("LogLinear", "log_linear_engine", "log_linear_data_10d", 0.70, 0.2),
     ("Euclidean", "euclidean_engine", "euclidean_data_10d", 0.90, 0.1),
     ("Semicircular", "semicircular_engine", "semicircular_data_10d", 0.70, 0.2),
+    ("Torus", "torus_engine", "torus_data_10d", 0.70, 0.2),
 ]
 
 

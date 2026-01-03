@@ -17,6 +17,7 @@ from smds.shapes.continuous_shapes import (
     LogLinearShape,
     SemicircularShape,
     SpiralShape,
+    TorusShape,
 )
 from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
@@ -42,6 +43,7 @@ DEFAULT_SHAPES = [
     LogLinearShape(),
     EuclideanShape(),
     SemicircularShape(),
+    TorusShape(),
 ]
 
 
