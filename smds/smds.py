@@ -8,6 +8,12 @@ from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
 from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
 
+try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    _TORCH_AVAILABLE = False
+
 from smds.stress import (
     StressMetrics,
     kl_divergence_stress,
@@ -26,6 +32,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         alpha: float = 0.1,
         orthonormal: bool = False,
         radius: float = 6371,
+        gpu_accel: bool = False,
     ):
         """
         Parameters:
@@ -33,6 +40,9 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
                 Dimensionality of the target subspace.
             manifold:
                 If callable, should return a (n x n) ideal distance matrix given y.
+            gpu_accel:
+                If True, attempts to use PyTorch (and CUDA/MPS if available)
+                to solve sparse/incomplete manifold optimization.
         """
         self.n_components = n_components
         self.manifold = manifold
@@ -40,12 +50,13 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         self.alpha = alpha
         self.orthonormal = orthonormal
         self.radius = radius  # Only used for spherical manifolds
+        self.gpu_accel = gpu_accel
         self._X_mean = None
         self._Y_mean = None
         if orthonormal and alpha != 0:
             print("Warning: orthonormal=True and alpha!=0. alpha will be ignored.")
 
-    def _compute_ideal_distances(self, y: np.ndarray, threshold: int = 2) -> np.ndarray:
+    def _compute_ideal_distances(self, y: np.ndarray) -> np.ndarray:
         """
         Compute ideal pairwise distance matrix D based on labels y and specified self.manifold.
         """
@@ -90,6 +101,112 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         result: float = float(np.sum(loss**2))
         return result
 
+    def _fit_pytorch(self, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> np.ndarray:
+        """
+        Specialized solver using PyTorch (AutoDiff + GPU acceleration).
+        Much faster for large N than scipy.optimize.minimize.
+        """
+        # Device Selection & Debugging
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+            device_name = torch.cuda.get_device_name(0)
+            print(f"Info: PyTorch solver active. Using GPU: {device_name}")
+        elif torch.backends.mps.is_available():
+            device = torch.device("mps")
+            print("Info: PyTorch solver active. Using Apple Metal (MPS) acceleration.")
+        else:
+            device = torch.device("cpu")
+            print("Warning: gpu_accel=True was requested, but PyTorch cannot find a CUDA or MPS device.")
+            print("         - torch.cuda.is_available():", torch.cuda.is_available())
+            print("         - torch.backends.mps.is_available():", torch.backends.mps.is_available())
+            print("         Falling back to PyTorch CPU implementation.")
+
+        # Data Transfer
+        # Convert inputs to float32 for speed (float64 is rarely needed for MDS)
+        X_t = torch.tensor(X, dtype=torch.float32, device=device)
+        D_t = torch.tensor(D, dtype=torch.float32, device=device)
+        mask_t = torch.tensor(mask, dtype=torch.bool, device=device)
+
+        # Parameter Initialization
+        n_features = X.shape[1]
+        # Initialize W similar to standard PCA scaling
+        W_t = torch.nn.Parameter(
+            torch.randn(self.n_components, n_features, device=device, dtype=torch.float32) * 0.01
+        )
+
+        # Optimization Setup
+        # Adam is robust for this type of non-convex landscape
+        optimizer = torch.optim.Adam([W_t], lr=0.01)
+
+        # Convergence settings
+        max_epochs = 2000
+        tol = 1e-4
+        prev_loss = float("inf")
+
+        # Training Loop
+        for epoch in range(max_epochs):
+            optimizer.zero_grad()
+
+            # Forward: Project X -> X_proj
+            # Shape: (N, n_components)
+            X_proj = torch.matmul(X_t, W_t.T)
+
+            # Compute pairwise Euclidean distances
+            # pdist/cdist is highly optimized on GPU
+            D_pred = torch.cdist(X_proj, X_proj, p=2)
+
+            # Masked Loss (MSE on defined distances only)
+            diff = (D_pred - D_t)
+            # We index with the boolean mask.
+            # Note: PyTorch boolean indexing flattens the result.
+            loss = torch.mean(torch.square(diff[mask_t]))
+
+            # Backward
+            loss.backward()
+            optimizer.step()
+
+            # Early Stopping Check (every 50 epochs)
+            if epoch % 50 == 0:
+                curr_loss = loss.item()
+                if abs(prev_loss - curr_loss) < tol:
+                    break
+                prev_loss = curr_loss
+
+        # Return weights as numpy
+        return W_t.detach().cpu().numpy()
+
+    def _fit_scipy(self, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> None:
+        """Helper for the CPU optimization path."""
+        print("Info: Using SciPy solver (CPU).")
+        rng = np.random.default_rng(42)
+        W0 = rng.normal(scale=0.01, size=(self.n_components, X.shape[1]))
+
+        result = minimize(self._masked_loss, W0.ravel(), args=(X, D, mask), method="L-BFGS-B")
+        self.W_ = result.x.reshape((self.n_components, X.shape[1]))
+
+    def _fit_classical(self, X: np.ndarray, D: np.ndarray) -> None:
+        """Helper for the classical spectral path."""
+        # Use classical MDS + closed-form least squares
+        Y = self._classical_mds(D)
+        self.Y_ = Y
+        self._X_mean = X.mean(axis=0)
+        self._Y_mean = Y.mean(axis=0)
+        X_centered = X - self._X_mean
+        Y_centered = Y - self._Y_mean
+
+        if self.orthonormal:
+            M = Y_centered.T @ X_centered
+            U, _, Vt = np.linalg.svd(M)
+            self.W_ = U @ Vt
+        else:
+            if self.alpha == 0:
+                self.W_ = Y_centered.T @ np.linalg.pinv(X_centered.T)
+            else:
+                XtX = X_centered.T @ X_centered
+                XtX_reg = XtX + self.alpha * np.eye(XtX.shape[0])
+                XtX_inv = np.linalg.inv(XtX_reg)
+                self.W_ = Y_centered.T @ X_centered @ XtX_inv
+
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SupervisedMDS":
         """
         Fit the linear transformation W to match distances induced by labels y.
@@ -112,33 +229,23 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
             # Raise warning if any distances are negative
             print("Warning: Distance matrix is incomplete. Using optimization to fit W.")
             mask = D >= 0
-            rng = np.random.default_rng(42)
-            W0 = rng.normal(scale=0.01, size=(self.n_components, X.shape[1]))
-
-            result = minimize(self._masked_loss, W0.ravel(), args=(X, D, mask), method="L-BFGS-B")
-            self.W_ = result.x.reshape((self.n_components, X.shape[1]))
-        else:
-            # Use classical MDS + closed-form least squares
-            Y = self._classical_mds(D)
-            self.Y_ = Y
-
-            self._X_mean = X.mean(axis=0)  # Centering
-            self._Y_mean = Y.mean(axis=0)  # Centering Y
-            X_centered = X - X.mean(axis=0)
-            Y_centered = Y - Y.mean(axis=0)
-            if self.orthonormal:
-                # Orthogonal Procrustes
-                M = Y_centered.T @ X_centered
-                U, _, Vt = np.linalg.svd(M)
-                self.W_ = U @ Vt
-            else:
-                if self.alpha == 0:
-                    self.W_ = Y_centered.T @ np.linalg.pinv(X_centered.T)
+            if self.gpu_accel:
+                if _TORCH_AVAILABLE:
+                    print("Info: Using PyTorch solver for sparse manifold.")
+                    self.W_ = self._fit_pytorch(X, D, mask)
                 else:
-                    XtX = X_centered.T @ X_centered
-                    XtX_reg = XtX + self.alpha * np.eye(XtX.shape[0])
-                    XtX_inv = np.linalg.inv(XtX_reg)
-                    self.W_ = Y_centered.T @ X_centered @ XtX_inv
+                    print("Warning: gpu_accel=True but 'torch' not found. Falling back to SciPy CPU solver.")
+                    self._fit_scipy(X, D, mask)
+
+            # --- PATH B: SciPy CPU Solver (Legacy/Fallback) ---
+            else:
+                print("Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time. "
+                      "Consider setting gpu_accel=True")
+                self._fit_scipy(X, D, mask)
+
+        else:
+            # Use classical MDS + closed-form least squares (Spectral Solution)
+            self._fit_classical(X, D)
 
         return self
 
