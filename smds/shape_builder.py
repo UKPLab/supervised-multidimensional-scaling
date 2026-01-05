@@ -5,7 +5,7 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-
+import plotly.graph_objects as go
 
 class ShapeBuilder:
     """
@@ -130,23 +130,31 @@ class ShapeBuilder:
         a_categories: NDArray,
         b_categories: NDArray,
         *,
-        radius: float = 1.0,
+        outer_radius: float = 3.0,
+        inner_radius: float = 1.0,
         a_name: str = "a",
         b_name: str = "b",
     ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
         """
-        Categorical + Categorical -> N*M distinct points on a circle.
+        Categorical + Categorical -> Nested clusters (maximum distance grouping).
         
-        All points are equally distant from each other (arranged on a circle).
+        Creates a two-level hierarchy:
+        - Outer category (a_categories): clusters placed on a large circle
+        - Inner category (b_categories): points within each cluster on a smaller circle
+        
+        This ensures both categorical levels are maximally separated at their
+        respective scales.
         
         Parameters
         ----------
         a_categories : array-like
-            First categorical values.
+            Outer categorical values (each gets a cluster).
         b_categories : array-like
-            Second categorical values.
-        radius : float, default=1.0
-            Radius of the circle on which points are placed.
+            Inner categorical values (points within each cluster).
+        outer_radius : float, default=3.0
+            Radius of the circle on which outer category centers are placed.
+        inner_radius : float, default=1.0
+            Radius of the small circle for points within each cluster.
         
         Returns
         -------
@@ -154,6 +162,12 @@ class ShapeBuilder:
             2D coordinates for each point.
         labels : DataFrame
             Labels for each point (includes 'pair' column with combined label).
+        
+        Examples
+        --------
+        >>> # A/B with 1/2/3: creates 2 clusters with 3 points each
+        >>> Y, labels = ShapeBuilder.distinct_points(['A', 'B'], [1, 2, 3])
+        >>> Y.shape  # (6, 2)
         """
         import pandas as pd
         a_grid, b_grid, df = ShapeBuilder._make_grid(a_categories, b_categories, a_name, b_name)
@@ -161,17 +175,38 @@ class ShapeBuilder:
         # Create combined pair labels
         df["pair"] = [f"{a}|{b}" for a, b in zip(a_grid, b_grid)]
         
-        # All unique pairs arranged equally on a circle
-        unique_pairs = df["pair"].unique()
-        n_pairs = len(unique_pairs)
-        pair_to_angle = {pair: 2 * np.pi * i / n_pairs for i, pair in enumerate(unique_pairs)}
+        # Outer category: place cluster centers on a large circle
+        unique_outer = np.unique(np.asarray(a_categories).ravel())
+        n_outer = len(unique_outer)
+        outer_to_angle = {cat: 2 * np.pi * i / n_outer for i, cat in enumerate(unique_outer)}
         
-        angles = np.array([pair_to_angle[p] for p in df["pair"]])
-        x = radius * np.cos(angles)
-        y = radius * np.sin(angles)
+        # Inner category: place points within each cluster on a small circle
+        unique_inner = np.unique(np.asarray(b_categories).ravel())
+        n_inner = len(unique_inner)
+        inner_to_angle = {cat: 2 * np.pi * i / n_inner for i, cat in enumerate(unique_inner)}
+        
+        # Calculate positions
+        x = np.zeros(len(df), dtype=np.float64)
+        y = np.zeros(len(df), dtype=np.float64)
+        
+        for i, (a_val, b_val) in enumerate(zip(a_grid, b_grid)):
+            # Outer category determines cluster center
+            outer_angle = outer_to_angle[a_val]
+            cx = outer_radius * np.cos(outer_angle)
+            cy = outer_radius * np.sin(outer_angle)
+            
+            # Inner category determines position within cluster
+            inner_angle = inner_to_angle[b_val]
+            dx = inner_radius * np.cos(inner_angle)
+            dy = inner_radius * np.sin(inner_angle)
+            
+            # Final position: cluster center + offset
+            x[i] = cx + dx
+            y[i] = cy + dy
         
         Y = np.column_stack([x, y]).astype(np.float64)
         return Y, df
+
 
     @staticmethod
     def parallel_lines(
@@ -460,23 +495,30 @@ class ShapeBuilder:
             Labels for each point.
         """
         cat_grid, angle_grid, df = ShapeBuilder._make_grid(categories, angle_values, cat_name, angle_name)
+    
+        # Ensure sufficient separation between circles
+        unique_cats = np.unique(np.asarray(categories).ravel())
+        n_cats = len(unique_cats)
         
         if center_radius is None:
-            center_radius = 3.0 * float(radius)
+            # Increase separation: ensure circles don't overlap
+            # Need center_radius > radius * (1 + 2*sin(π/n_cats)) for no overlap
+            min_separation = radius * (1 + 2 * np.sin(np.pi / n_cats))
+            center_radius = max(4.0 * float(radius), min_separation * 1.5)
 
         # Angles along each circle (within-category)
         t_a = ShapeBuilder._normalize_circular(angle_grid)
         theta = 2 * np.pi * t_a
 
-        # Category centers arranged on a circle (between-category separation)
-        unique_cats = np.unique(np.asarray(categories).ravel())
-        n_cats = len(unique_cats)
-        cat_to_phi = {cat: 2 * np.pi * i / n_cats for i, cat in enumerate(unique_cats)}
+        # Category centers arranged on a circle
+        # Offset by π/n_cats to improve visual balance
+        cat_to_phi = {cat: 2 * np.pi * i / n_cats + np.pi / n_cats 
+                    for i, cat in enumerate(unique_cats)}
         phi = np.array([cat_to_phi[c] for c in cat_grid], dtype=np.float64)
         cx = float(center_radius) * np.cos(phi)
         cy = float(center_radius) * np.sin(phi)
 
-        # Local circle around each center (in the XY plane)
+        # Local circle around each center
         x = cx + float(radius) * np.cos(theta)
         y = cy + float(radius) * np.sin(theta)
         z = np.zeros_like(x)
@@ -644,3 +686,184 @@ class ShapeBuilder:
         
         return Y_samples
 
+
+
+
+def plot_shape(
+    Y: NDArray[np.float64],
+    labels_df: pd.DataFrame,
+    color_by: Optional[str] = None,
+    title: Optional[str] = None,
+    size: int = 8,
+    opacity: float = 0.7,
+    output_file: Optional[str] = None,
+    show: bool = True,
+) -> go.Figure:
+    """
+    Plot any ShapeBuilder output with interactive 3D/2D visualization.
+    
+    Parameters
+    ----------
+    Y : NDArray
+        Coordinate array from ShapeBuilder (shape: n_points × 2 or 3).
+    labels_df : DataFrame
+        Labels DataFrame from ShapeBuilder.
+    color_by : str, optional
+        Column name in labels_df to use for coloring points.
+        If None, uses the first column.
+    title : str, optional
+        Plot title. If None, auto-generated from labels.
+    size : int, default=8
+        Marker size.
+    opacity : float, default=0.7
+        Marker opacity (0-1).
+    output_file : str, optional
+        Path to save HTML file. If None, doesn't save.
+    show : bool, default=True
+        Whether to display the plot.
+    
+    Returns
+    -------
+    fig : plotly Figure
+        The generated figure.
+    
+    Examples
+    --------
+    >>> # 2D shape
+    >>> Y, labels = ShapeBuilder.distinct_points(['A', 'B'], [1, 2, 3])
+    >>> plot_shape(Y, labels, color_by='a')
+    
+    >>> # 3D shape
+    >>> Y, labels = ShapeBuilder.cylinder(np.arange(2020, 2025), np.arange(1, 13))
+    >>> plot_shape(Y, labels, color_by='angle', output_file='cylinder.html')
+    
+    >>> # Hierarchical shape
+    >>> Y, labels = ShapeBuilder.hierarchical_clusters(['A', 'B'], [1, 2, 3])
+    >>> plot_shape(Y, labels, color_by='level_1', title='Nested Clusters')
+    """
+    
+    # Validate input
+    if Y.shape[0] != len(labels_df):
+        raise ValueError(f"Y has {Y.shape[0]} points but labels_df has {len(labels_df)} rows")
+    
+    n_dims = Y.shape[1]
+    if n_dims not in [2, 3]:
+        raise ValueError(f"Y must be 2D or 3D, got shape {Y.shape}")
+    
+    # Determine color column
+    if color_by is None:
+        color_by = labels_df.columns[0]
+    elif color_by not in labels_df.columns:
+        raise ValueError(f"color_by='{color_by}' not found in labels. Available: {list(labels_df.columns)}")
+    
+    # Extract coordinates
+    x, y = Y[:, 0], Y[:, 1]
+    z = Y[:, 2] if n_dims == 3 else None
+    
+    # Prepare color data
+    color_data = labels_df[color_by].values
+    
+    # Convert categorical to numeric for colorscale
+    is_categorical = labels_df[color_by].dtype == object or pd.api.types.is_categorical_dtype(labels_df[color_by])
+    
+    if is_categorical:
+        unique_vals = pd.unique(color_data)
+        color_map = {val: i for i, val in enumerate(unique_vals)}
+        color_numeric = np.array([color_map[val] for val in color_data])
+        colorscale = "Viridis"
+        colorbar_title = color_by
+        tickvals = list(range(len(unique_vals)))
+        ticktext = [str(v) for v in unique_vals]
+    else:
+        color_numeric = color_data.astype(float)
+        colorscale = "Viridis"
+        colorbar_title = color_by
+        tickvals = None
+        ticktext = None
+    
+    # Build hover text with all labels
+    hover_parts = []
+    for col in labels_df.columns:
+        hover_parts.append(f"{col}=%{{customdata[{list(labels_df.columns).index(col)}]}}")
+    hovertemplate = "<br>".join(hover_parts) + "<extra></extra>"
+    
+    customdata = labels_df.values
+    
+    # Create trace
+    if n_dims == 3:
+        trace = go.Scatter3d(
+            x=x, y=y, z=z,
+            mode="markers",
+            customdata=customdata,
+            hovertemplate=hovertemplate,
+            marker=dict(
+                size=size,
+                opacity=opacity,
+                color=color_numeric,
+                colorscale=colorscale,
+                showscale=True,
+                colorbar=dict(
+                    title=colorbar_title,
+                    tickvals=tickvals,
+                    ticktext=ticktext,
+                ) if is_categorical and tickvals else dict(title=colorbar_title),
+            ),
+            showlegend=False,
+        )
+        
+        fig = go.Figure(data=[trace])
+        fig.update_layout(
+            scene=dict(
+                aspectmode="data",
+                xaxis_title="X",
+                yaxis_title="Y",
+                zaxis_title="Z",
+            ),
+        )
+    else:  # 2D
+        trace = go.Scatter(
+            x=x, y=y,
+            mode="markers",
+            customdata=customdata,
+            hovertemplate=hovertemplate,
+            marker=dict(
+                size=size,
+                opacity=opacity,
+                color=color_numeric,
+                colorscale=colorscale,
+                showscale=True,
+                colorbar=dict(
+                    title=colorbar_title,
+                    tickvals=tickvals,
+                    ticktext=ticktext,
+                ) if is_categorical and tickvals else dict(title=colorbar_title),
+            ),
+            showlegend=False,
+        )
+        
+        fig = go.Figure(data=[trace])
+        fig.update_xaxes(title="X", scaleanchor="y", scaleratio=1)
+        fig.update_yaxes(title="Y")
+    
+    # Set title
+    if title is None:
+        label_cols = [col for col in labels_df.columns if col != 'pair']
+        title = f"Shape: {' × '.join(label_cols)}"
+    
+    fig.update_layout(
+        title=title,
+        width=800,
+        height=700,
+        margin=dict(l=10, r=10, t=60, b=10),
+    )
+    
+    # Save if requested
+    if output_file:
+        fig.write_html(output_file, include_plotlyjs="cdn")
+        print(f"Saved plot to {output_file}")
+    
+    # Show if requested
+    if show:
+        fig.show()
+    
+    return fig
