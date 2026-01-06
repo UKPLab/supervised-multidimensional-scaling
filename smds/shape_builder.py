@@ -58,25 +58,23 @@ class ShapeBuilder:
         return np.zeros_like(v)
 
     @staticmethod
-    def _normalize_circular(values: NDArray) -> NDArray[np.float64]:
-        """Normalize values to [0, 1) range for circular mapping (avoids overlap at 0 and 2π)."""
-        v = np.asarray(values, dtype=np.float64).ravel()
-        vmin, vmax = v.min(), v.max()
-        if vmax > vmin:
-            t = (v - vmin) / (vmax - vmin)
-            return np.clip(t, 0, 1 - 1e-10)
-        return np.zeros_like(v)
-
-    @staticmethod
-    def _category_angles(categories: NDArray) -> Tuple[NDArray, Dict]:
+    def _map_to_circle(values: NDArray) -> Tuple[NDArray, Dict]:
         """Map categories to angles, equally spaced on a circle."""
-        cats = np.asarray(categories).ravel()
-        unique = np.unique(cats)
+        vals = np.asarray(values).ravel()
+        unique = np.unique(vals)
         n = len(unique)
         # Map each category to an angle
-        cat_to_angle = {cat: 2 * np.pi * i / n for i, cat in enumerate(unique)}
-        angles = np.array([cat_to_angle[c] for c in cats])
-        return angles, cat_to_angle
+        val_to_angle = {val: 2 * np.pi * i / n for i, val in enumerate(unique)}
+        angles = np.array([val_to_angle[v] for v in vals], dtype=np.float64)
+        return angles, val_to_angle
+    
+    @staticmethod
+    def _map_to_half_circle(values: NDArray) -> NDArray:
+        """Map discrete values to evenly-spaced angles on a semicircle."""
+        vals = np.asarray(values).ravel()
+        t = ShapeBuilder._normalize(vals)
+        angles = np.pi * t
+        return angles
 
     # -------------------------------------------------------------------------
     # 2D Shapes
@@ -176,33 +174,18 @@ class ShapeBuilder:
         df["pair"] = [f"{a}|{b}" for a, b in zip(a_grid, b_grid)]
         
         # Outer category: place cluster centers on a large circle
-        unique_outer = np.unique(np.asarray(a_categories).ravel())
-        n_outer = len(unique_outer)
-        outer_to_angle = {cat: 2 * np.pi * i / n_outer for i, cat in enumerate(unique_outer)}
+        outer_angles, _ = ShapeBuilder._map_to_circle(a_grid)
+        cx = outer_radius * np.cos(outer_angles)
+        cy = outer_radius * np.sin(outer_angles)
         
         # Inner category: place points within each cluster on a small circle
-        unique_inner = np.unique(np.asarray(b_categories).ravel())
-        n_inner = len(unique_inner)
-        inner_to_angle = {cat: 2 * np.pi * i / n_inner for i, cat in enumerate(unique_inner)}
+        inner_angles, _ = ShapeBuilder._map_to_circle(b_grid)
+        dx = inner_radius * np.cos(inner_angles)
+        dy = inner_radius * np.sin(inner_angles)
         
-        # Calculate positions
-        x = np.zeros(len(df), dtype=np.float64)
-        y = np.zeros(len(df), dtype=np.float64)
-        
-        for i, (a_val, b_val) in enumerate(zip(a_grid, b_grid)):
-            # Outer category determines cluster center
-            outer_angle = outer_to_angle[a_val]
-            cx = outer_radius * np.cos(outer_angle)
-            cy = outer_radius * np.sin(outer_angle)
-            
-            # Inner category determines position within cluster
-            inner_angle = inner_to_angle[b_val]
-            dx = inner_radius * np.cos(inner_angle)
-            dy = inner_radius * np.sin(inner_angle)
-            
-            # Final position: cluster center + offset
-            x[i] = cx + dx
-            y[i] = cy + dy
+        # Final position: cluster center + offset
+        x = cx + dx
+        y = cy + dy
         
         Y = np.column_stack([x, y]).astype(np.float64)
         return Y, df
@@ -254,10 +237,7 @@ class ShapeBuilder:
         x_local = float(length) * (t - 0.5)
         
         # Category centers arranged on a circle (between-category separation)
-        unique_cats = np.unique(np.asarray(categories).ravel())
-        n_cats = len(unique_cats)
-        cat_to_phi = {cat: 2 * np.pi * i / n_cats for i, cat in enumerate(unique_cats)}
-        phi = np.array([cat_to_phi[c] for c in cat_grid], dtype=np.float64)
+        phi, _ = ShapeBuilder._map_to_circle(cat_grid)
         cx = float(center_radius) * np.cos(phi)
         cy = float(center_radius) * np.sin(phi)
 
@@ -266,6 +246,57 @@ class ShapeBuilder:
         
         Y = np.column_stack([x, y]).astype(np.float64)
         return Y, df
+    
+
+    @staticmethod
+    def half_circle(
+        angle_values: NDArray,
+        *,
+        radius: float = 1.0,
+        angle_name: str = "angle",
+    ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
+        """
+        Circular (semicircle) -> 2D semicircle arc.
+        
+        Maps values to evenly-spaced points on a semicircular arc from
+        0° to 180° (left to right).
+        
+        Parameters
+        ----------
+        angle_values : array-like
+            Discrete values to map around the semicircle.
+        radius : float, default=1.0
+            Radius of the semicircle.
+        angle_name : str, default="angle"
+            Name for the angle column in the labels DataFrame.
+        
+        Returns
+        -------
+        Y : NDArray of shape (n_points, 2)
+            2D coordinates for each point.
+        labels : DataFrame
+            Labels for each point.
+        
+        Examples
+        --------
+        >>> # Map 7 days of week to a semicircle
+        >>> days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        >>> Y, labels = ShapeBuilder.half_circle(days)
+        >>> Y.shape  # (7, 2)
+        """
+        import pandas as pd
+        angles = np.asarray(angle_values).ravel()
+        df = pd.DataFrame({angle_name: angles})
+        
+        # Map to semicircle (0 to π)
+        theta = ShapeBuilder._map_to_half_circle(angles)
+        
+        x = radius * np.cos(theta)
+        y = radius * np.sin(theta)
+        
+        Y = np.column_stack([x, y]).astype(np.float64)
+        return Y, df
+
 
     # -------------------------------------------------------------------------
     # 3D Shapes
@@ -309,8 +340,67 @@ class ShapeBuilder:
         z = height * (t_h - 0.5)
         
         # Angle: circular mapping
-        t_a = ShapeBuilder._normalize_circular(a_grid)
-        theta = 2 * np.pi * t_a
+        theta, _ = ShapeBuilder._map_to_circle(a_grid)
+        x = radius * np.cos(theta)
+        y = radius * np.sin(theta)
+        
+        Y = np.column_stack([x, y, z]).astype(np.float64)
+        return Y, df
+    
+    @staticmethod
+    def half_cylinder(
+        height_values: NDArray,
+        angle_values: NDArray,
+        *,
+        radius: float = 1.0,
+        height: float = 2.0,
+        height_name: str = "height",
+        angle_name: str = "angle",
+    ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
+        """
+        Linear + Circular (semicircle) -> 3D half-cylinder surface.
+        
+        Creates a half-cylinder (semicircular cross-section) with height
+        along the z-axis and semicircular arc in the xy-plane.
+        
+        Parameters
+        ----------
+        height_values : array-like
+            Linear values mapped to cylinder height (z-axis).
+        angle_values : array-like
+            Discrete values mapped to semicircular arc (0° to 180°).
+        radius : float, default=1.0
+            Radius of the half-cylinder.
+        height : float, default=2.0
+            Height of the half-cylinder (z range: -height/2 to +height/2).
+        height_name : str, default="height"
+            Name for the height column in labels.
+        angle_name : str, default="angle"
+            Name for the angle column in labels.
+        
+        Returns
+        -------
+        Y : NDArray of shape (n_points, 3)
+            3D coordinates for each point.
+        labels : DataFrame
+            Labels for each point.
+        
+        Examples
+        --------
+        >>> # Half-cylinder for years × months
+        >>> years = np.arange(2020, 2025)
+        >>> months = np.arange(1, 13)
+        >>> Y, labels = ShapeBuilder.half_cylinder(years, months)
+        >>> Y.shape  # (60, 3) - 5 years × 12 months
+        """
+        h_grid, a_grid, df = ShapeBuilder._make_grid(height_values, angle_values, height_name, angle_name)
+        
+        # Height: linear mapping
+        t_h = ShapeBuilder._normalize(h_grid)
+        z = height * (t_h - 0.5)
+        
+        # Angle: semicircular mapping (0 to π)
+        theta = ShapeBuilder._map_to_half_circle(a_grid)
         x = radius * np.cos(theta)
         y = radius * np.sin(theta)
         
@@ -350,12 +440,9 @@ class ShapeBuilder:
         """
         u_grid, v_grid, df = ShapeBuilder._make_grid(u_values, v_values, u_name, v_name)
         
-        # Both axes are circular
-        t_u = ShapeBuilder._normalize_circular(u_grid)
-        t_v = ShapeBuilder._normalize_circular(v_grid)
-        
-        theta = 2 * np.pi * t_u  # Around the torus
-        phi = 2 * np.pi * t_v    # Around the tube
+        # Both axes: map to circle (no overlap)
+        theta, _ = ShapeBuilder._map_to_circle(u_grid)  # Around the torus
+        phi, _ = ShapeBuilder._map_to_circle(v_grid)    # Around the tube
         
         x = (major_radius + minor_radius * np.cos(phi)) * np.cos(theta)
         y = (major_radius + minor_radius * np.cos(phi)) * np.sin(theta)
@@ -363,6 +450,7 @@ class ShapeBuilder:
         
         Y = np.column_stack([x, y, z]).astype(np.float64)
         return Y, df
+
 
     @staticmethod
     def sphere(
@@ -397,14 +485,15 @@ class ShapeBuilder:
             Labels for each point.
         """
         lat_grid, lon_grid, df = ShapeBuilder._make_grid(lat_values, lon_values, lat_name, lon_name)
-        
-        # Latitude: map to [-π/2, π/2]
+    
+        # Latitude mapping
         t_lat = ShapeBuilder._normalize(lat_grid)
-        phi = np.pi * t_lat - np.pi / 2
+
+        epsilon = 0.05  # Small offset from poles to avoid poles
+        phi = np.pi * (t_lat * (1 - 2*epsilon) + epsilon) - np.pi / 2
         
-        # Longitude: map to [0, 2π)
-        t_lon = ShapeBuilder._normalize_circular(lon_grid)
-        theta = 2 * np.pi * t_lon
+        # Longitude mapping
+        theta, _ = ShapeBuilder._map_to_circle(lon_grid)
         
         x = radius * np.cos(phi) * np.cos(theta)
         y = radius * np.cos(phi) * np.sin(theta)
@@ -457,6 +546,88 @@ class ShapeBuilder:
         
         Y = np.column_stack([x, y, z]).astype(np.float64)
         return Y, df
+    
+    @staticmethod
+    def helix_surface(
+        linear_values: NDArray,
+        t_values: NDArray,
+        *,
+        radius: float = 1.0,
+        pitch: float = 1.0,
+        turns: float = 2.0,
+        spacing: float = 0.5,
+        linear_name: str = "linear",
+        t_name: str = "t",
+    ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
+        """
+        Linear + Helix -> 3D helical surface (parallel helix curves).
+        
+        Creates a surface made of parallel helix curves, with each curve
+        displaced linearly perpendicular to the helix axis. Think of it
+        as a corrugated or ribbed surface where each "rib" is a helix.
+        
+        Parameters
+        ----------
+        linear_values : array-like
+            Linear values that create parallel copies of the helix.
+            Each value generates one helix curve.
+        t_values : array-like
+            Parameter values along each helix curve.
+        radius : float, default=1.0
+            Radius of each helix spiral.
+        pitch : float, default=1.0
+            Vertical distance per complete turn.
+        turns : float, default=2.0
+            Number of complete rotations for each helix.
+        spacing : float, default=0.5
+            Distance between adjacent helix curves.
+        linear_name : str, default="linear"
+            Name for the linear dimension column in labels.
+        t_name : str, default="t"
+            Name for the helix parameter column in labels.
+        
+        Returns
+        -------
+        Y : NDArray of shape (n_points, 3)
+            3D coordinates for each point.
+        labels : DataFrame
+            Labels for each point.
+        
+        Examples
+        --------
+        >>> # Helical surface with 5 parallel helices
+        >>> linear = np.arange(5)
+        >>> t = np.linspace(0, 10, 100)
+        >>> Y, labels = ShapeBuilder.helix_surface(linear, t)
+        >>> plot_shape(Y, labels, color_by='linear')
+        """
+        lin_grid, t_grid, df = ShapeBuilder._make_grid(linear_values, t_values, linear_name, t_name)
+        
+        # Normalize linear dimension to [0, 1]
+        t_lin = ShapeBuilder._normalize(lin_grid)
+        
+        # Normalize helix parameter to [0, 1]
+        t_norm = ShapeBuilder._normalize(t_grid)
+        
+        # Helix spiral coordinates
+        theta = 2 * np.pi * turns * t_norm
+        x_helix = float(radius) * np.cos(theta)
+        y_helix = float(radius) * np.sin(theta)
+        z = pitch * turns * t_norm
+        
+        # Linear offset: shift each helix perpendicular to spiral axis
+        # Place helices along a line in the x-direction
+        n_linear = len(np.unique(linear_values))
+        total_width = spacing * (n_linear - 1) if n_linear > 1 else 0
+        x_offset = spacing * t_lin * (n_linear - 1) - total_width / 2
+        
+        # Final coordinates: helix + linear offset
+        x = x_helix + x_offset
+        y = y_helix
+        
+        Y = np.column_stack([x, y, z]).astype(np.float64)
+        return Y, df
+
 
     @staticmethod
     def parallel_circles(
@@ -507,14 +678,10 @@ class ShapeBuilder:
             center_radius = max(4.0 * float(radius), min_separation * 1.5)
 
         # Angles along each circle (within-category)
-        t_a = ShapeBuilder._normalize_circular(angle_grid)
-        theta = 2 * np.pi * t_a
+        theta, _ = ShapeBuilder._map_to_circle(angle_grid)
 
         # Category centers arranged on a circle
-        # Offset by π/n_cats to improve visual balance
-        cat_to_phi = {cat: 2 * np.pi * i / n_cats + np.pi / n_cats 
-                    for i, cat in enumerate(unique_cats)}
-        phi = np.array([cat_to_phi[c] for c in cat_grid], dtype=np.float64)
+        phi, _ = ShapeBuilder._map_to_circle(cat_grid)
         cx = float(center_radius) * np.cos(phi)
         cy = float(center_radius) * np.sin(phi)
 
@@ -597,8 +764,7 @@ class ShapeBuilder:
         t_h = ShapeBuilder._normalize(height_grid)
         z = height * (t_h - 0.5)
         
-        t_a = ShapeBuilder._normalize_circular(angle_grid)
-        theta = 2 * np.pi * t_a
+        theta, _ = ShapeBuilder._map_to_circle(angle_grid)
         
         # Base cylinder at origin
         x_cyl = float(radius) * np.cos(theta)
@@ -867,3 +1033,108 @@ def plot_shape(
         fig.show()
     
     return fig
+
+
+def main():
+    """Demonstrate all ShapeBuilder shapes with 5x5 or equivalent inputs."""
+    import numpy as np
+    
+    print("=" * 70)
+    print("ShapeBuilder - All Shapes Demo")
+    print("=" * 70)
+    
+    # Common inputs
+    linear_5 = np.arange(5)
+    categories_5 = ['A', 'B', 'C', 'D', 'E']
+    circular_5 = np.arange(5)
+    
+    # -------------------------------------------------------------------------
+    # 2D Shapes
+    # -------------------------------------------------------------------------
+    
+    print("\n[1/13] Plane (Linear + Linear)")
+    Y, labels = ShapeBuilder.plane(linear_5, linear_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Plane: 5×5 Grid", output_file="01_plane.html", show=False)
+    
+    print("\n[2/13] Distinct Points (Categorical + Categorical)")
+    Y, labels = ShapeBuilder.distinct_points(categories_5[:3], categories_5[:3])
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Distinct Points: 3×3 Nested Clusters", 
+               output_file="02_distinct_points.html", show=False)
+    
+    print("\n[3/13] Parallel Lines (Categorical + Linear)")
+    Y, labels = ShapeBuilder.parallel_lines(categories_5[:3], linear_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Parallel Lines: 3 Categories × 5 Points", 
+               output_file="03_parallel_lines.html", show=False)
+    
+    print("\n[4/13] Half Circle (Circular)")
+    Y, labels = ShapeBuilder.half_circle(circular_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Half Circle: 5 Points", 
+               output_file="04_half_circle.html", show=False)
+    
+    # -------------------------------------------------------------------------
+    # 3D Shapes - Single/Double Parameter
+    # -------------------------------------------------------------------------
+    
+    print("\n[5/13] Cylinder (Linear + Circular)")
+    Y, labels = ShapeBuilder.cylinder(linear_5, circular_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Cylinder: 5×5 Surface", 
+               output_file="05_cylinder.html", show=False)
+    
+    print("\n[6/13] Torus (Circular + Circular)")
+    Y, labels = ShapeBuilder.torus(circular_5, circular_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Torus: 5×5 Surface", 
+               output_file="06_torus.html", show=False)
+    
+    print("\n[7/13] Sphere (Circular + Circular)")
+    Y, labels = ShapeBuilder.sphere(linear_5, circular_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Sphere: 5×5 Surface", 
+               output_file="07_sphere.html", show=False)
+    
+    print("\n[8/13] Helix (Linear)")
+    Y, labels = ShapeBuilder.helix(np.linspace(0, 10, 50))
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Helix: 50 Points", 
+               output_file="08_helix.html", show=False)
+    
+    print("\n[9/13] Half Cylinder (Linear + Circular)")
+    Y, labels = ShapeBuilder.half_cylinder(linear_5, circular_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Half Cylinder: 5×5 Surface", 
+               output_file="09_half_cylinder.html", show=False)
+    
+    # -------------------------------------------------------------------------
+    # 3D Shapes - With Categories
+    # -------------------------------------------------------------------------
+    
+    print("\n[10/13] Parallel Circles (Categorical + Circular)")
+    Y, labels = ShapeBuilder.parallel_circles(categories_5[:3], circular_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Parallel Circles: 3 Categories × 5 Angles", 
+               output_file="10_parallel_circles.html", show=False)
+    
+    print("\n[11/13] Parallel Cylinders (Categorical + Linear + Circular)")
+    Y, labels = ShapeBuilder.parallel_cylinders(categories_5[:3], linear_5, circular_5)
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Parallel Cylinders: 3 Categories × 5×5", 
+               output_file="11_parallel_cylinders.html", show=False)
+    
+    print("\n[12/13] Helix Surface (Linear + Helix)")
+    Y, labels = ShapeBuilder.helix_surface(linear_5, np.linspace(0, 10, 50))
+    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
+    plot_shape(Y, labels, title="Helix Surface: 5 Parallel Helices", 
+               output_file="12_helix_surface.html", show=False)
+    
+    print("\n" + "=" * 70)
+    print("All shapes generated! HTML files saved.")
+    print("=" * 70)
+
+
+if __name__ == "__main__":
+    main()
