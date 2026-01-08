@@ -61,11 +61,20 @@ target-version = "py312"
 output-format = "grouped"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W", "I", "D"]
 fixable = ["ALL"]
+ignore = [
+    "D104",
+    "D100",
+    "D401"
+]
 
 [tool.ruff.lint.per-file-ignores]
 "smds/shapes/coordinates/base_coordinates.py" = ["F821"]
+"tests/**/*" = ["D101", "D102", "D103", "D205", "D400", "D401"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.mypy]
 strict = true
