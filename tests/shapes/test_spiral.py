@@ -69,7 +69,7 @@ def test_compute_distances_values(
     init_radius: float, growth: float, turns: float, y_input: NDArray[np.float64], expected_sum: float
 ) -> None:
     """
-    verify degenerate edge cases where the spiral parameters force all input points to map to the exact same physical
+    Verify degenerate edge cases where the spiral parameters force all input points to map to the exact same physical
      location
     """
     shape = SpiralShape(initial_radius=init_radius, growth_rate=growth, num_turns=turns)
