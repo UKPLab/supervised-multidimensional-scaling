@@ -155,6 +155,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             print("Warning: gpu_accel=True was requested, but PyTorch cannot find a CUDA or MPS device.")
             print("         - torch.cuda.is_available():", torch.cuda.is_available())
             print("         - torch.backends.mps.is_available():", torch.backends.mps.is_available())
+            print("         See README for CUDA installation instructions.")
             print("         Falling back to PyTorch CPU implementation.")
 
         # Data Transfer
@@ -269,7 +270,14 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
                     print("Info: Using PyTorch solver for sparse manifold.")
                     self.W_ = self._fit_pytorch(X, D, mask)
                 else:
-                    print("Warning: gpu_accel=True but 'torch' not found. Falling back to SciPy CPU solver.")
+                    print(
+                        "ImportError: You requested accelerated optimization (gpu_accel=True), "
+                        "but PyTorch is not installed.\n\n"
+                        "Please install PyTorch to use this feature:\n"
+                        "  - Standard (Mac/CPU): uv pip install torch\n"
+                        "  - NVIDIA GPU: See README for CUDA installation instructions."
+                    )
+                    print("\nFalling back to SciPy CPU solver.")
                     self._fit_scipy(X, D, mask)
 
             else:
