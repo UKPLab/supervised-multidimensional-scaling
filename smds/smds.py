@@ -1,12 +1,15 @@
 import math
 import os
 import pickle
+from math import exp
 from typing import Callable
 
 import numpy as np
 from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
 from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
+from sklearn.utils.multiclass import type_of_target  # type: ignore[import-untyped]
+from sklearn.utils.validation import check_array, check_is_fitted, validate_data  # type: ignore[import-untyped]
 
 try:
     import torch
@@ -24,7 +27,7 @@ from smds.stress import (
 )
 
 
-class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
+class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     def __init__(
         self,
         manifold: Callable[[np.ndarray], np.ndarray],
@@ -46,15 +49,21 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         """
         self.n_components = n_components
         self.manifold = manifold
-        self.W_ = None
         self.alpha = alpha
         self.orthonormal = orthonormal
-        self.radius = radius  # Only used for spherical manifolds
+        self.radius = radius
         self.gpu_accel = gpu_accel
-        self._X_mean = None
-        self._Y_mean = None
-        if orthonormal and alpha != 0:
-            print("Warning: orthonormal=True and alpha!=0. alpha will be ignored.")
+
+    def _validate_and_convert_metric(self, metric: str | StressMetrics) -> StressMetrics:
+        """
+        Validate and convert the metric to a StressMetrics enum.
+        """
+        if isinstance(metric, StressMetrics):
+            return metric
+        valid_metrics = {m.value for m in StressMetrics}
+        if metric not in valid_metrics:
+            raise ValueError(f"Unknown metric: {metric}. Valid options are: {sorted(valid_metrics)}")
+        return StressMetrics(metric)
 
     def _compute_ideal_distances(self, y: np.ndarray) -> np.ndarray:
         """
@@ -100,6 +109,34 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         loss = (D_pred - D)[mask]
         result: float = float(np.sum(loss**2))
         return result
+
+    def _validate_data(self, X: np.ndarray, y: np.ndarray, reset: bool = True) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Validate and process X and y based on the manifold's expected y dimensionality.
+        """
+        expected_y_ndim = getattr(self.manifold, "y_ndim", 1)
+
+        if expected_y_ndim == 1:
+            X, y = validate_data(self, X, y, reset=reset)
+            type_of_target(y, raise_unknown=True)
+            y = np.asarray(y).squeeze()
+            if y.ndim == 0:
+                y = y.reshape(1)
+        else:
+            X = check_array(X)
+            y = np.asarray(y)
+            if y.ndim != expected_y_ndim:
+                raise ValueError(
+                    f"Input 'y' must be {expected_y_ndim}-dimensional, "
+                    f"but got shape {y.shape} with {y.ndim} dimensions."
+                )
+            if X.shape[0] != y.shape[0]:
+                raise ValueError(
+                    f"X and y must have the same number of samples. "
+                    f"Got X.shape[0]={X.shape[0]} and y.shape[0]={y.shape[0]}."
+                )
+
+        return X, y
 
     def _fit_pytorch(self, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """
@@ -221,8 +258,12 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         Returns:
             self: returns an instance of self.
         """
-        X = np.asarray(X)
-        y = np.asarray(y).squeeze()  # Ensure y is 1D
+        X, y = self._validate_data(X, y)
+
+        if X.shape[0] == 1:
+            raise ValueError("Found array with n_samples=1. SupervisedMDS requires at least 2 samples.")
+        if self.orthonormal and self.alpha != 0:
+            print("Warning: orthonormal=True and alpha!=0. alpha will be ignored.")
         D = self._compute_ideal_distances(y)
 
         if np.any(D < 0):
@@ -260,11 +301,9 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
             X_proj: array of shape (n_samples, n_components)
                 The transformed data in the low-dimensional space.
         """
-        if self.W_ is None:
-            raise RuntimeError("You must fit the model before calling transform.")
-        X = np.asarray(X)
-        if self._X_mean is not None:
-            # Center X using the same logic as during fit
+        check_is_fitted(self)
+        X = validate_data(self, X, reset=False)
+        if hasattr(self, "_X_mean") and self._X_mean is not None:
             X_centered = X - self._X_mean
         else:
             X_centered = X
@@ -293,10 +332,8 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
             X_reconstructed: array of shape (n_samples, original_n_features)
                 The reconstructed data in the original space.
         """
-        if self.W_ is None:
-            raise RuntimeError("You must fit the model before calling inverse_transform.")
-
-        X_proj = np.asarray(X_proj)
+        check_is_fitted(self)
+        X_proj = check_array(X_proj, ensure_2d=True)
 
         # Use pseudo-inverse in case W_ is not square or full-rank
         # W_pinv = np.linalg.pinv(self.W_)
@@ -330,12 +367,12 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         self,
         X: np.ndarray,
         y: np.ndarray,
-        metric: StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS,
+        metric: str | StressMetrics = StressMetrics.SCALE_NORMALIZED_STRESS,
     ) -> float:
         """Evaluate embedding quality using SUPERVISED metric (uses y labels)."""
-        if self.W_ is None:
-            raise RuntimeError("Model must be fit before scoring.")
-
+        check_is_fitted(self)
+        metric = self._validate_and_convert_metric(metric)
+        X, y = self._validate_data(X, y, reset=False)
         D_ideal = self._compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
@@ -345,7 +382,7 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
 
         if metric == StressMetrics.NORMALIZED_KL_DIVERGENCE:
             score_value = kl_divergence_stress(D_ideal, D_pred)
-            score_value = math.exp(-score_value)
+            score_value = float(exp(-score_value))
             return score_value
 
         mask = np.triu(np.ones((n, n), dtype=bool), k=1)
@@ -354,15 +391,13 @@ class SupervisedMDS(BaseEstimator, TransformerMixin):  # type: ignore[misc]
         D_pred_flat = D_pred[mask]
 
         if metric == StressMetrics.SCALE_NORMALIZED_STRESS:
-            score_value = 1 - scale_normalized_stress(D_ideal_flat, D_pred_flat)
+            score_value = float(1 - scale_normalized_stress(D_ideal_flat, D_pred_flat))
         elif metric == StressMetrics.NON_METRIC_STRESS:
-            score_value = 1 - non_metric_stress(D_ideal_flat, D_pred_flat)
+            score_value = float(1 - non_metric_stress(D_ideal_flat, D_pred_flat))
         elif metric == StressMetrics.SHEPARD_GOODNESS_SCORE:
-            score_value = shepard_goodness_stress(D_ideal_flat, D_pred_flat)
+            score_value = float(shepard_goodness_stress(D_ideal_flat, D_pred_flat))
         elif metric == StressMetrics.NORMALIZED_STRESS:
-            score_value = 1 - normalized_stress(D_ideal_flat, D_pred_flat)
-        else:
-            raise ValueError(f"Unknown metric: {metric}")
+            score_value = float(1 - normalized_stress(D_ideal_flat, D_pred_flat))
 
         return score_value
 
