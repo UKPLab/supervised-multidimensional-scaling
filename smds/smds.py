@@ -1,4 +1,3 @@
-import math
 import os
 import pickle
 from math import exp
@@ -13,6 +12,7 @@ from sklearn.utils.validation import check_array, check_is_fitted, validate_data
 
 try:
     import torch
+
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
@@ -150,7 +150,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             print(f"Info: PyTorch solver active. Using GPU: {device_name}")
         elif torch.backends.mps.is_available():
             device = torch.device("mps")
-            print("Info: PyTorch solver active. Using Apple Metal (MPS) acceleration.")
         else:
             device = torch.device("cpu")
             print("Warning: gpu_accel=True was requested, but PyTorch cannot find a CUDA or MPS device.")
@@ -159,20 +158,17 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             print("         Falling back to PyTorch CPU implementation.")
 
         # Data Transfer
-        # Convert inputs to float32 for speed (float64 is rarely needed for MDS)
+        # Convert inputs to float32 for speed
         X_t = torch.tensor(X, dtype=torch.float32, device=device)
         D_t = torch.tensor(D, dtype=torch.float32, device=device)
         mask_t = torch.tensor(mask, dtype=torch.bool, device=device)
 
         # Parameter Initialization
         n_features = X.shape[1]
-        # Initialize W similar to standard PCA scaling
-        W_t = torch.nn.Parameter(
-            torch.randn(self.n_components, n_features, device=device, dtype=torch.float32) * 0.01
-        )
+
+        W_t = torch.nn.Parameter(torch.randn(self.n_components, n_features, device=device, dtype=torch.float32) * 0.01)
 
         # Optimization Setup
-        # Adam is robust for this type of non-convex landscape
         optimizer = torch.optim.Adam([W_t], lr=0.01)
 
         # Convergence settings
@@ -188,18 +184,16 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             # Shape: (N, n_components)
             X_proj = torch.matmul(X_t, W_t.T)
 
-            # Compute pairwise Euclidean distances
-            # pdist/cdist is highly optimized on GPU
+            # Compute pairwise Euclidean distances (highly optimized on GPU)
             D_pred = torch.cdist(X_proj, X_proj, p=2)
 
             # Masked Loss (MSE on defined distances only)
-            diff = (D_pred - D_t)
-            # We index with the boolean mask.
-            # Note: PyTorch boolean indexing flattens the result.
+            diff = D_pred - D_t
+
             loss = torch.mean(torch.square(diff[mask_t]))
 
             # Backward
-            loss.backward()
+            loss.backward() # type: ignore[no-untyped-call]
             optimizer.step()
 
             # Early Stopping Check (every 50 epochs)
@@ -209,7 +203,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
                     break
                 prev_loss = curr_loss
 
-        # Return weights as numpy
         return W_t.detach().cpu().numpy()
 
     def _fit_scipy(self, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> None:
@@ -267,10 +260,11 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         D = self._compute_ideal_distances(y)
 
         if np.any(D < 0):
-            # Raise warning if any distances are negative
-            print("Warning: Distance matrix is incomplete. Using optimization to fit W.")
+            # Inform if any distances are negative
+            print("Info: Distance matrix is incomplete.")
             mask = D >= 0
             if self.gpu_accel:
+                # PyTorch GPU Solver
                 if _TORCH_AVAILABLE:
                     print("Info: Using PyTorch solver for sparse manifold.")
                     self.W_ = self._fit_pytorch(X, D, mask)
@@ -278,10 +272,12 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
                     print("Warning: gpu_accel=True but 'torch' not found. Falling back to SciPy CPU solver.")
                     self._fit_scipy(X, D, mask)
 
-            # --- PATH B: SciPy CPU Solver (Legacy/Fallback) ---
             else:
-                print("Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time. "
-                      "Consider setting gpu_accel=True")
+                # SciPy CPU Solver (Fallback)
+                print(
+                    "Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time. "
+                    "Consider setting gpu_accel=True"
+                )
                 self._fit_scipy(X, D, mask)
 
         else:
