@@ -36,7 +36,7 @@ X = np.random.randn(100, 20)   # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-smds = SupervisedMDS(n_components=2, manifold="cluster", alpha=0.1)
+smds = SupervisedMDS(ComputedStage1(n_components=2, manifold="cluster", alpha=0.1))
 smds.fit(X, y)
 
 # Transform to low-dimensional space

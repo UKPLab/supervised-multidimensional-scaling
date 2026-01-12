@@ -7,7 +7,7 @@ from typing import Callable
 import numpy as np
 from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
-from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
+from sklearn.base import BaseEstimator, TransformerMixin, clone  # type: ignore[import-untyped]
 from sklearn.utils.multiclass import type_of_target  # type: ignore[import-untyped]
 from sklearn.utils.validation import check_array, check_is_fitted, validate_data  # type: ignore[import-untyped]
 
@@ -59,6 +59,7 @@ class Stage1SMDSTransformer(TransformerMixin, BaseEstimator, ABC):
 
 class ComputedStage1(Stage1SMDSTransformer):
     def __init__(self, manifold: Callable[[np.ndarray], np.ndarray], n_components: int):
+        # fixme: set manifold to be BaseShape
         self.manifold = manifold
         self._n_components = n_components
         self.Y_ = None
@@ -137,8 +138,7 @@ class UserProvidedStage1(Stage1SMDSTransformer):
 class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     def __init__(
         self,
-        manifold: Callable[[np.ndarray], np.ndarray],
-        n_components: int = 2,
+        stage_1: Stage1SMDSTransformer,
         alpha: float = 0.1,
         orthonormal: bool = False,
         radius: float = 6371,
@@ -152,14 +152,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             metric:
                 The metric to use for scoring the embedding.
         """
-        self.n_components = n_components
-        self.manifold = manifold
+        self.stage_1 = stage_1
         self.alpha = alpha
         self.orthonormal = orthonormal
         self.radius = radius
-
-        # todo: set as arg in all tests
-        self.stage_1 = ComputedStage1(self.manifold, self.n_components)
 
     def _validate_and_convert_metric(self, metric: str | StressMetrics) -> StressMetrics:
         """
@@ -176,7 +172,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Compute the loss only on the defined distances (where mask is True).
         """
-        W = W_flat.reshape((self.n_components, X.shape[1]))
+        W = W_flat.reshape((self.stage_1.n_components, X.shape[1]))
         X_proj = (W @ X.T).T
         D_pred = np.linalg.norm(X_proj[:, None, :] - X_proj[None, :, :], axis=-1)
         loss = (D_pred - D)[mask]
@@ -187,7 +183,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Validate and process X and y based on the manifold's expected y dimensionality.
         """
-        expected_y_ndim = getattr(self.manifold, "y_ndim", 1)
+        if isinstance(self.stage_1, UserProvidedStage1):
+            expected_y_ndim = self.stage_1.n_components
+        else:
+            expected_y_ndim = getattr(self.stage_1.manifold, "y_ndim", 1)
 
         if expected_y_ndim == 1:
             X, y = validate_data(self, X, y, reset=reset)
@@ -235,20 +234,22 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         X = np.asarray(X)
         y = np.asarray(y).squeeze()  # Ensure y is 1D
 
-        self.stage_1.fit(y)
-        self.Y_ = self.stage_1.Y_
+        self.stage_1_fitted_: Stage1SMDSTransformer = clone(self.stage_1)
+        self.stage_1_fitted_.fit(y)
 
-        D = self.stage_1.D_
+        self.Y_ = self.stage_1_fitted_.Y_
+
+        D = self.stage_1_fitted_.D_
 
         if np.any(D < 0):
             # Raise warning if any distances are negative
             print("Warning: Distance matrix is incomplete. Using optimization to fit W.")
             mask = D >= 0
             rng = np.random.default_rng(42)
-            W0 = rng.normal(scale=0.01, size=(self.n_components, X.shape[1]))
+            W0 = rng.normal(scale=0.01, size=(self.stage_1_fitted_.n_components, X.shape[1]))
 
             result = minimize(self._masked_loss, W0.ravel(), args=(X, D, mask), method="L-BFGS-B")
-            self.W_ = result.x.reshape((self.n_components, X.shape[1]))
+            self.W_ = result.x.reshape((self.stage_1_fitted_.n_components, X.shape[1]))
         else:
             # Use classical MDS + closed-form least squares
             Y = self.Y_
@@ -356,7 +357,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         check_is_fitted(self)
         metric = self._validate_and_convert_metric(metric)
         X, y = self._validate_data(X, y, reset=False)
-        D_ideal = self.stage_1.compute_ideal_distances(y)
+        D_ideal = self.stage_1_fitted_.compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
         X_proj = self.transform(X)

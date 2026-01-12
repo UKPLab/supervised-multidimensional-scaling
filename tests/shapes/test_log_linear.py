@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-from smds import SupervisedMDS
+from smds import ComputedStage1, SupervisedMDS
 from smds.shapes.continuous_shapes import LogLinearShape
 
 
 @pytest.fixture
 def engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=1, manifold=LogLinearShape(), alpha=0.1)
+    return SupervisedMDS(ComputedStage1(n_components=1, manifold=LogLinearShape()), alpha=0.1)
 
 
 @pytest.fixture

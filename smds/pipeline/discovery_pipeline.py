@@ -9,7 +9,7 @@ import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
 
-from smds import SupervisedMDS
+from smds import ComputedStage1, SupervisedMDS
 from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes import (
     CircularShape,
@@ -183,7 +183,7 @@ def discover_manifolds(
             results_list.append(row)
             continue
 
-        estimator = SupervisedMDS(n_components=smds_components, manifold=shape)
+        estimator = SupervisedMDS(ComputedStage1(n_components=smds_components, manifold=shape))
 
         try:
             cv_results = cross_validate(
@@ -218,7 +218,7 @@ def discover_manifolds(
             # Generate Interactive Plot
             if save_results and plots_dir is not None:
                 try:
-                    full_estimator = SupervisedMDS(n_components=smds_components, manifold=shape)
+                    full_estimator = SupervisedMDS(ComputedStage1(n_components=smds_components, manifold=shape))
                     X_embedded = full_estimator.fit_transform(X, y)
 
                     plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name
