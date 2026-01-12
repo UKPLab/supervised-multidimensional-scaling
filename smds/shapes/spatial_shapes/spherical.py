@@ -6,15 +6,29 @@ from smds.shapes import BaseShape
 
 class SphericalShape(BaseShape):
     """
-    Spherical shape for computing ideal distances on a spherical manifold (straight-line).
+    Compute Euclidean (chord) distances between points projected onto a sphere.
 
-    Maps each coordinate into a 3D point on a sphere of radius r.
+    Unlike GeodesicShape which measures distance along the surface, this shape
+    measures the straight-line distance through the sphere's volume.
+
+    Parameters
+    ----------
+    radius : float, optional
+        Radius of the sphere. Default is 1.0.
+    normalize_labels : bool, optional
+        Whether to normalize labels using the base class logic. Default is False.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (2). Expects (n_samples, 2) for lat/lon.
     """
 
     y_ndim = 2
 
     @property
     def normalize_labels(self) -> bool:
+        """bool: Whether input labels are normalized."""
         return self._normalize_labels
 
     def __init__(self, radius: float = 1.0, normalize_labels: bool = False):
@@ -22,6 +36,24 @@ class SphericalShape(BaseShape):
         self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Validate input is 2D with shape (n_samples, 2).
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input coordinates (latitude, longitude) in degrees.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Validated input array.
+
+        Raises
+        ------
+        ValueError
+            If input is empty or shape is not (n_samples, 2).
+        """
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
 
         if y_proc.size == 0:
@@ -36,6 +68,25 @@ class SphericalShape(BaseShape):
         return y_proc
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Convert spherical coordinates to 3D Cartesian points and compute Euclidean norms.
+
+        Maps input (lat, lon) to $(x, y, z)$ using:
+        $$ x = r \\cos(lat) \\cos(lon) $$
+        $$ y = r \\cos(lat) \\sin(lon) $$
+        $$ z = r \\sin(lat) $$
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of shape (n_samples, 2) containing latitude and longitude
+            in degrees.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Pairwise Euclidean distance matrix (chord lengths).
+        """
         lat = np.radians(y[:, 0])
         lon = np.radians(y[:, 1])
 

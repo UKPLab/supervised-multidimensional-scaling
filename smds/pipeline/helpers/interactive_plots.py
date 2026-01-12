@@ -19,7 +19,8 @@ def generate_interactive_plot(
         shape_name: The name of the shape hypothesis (used for filename).
         save_dir: The directory where the HTML file should be saved.
 
-    Returns:
+    Returns
+    -------
         The filename of the saved HTML plot (e.g., 'CircularShape.html').
     """
     n_components = X_embedded.shape[1]

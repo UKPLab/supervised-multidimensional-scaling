@@ -82,7 +82,8 @@ def discover_manifolds(
         create_visualization: Whether to create a visualization of the results as an image file.
         clear_cache: Whether to delete all cache files after successful completion.
 
-    Returns:
+    Returns
+    -------
         A tuple containing:
         - pd.DataFrame: The aggregated results, sorted by mean score.
         - Optional[str]: The path to the saved CSV file, or None if saving was disabled.
