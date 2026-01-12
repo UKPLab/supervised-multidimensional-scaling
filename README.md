@@ -3,25 +3,29 @@
 </p>
 
 # Supervised Multi-Dimensional Scaling
+
 [![Arxiv](https://img.shields.io/badge/Arxiv-2510.01025-red?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.01025)
 [![License](https://img.shields.io/github/license/UKPLab/supervised-multidimensional-scaling)](https://opensource.org/licenses/Apache-2.0)
 [![Python Versions](https://img.shields.io/badge/Python-3.12-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![CI](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml/badge.svg)](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml)
 
-This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens: Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds of various shape.
+This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens:
+Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the
+familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds
+of various shape.
 
-Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de) 
+Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de)
 
 [UKP Lab](https://www.ukp.tu-darmstadt.de/) | [TU Darmstadt](https://www.tu-darmstadt.de/)
 
 Don't hesitate to send us an e-mail or report an issue or if you have further questions.
 
-
 ## Getting Started (TODO)
 
 ## Usage
 
-The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use, along with utilities such as an inverse function and saving/loading a trained model.  
+The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use, along with utilities
+such as an inverse function and saving/loading a trained model.
 
 ### Fit & Transform
 
@@ -29,14 +33,15 @@ You can instantiate the model, fit it to data `(X, y)`, and transform your input
 
 ```python
 import numpy as np
-from supervised_mds import SupervisedMDS
+from smds import SupervisedMDS, ComputedStage1
+from smds.shapes.discrete_shapes import ClusterShape
 
 # Example data
-X = np.random.randn(100, 20)   # 100 samples, 20 features
+X = np.random.randn(100, 20)  # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-smds = SupervisedMDS(ComputedStage1(n_components=2, manifold="cluster", alpha=0.1))
+smds = SupervisedMDS(stage_1=ComputedStage1(n_components=2, manifold=ClusterShape()), alpha=0.1)
 smds.fit(X, y)
 
 # Transform to low-dimensional space
@@ -46,7 +51,8 @@ print(X_proj.shape)  # (100, 2)
 
 ### Extra functionalities
 
-Once fitted, you can use the learned transformation for inverse projections and to assess how well the embedding matches the target geometry:
+Once fitted, you can use the learned transformation for inverse projections and to assess how well the embedding matches
+the target geometry:
 
 ```python
 # Inverse transform: approximate reconstruction of original features
@@ -77,8 +83,6 @@ loaded_smds = SupervisedMDS.load("smds_model.pkl")
 - [Feature]: A manifold discovery utility
 - [Docs]: Setup instructions.
 - [Docs]: A documentation website with class descriptions and examples.
-
-
 
 ## Cite
 
