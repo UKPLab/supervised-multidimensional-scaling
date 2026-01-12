@@ -6,29 +6,54 @@ from smds.shapes import BaseShape
 
 class LogLinearShape(BaseShape):
     """
-    Implements the Log-Linear shape for continuous data.
+    Compute distances based on logarithmic scaling.
 
-    This models data where distance scales logarithmically.
-    Reference: Table 1 in "Shape Happens" paper.
-    Formula: d(i, j) = |log(yi) - log(yj)|
+    This shape models data where differences are more significant at smaller scales
+    than at larger scales (e.g., sound intensity, earthquake magnitude).
+    The distance is defined as the absolute difference between the logarithms
+    of the values.
+
+    Reference: Table 1 in the "Shape Happens" paper.
+
+    Parameters
+    ----------
+    normalize_labels : bool, optional
+        Whether to normalize labels using the base class logic. Default is False.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (1). Expects non-negative continuous values.
     """
 
     y_ndim = 1
 
     @property
     def normalize_labels(self) -> bool:
+        """bool: Whether input labels are normalized."""
         return self._normalize_labels
 
     def __init__(self, normalize_labels: bool = False):
-        """
-        Args:
-            normalize_labels: Whether to scale inputs to [0, 1].
-        """
         self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Validates that input y is a non-empty 1D array of non-negative values.
+        Validate input is 1D and contains only non-negative values.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input 1D array of values.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Validated flat array.
+
+        Raises
+        ------
+        ValueError
+            If `y` is empty, multi-dimensional, or contains negative values.
         """
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
 
@@ -49,6 +74,22 @@ class LogLinearShape(BaseShape):
         return y_flat
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Compute pairwise logarithmic distances.
+
+        Calculates $D_{ij} = |\\log(y_i + 1) - \\log(y_j + 1)|$.
+        A shift of 1.0 is added to avoid $\\log(0)$.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of non-negative values.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Pairwise distance matrix representing the difference in magnitude.
+        """
         y_flat = y.ravel()
         y_log = np.log(y_flat + 1.0)
         distance_matrix: NDArray[np.float64] = np.abs(y_log[:, None] - y_log[None, :])

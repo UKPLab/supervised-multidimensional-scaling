@@ -20,8 +20,6 @@ from smds.stress import (
     shepard_goodness_stress,
 )
 
-# TODO: stage 1 - for the manifold Y_
-#   result: Y_
 # TODO: stage 2 - for mapping to the lower space
 #   result: X_proj
 
@@ -143,11 +141,11 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         radius: float = 6371,
     ):
         """
-        Parameters:
-            n_components:
-                Dimensionality of the target subspace.
-            manifold:
-                If callable, should return a (n x n) ideal distance matrix given y.
+        Parameters
+        ----------
+            stage_1:
+                Stage 1 of SMDS.
+                Defines the method of obtaining Y_.
             metric:
                 The metric to use for scoring the embedding.
         """
@@ -216,12 +214,15 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Uses classical MDS + closed-form when all distances are defined,
         and switches to optimization if some distances are undefined (negative).
 
-        Parameters:
+        Parameters
+        ----------
             X: array-like of shape (n_samples, n_features)
                 The input data to be transformed.
             y: array-like of shape (n_samples,) or (n_samples, 2)
                 The labels or coordinates defining the ideal distances.
-        Returns:
+
+        Returns
+        -------
             self: returns an instance of self.
         """
         X, y = self._validate_data(X, y)
@@ -278,10 +279,13 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Apply the learned transformation to X.
 
-        Parameters:
+        Parameters
+        ----------
             X: array-like of shape (n_samples, n_features)
                 The input data to be transformed.
-        Returns:
+
+        Returns
+        -------
             X_proj: array of shape (n_samples, n_components)
                 The transformed data in the low-dimensional space.
         """
@@ -308,11 +312,13 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Reconstruct the original input X from its low-dimensional projection.
 
-        Parameters:
+        Parameters
+        ----------
             X_proj: array-like of shape (n_samples, n_components)
                 The low-dimensional representation of the input data.
 
-        Returns:
+        Returns
+        -------
             X_reconstructed: array of shape (n_samples, original_n_features)
                 The reconstructed data in the original space.
         """
@@ -336,11 +342,15 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     def fit_transform(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         Fit the model and transform X in one step.
-        Parameters:
+
+        Parameters
+        ----------
             X: array-like of shape (n_samples, n_features)
                 The input data to be transformed.
             y: array-like of shape (n_samples,) or (n_samples, 2)
-        Returns:
+
+        Returns
+        -------
             X_proj: array of shape (n_samples, n_components)
                 The transformed data in the low-dimensional space.
         """
@@ -398,7 +408,9 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     def load(cls, filepath: str) -> "SupervisedMDS":
         """
         Load a model from disk.
-        Returns:
+
+        Returns
+        -------
             An instance of SupervisedMDS.
         """
         with open(filepath, "rb") as f:
