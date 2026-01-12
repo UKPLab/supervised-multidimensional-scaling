@@ -26,7 +26,8 @@ def test_hierarchical_smoke_test(
     smds_engine: SupervisedMDS,
 ) -> None:
     """
-    A simple "smoke test" to ensure HierarchicalShape can be fit and transformed without errors and produces an output of the correct shape.
+    A simple "smoke test" to ensure HierarchicalShape can be fit and transformed without errors
+     and produces an output of the correct shape.
     """
     X: NDArray[np.float64]
     y: NDArray[np.float64]
