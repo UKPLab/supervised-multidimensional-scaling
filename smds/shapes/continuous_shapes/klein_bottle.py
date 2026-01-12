@@ -118,20 +118,20 @@ class KleinBottleShape(BaseShape):
         diff_v = np.abs(v1 - v2)
 
         # 1. Direct path
-        dist_sq_direct = diff_u ** 2 + diff_v ** 2
+        dist_sq_direct = diff_u**2 + diff_v**2
 
         # 2. Cylinder Wrap (Wrap V: |v1 - v2| becomes 1 - |v1 - v2|)
-        dist_sq_cylinder = diff_u ** 2 + (1.0 - diff_v) ** 2
+        dist_sq_cylinder = diff_u**2 + (1.0 - diff_v) ** 2
 
         # 3. Möbius Twist (Wrap U -> Flip V)
         dist_u_twist = 1.0 - diff_u
         dist_v_twist = np.abs(v1 + v2 - 1.0)  # |v1 - (1 - v2)| = |v1 + v2 - 1|
 
-        dist_sq_twist = dist_u_twist ** 2 + dist_v_twist ** 2
+        dist_sq_twist = dist_u_twist**2 + dist_v_twist**2
 
         # 4. Combined Wrap (Wrap U + Wrap V)
         dist_v_twist_wrap = 1.0 - dist_v_twist
-        dist_sq_twist_wrap = dist_u_twist ** 2 + dist_v_twist_wrap ** 2
+        dist_sq_twist_wrap = dist_u_twist**2 + dist_v_twist_wrap**2
 
         # Minimum distance
         D_sq = np.minimum(dist_sq_direct, dist_sq_cylinder)
