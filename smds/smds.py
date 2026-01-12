@@ -30,6 +30,7 @@ class Stage1SMDSTransformer(TransformerMixin, BaseEstimator, ABC):
     @abstractmethod
     def n_components(self) -> int:
         """
+        Subclasses must implement this.
         Number of components of the projected manifold.
         """
         pass
@@ -52,6 +53,10 @@ class Stage1SMDSTransformer(TransformerMixin, BaseEstimator, ABC):
 
     @abstractmethod
     def compute_ideal_distances(self, y: np.typing.NDArray):
+        """
+        Subclasses must implement this.
+        Return the pairwise distance matrix for the given labels or coordinates.
+        """
         pass
 
 
@@ -63,6 +68,9 @@ class ComputedStage1(Stage1SMDSTransformer):
 
     @property
     def n_components(self) -> int:
+        """
+        Number of manifold coordinates produced by this stage.
+        """
         return self._n_components
 
     def compute_ideal_distances(self, y: np.typing.NDArray, threshold: int = 2) -> np.ndarray:
@@ -100,11 +108,17 @@ class ComputedStage1(Stage1SMDSTransformer):
         return Y
 
     def fit(self, X, y=None) -> "ComputedStage1":
+        """
+        Compute the ideal distance matrix and its MDS embedding from input labels.
+        """
         self.D_ = self.compute_ideal_distances(X)
         self.Y_ = self._classical_mds(self.D_)
         return self
 
     def transform(self, X=None) -> np.typing.NDArray:
+        """
+        Return the stage-1 embedding computed during fit.
+        """
         return self.Y_
 
 
@@ -118,17 +132,29 @@ class UserProvidedStage1(Stage1SMDSTransformer):
 
     @property
     def n_components(self) -> int:
+        """
+        Number of manifold coordinates represented by the provided embedding.
+        """
         return self._n_components
 
     def compute_ideal_distances(self, y: np.typing.NDArray):
+        """
+        Compute pairwise distances between the stored embedding points.
+        """
         return np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
 
     def fit(self, X=None, y=None) -> "UserProvidedStage1":
+        """
+        Store provided coordinates and compute their distance matrix.
+        """
         self.Y_ = self.y
         self.D_ = self.compute_ideal_distances(None)
         return self
 
     def transform(self, X):
+        """
+        Return the provided embedding coordinates.
+        """
         return self.Y_
 
 
