@@ -33,7 +33,8 @@ SHAPE_TEST_CASES = [
     ("Spherical", "spherical_engine", "spherical_data_10d", 0.70, 0.2),
     ("Geodesic", "geodesic_engine", "spherical_data_10d", 0.70, 0.2),  # max score 0.90 without noise
     ("Spiral", "spiral_engine", "spiral_data_10d", 0.90, 0.1),
-    ("LogLinear", "log_linear_engine", "log_linear_data_10d", 0.70, 0.2),
+    ("LogLinear_ComputedStage1", "log_linear_engine_computed_stage1", "log_linear_data_10d", 0.70, 0.2),
+    ("LogLinear_UserProvidedStage1", "log_linear_engine_user_provided_stage1", "log_linear_data_10d", 0.70, 0.2),
     ("Euclidean", "euclidean_engine", "euclidean_data_10d", 0.90, 0.1),
     ("Semicircular", "semicircular_engine", "semicircular_data_10d", 0.70, 0.2),
     ("KleinBottle", "klein_bottle_engine", "klein_bottle_data_10d", 0.70, 0.2),

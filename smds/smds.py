@@ -62,8 +62,6 @@ class ComputedStage1(Stage1SMDSTransformer):
         # fixme: set manifold to be BaseShape
         self.manifold = manifold
         self._n_components = n_components
-        self.Y_ = None
-        self.D_ = None
 
     @property
     def n_components(self) -> int:
@@ -117,8 +115,7 @@ class UserProvidedStage1(Stage1SMDSTransformer):
         self._n_components = n_components
         if y.shape[-1] != n_components:
             raise ValueError(f"y must have last shape == n_components ({n_components}), got {y.shape[-1]}")
-        self.Y_ = y
-        self.D_ = None
+        self.y = y
 
     @property
     def n_components(self) -> int:
@@ -128,6 +125,7 @@ class UserProvidedStage1(Stage1SMDSTransformer):
         return np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
 
     def fit(self, X=None, y=None) -> "UserProvidedStage1":
+        self.Y_ = self.y
         self.D_ = self.compute_ideal_distances(None)
         return self
 

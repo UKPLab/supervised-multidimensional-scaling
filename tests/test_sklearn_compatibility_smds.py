@@ -7,6 +7,9 @@ from sklearn.utils.estimator_checks import check_estimator  # type: ignore[impor
 from smds.smds import ComputedStage1, SupervisedMDS
 
 
+# todo: add same for Stage1SMDSTransformer
+
+
 def dummy_manifold_func(y: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Dummy manifold function that works with ANY y (for tests).

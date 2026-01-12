@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from smds import ComputedStage1, SupervisedMDS
+from smds import ComputedStage1, UserProvidedStage1, SupervisedMDS
 from smds.shapes.continuous_shapes import (
     CircularShape,
     EuclideanShape,
@@ -282,9 +282,18 @@ def spiral_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray
 # LOG LINEAR SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def log_linear_engine() -> SupervisedMDS:
+def log_linear_engine_computed_stage1() -> SupervisedMDS:
     # LogLinear is intrinsically 1D (a line where distance is log-scale)
-    return SupervisedMDS(ComputedStage1(n_components=1, manifold=LogLinearShape()), alpha=0.1)
+    return SupervisedMDS(stage_1=ComputedStage1(n_components=1, manifold=LogLinearShape()), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def log_linear_engine_user_provided_stage1(
+    log_linear_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    # LogLinear is intrinsically 1D (a line where distance is log-scale)
+    _, _, Y_ = log_linear_data_10d
+    return SupervisedMDS(stage_1=UserProvidedStage1(y=Y_, n_components=1), alpha=0.1)
 
 
 @pytest.fixture(scope="module")
