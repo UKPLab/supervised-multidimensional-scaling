@@ -67,7 +67,10 @@ ignore = [
     "D104",
     "D100",
     "D401",
-    "D301"
+    "D301",
+    "D200",
+    "D101",
+    "D205"
 ]
 
 [tool.ruff.lint.per-file-ignores]
