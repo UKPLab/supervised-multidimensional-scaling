@@ -6,7 +6,6 @@ from sklearn.utils.estimator_checks import check_estimator  # type: ignore[impor
 
 from smds.smds import ComputedStage1, SupervisedMDS
 
-
 # todo: add same for Stage1SMDSTransformer
 
 

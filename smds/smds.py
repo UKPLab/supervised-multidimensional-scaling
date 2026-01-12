@@ -115,6 +115,7 @@ class UserProvidedStage1(Stage1SMDSTransformer):
         self._n_components = n_components
         if y.shape[-1] != n_components:
             raise ValueError(f"y must have last shape == n_components ({n_components}), got {y.shape[-1]}")
+        # todo: maybe no need to pass it here if we pass it in fit()?
         self.y = y
 
     @property
@@ -182,7 +183,8 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Validate and process X and y based on the manifold's expected y dimensionality.
         """
         if isinstance(self.stage_1, UserProvidedStage1):
-            expected_y_ndim = self.stage_1.n_components
+            # todo: probably not the right way
+            expected_y_ndim = y.ndim
         else:
             expected_y_ndim = getattr(self.stage_1.manifold, "y_ndim", 1)
 
