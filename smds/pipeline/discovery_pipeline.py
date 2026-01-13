@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
-from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
+from sklearn.model_selection import cross_validate, KFold  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.base_shape import BaseShape
@@ -26,6 +26,7 @@ from smds.stress.stress_metrics import StressMetrics
 from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
 from .helpers.interactive_plots import generate_interactive_plot
 from .helpers.plots import create_plots
+from ..stress import stress_metrics
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
@@ -57,8 +58,10 @@ def discover_manifolds(
     save_results: bool = True,
     save_path: Optional[str] = None,
     experiment_name: str = "results",
-    create_visualization: bool = True,
+    create_png_visualization: bool = True,
     clear_cache: bool = True,
+    random_state: Optional[int] = None,
+    st_run_id: Optional[str] = None,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
@@ -79,8 +82,10 @@ def discover_manifolds(
         save_results: Whether to persist results to a CSV file.
         save_path: Specific path to save results. If None, generates one based on timestamp.
         experiment_name: Label to include in the generated filename.
-        create_visualization: Whether to create a visualization of the results as an image file.
+        create_png_visualization: Whether to create a visualization of the results as an image file.
         clear_cache: Whether to delete all cache files after successful completion.
+        random_state:
+        st_run_id: todo
 
     Returns:
         A tuple containing:
@@ -93,6 +98,10 @@ def discover_manifolds(
     """
     if shapes is None:
         shapes = DEFAULT_SHAPES
+
+    if st_run_id is not None:
+        # to avoid loding cached manifolds from prev pipeline_run in st_run
+        clear_cache = True
 
     results_list = []
 
@@ -139,6 +148,17 @@ def discover_manifolds(
             pd.DataFrame(columns=csv_headers).to_csv(save_path, index=False)
 
     print("Saving to:", save_path)
+
+    # Setup Cross-Validation Strategy
+    cv_strategy: Any
+
+    # If a seed is provided (ST run), we MUST build the splitter manually to inject the seed.
+    if random_state is not None:
+        cv_strategy = KFold(n_splits=n_folds, shuffle=True, random_state=random_state)
+
+    # If no seed (Standard run), keep original behavior (let sklearn handle it via int)
+    else:
+        cv_strategy = n_folds
 
     # Construct the scoring map for cross_validate
 
@@ -190,7 +210,7 @@ def discover_manifolds(
                 estimator,
                 X,
                 y,
-                cv=n_folds,
+                cv=cv_strategy,
                 n_jobs=n_jobs,
                 scoring=scoring_map,
                 return_train_score=False,
@@ -273,7 +293,7 @@ def discover_manifolds(
     if not df.empty and primary_metric in df.columns:
         df = df.sort_values(primary_metric, ascending=False).reset_index(drop=True)
 
-    if save_results and save_path is not None and create_visualization:
+    if save_results and save_path is not None and create_png_visualization:
         create_plots(X, y, df, valid_shapes, save_path, experiment_name)
 
     if clear_cache:
