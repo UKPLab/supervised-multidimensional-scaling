@@ -71,8 +71,11 @@ def run_statistical_validation(
     data_records = []
 
     for run_idx, csv_path in enumerate(pipeline_results_paths):
-        # We need to skip the metadata comment lines when reading for aggregation
-        df = pd.read_csv(csv_path, comment='#')
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception as e:
+            print(f"Error reading {csv_path}: {e}")
+            continue
 
         for _, row in df.iterrows():
             shape_name = row['shape']

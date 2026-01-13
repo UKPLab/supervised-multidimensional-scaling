@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import uuid
@@ -56,7 +57,8 @@ def discover_manifolds(
     n_folds: int = 5,
     n_jobs: int = -1,
     save_results: bool = True,
-    save_path: Optional[str] = None,
+    #save_path: Optional[str] = None,   # todo: is this a neccessary feature? Users can change SAVE_DIR if they really
+                                        # todo: want another folder. Id say we leave this out. Remove if agree!
     experiment_name: str = "results",
     create_png_visualization: bool = True,
     clear_cache: bool = True,
@@ -121,33 +123,34 @@ def discover_manifolds(
     if save_results:
         os.makedirs(SAVE_DIR, exist_ok=True)
 
-        if save_path is None:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            unique_id = uuid.uuid4().hex[:6]
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        unique_id = uuid.uuid4().hex[:6]
 
-            safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
+        safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
 
-            # Create a unique folder for this experiment
-            unique_suffix = f"{safe_name}_{timestamp}_{unique_id}"
-            experiment_dir = os.path.join(SAVE_DIR, unique_suffix)
-            plots_dir = os.path.join(experiment_dir, "plots")
+        # Create a unique folder for this experiment
+        unique_suffix = f"{safe_name}_{timestamp}_{unique_id}"
+        experiment_dir = os.path.join(SAVE_DIR, unique_suffix)
+        plots_dir = os.path.join(experiment_dir, "plots")
 
-            os.makedirs(experiment_dir, exist_ok=True)
-            os.makedirs(plots_dir, exist_ok=True)
+        os.makedirs(experiment_dir, exist_ok=True)
+        os.makedirs(plots_dir, exist_ok=True)
 
-            filename = f"{unique_suffix}.csv"
-            save_path = os.path.join(experiment_dir, filename)
+        filename = f"{unique_suffix}.csv"
+        save_path = os.path.join(experiment_dir, filename)
 
-        else:
-            experiment_dir = os.path.dirname(os.path.abspath(save_path))
-            plots_dir = os.path.join(experiment_dir, "plots")
-            if not os.path.exists(plots_dir):
-                os.makedirs(plots_dir, exist_ok=True)
+        # === NEW: Save Metadata to JSON ===
+        # todo: This might be used to let the dashboard know which experiments belong to wich st_runs to render the
+        #  st_run plots underneath the current experiment plots. If its non render nothing there or a placeholder
+        #  explaining how to run a st_run
+        meta_path = os.path.join(experiment_dir, "metadata.json")
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump({"st_run_id": st_run_id}, f, indent=4)
 
-        if not os.path.exists(save_path):
+        with open(save_path, 'w', encoding='utf-8') as f:
             pd.DataFrame(columns=csv_headers).to_csv(save_path, index=False)
 
-    print("Saving to:", save_path)
+        print("Saving to:", save_path)
 
     # Setup Cross-Validation Strategy
     cv_strategy: Any
