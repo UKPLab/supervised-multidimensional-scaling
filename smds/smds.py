@@ -25,7 +25,7 @@ from smds.stress import (
 
 
 # smds stage 1 - for the manifold Y_
-class Stage1SMDSTransformer(TransformerMixin, BaseEstimator, ABC):
+class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
     @property
     @abstractmethod
     def n_components(self) -> int:
@@ -60,7 +60,7 @@ class Stage1SMDSTransformer(TransformerMixin, BaseEstimator, ABC):
         pass
 
 
-class ComputedStage1(Stage1SMDSTransformer):
+class ComputedSMDSParametrization(SMDSParametrization):
     def __init__(self, manifold: Callable[[np.ndarray], np.ndarray], n_components: int):
         # fixme: set manifold to be BaseShape
         self.manifold = manifold
@@ -107,7 +107,7 @@ class ComputedStage1(Stage1SMDSTransformer):
         Y: np.ndarray = eigvecs * np.sqrt(np.maximum(eigvals, 0))
         return Y
 
-    def fit(self, X, y=None) -> "ComputedStage1":
+    def fit(self, X, y=None) -> "ComputedSMDSParametrization":
         """
         Compute the ideal distance matrix and its MDS embedding from input labels.
         """
@@ -122,7 +122,7 @@ class ComputedStage1(Stage1SMDSTransformer):
         return self.Y_
 
 
-class UserProvidedStage1(Stage1SMDSTransformer):
+class UserProvidedSMDSParametrization(SMDSParametrization):
     def __init__(self, y: np.typing.NDArray, n_components: int):
         self._n_components = n_components
         if y.shape[-1] != n_components:
@@ -143,7 +143,7 @@ class UserProvidedStage1(Stage1SMDSTransformer):
         """
         return np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
 
-    def fit(self, X=None, y=None) -> "UserProvidedStage1":
+    def fit(self, X=None, y=None) -> "UserProvidedSMDSParametrization":
         """
         Store provided coordinates and compute their distance matrix.
         """
@@ -161,7 +161,7 @@ class UserProvidedStage1(Stage1SMDSTransformer):
 class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     def __init__(
         self,
-        stage_1: Stage1SMDSTransformer,
+        stage_1: SMDSParametrization,
         alpha: float = 0.1,
         orthonormal: bool = False,
         radius: float = 6371,
@@ -206,7 +206,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Validate and process X and y based on the manifold's expected y dimensionality.
         """
-        if isinstance(self.stage_1, UserProvidedStage1):
+        if isinstance(self.stage_1, UserProvidedSMDSParametrization):
             # todo: probably not the right way
             expected_y_ndim = y.ndim
         else:
@@ -261,7 +261,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         X = np.asarray(X)
         y = np.asarray(y).squeeze()  # Ensure y is 1D
 
-        self.stage_1_fitted_: Stage1SMDSTransformer = clone(self.stage_1)
+        self.stage_1_fitted_: SMDSParametrization = clone(self.stage_1)
         self.stage_1_fitted_.fit(y)
 
         self.Y_ = self.stage_1_fitted_.Y_

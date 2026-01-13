@@ -4,7 +4,7 @@ from numpy.testing import assert_array_equal
 from numpy.typing import NDArray
 from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
-from smds import ComputedStage1, SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS
 from smds.shapes.discrete_shapes import ClusterShape
 
 
@@ -44,7 +44,7 @@ def test_cluster_distance_computation() -> None:
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
     """Provides a default SMDS engine configured with ClusterShape."""
-    return SupervisedMDS(ComputedStage1(n_components=2, manifold=ClusterShape()))
+    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=ClusterShape()))
 
 
 @pytest.fixture

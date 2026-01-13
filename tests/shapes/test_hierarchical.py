@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from smds import ComputedStage1, SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS
 from smds.shapes.discrete_shapes import HierarchicalShape
 
 
@@ -18,7 +18,9 @@ def random_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
     return SupervisedMDS(
-        ComputedStage1(n_components=2, manifold=HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0])))
+        ComputedSMDSParametrization(
+            n_components=2, manifold=HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0]))
+        )
     )
 
 

@@ -33,7 +33,7 @@ You can instantiate the model, fit it to data `(X, y)`, and transform your input
 
 ```python
 import numpy as np
-from smds import SupervisedMDS, ComputedStage1
+from smds import SupervisedMDS, ComputedSMDSParametrization
 from smds.shapes.discrete_shapes import ClusterShape
 
 # Example data
@@ -41,7 +41,7 @@ X = np.random.randn(100, 20)  # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-smds = SupervisedMDS(stage_1=ComputedStage1(n_components=2, manifold=ClusterShape()), alpha=0.1)
+smds = SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=2, manifold=ClusterShape()), alpha=0.1)
 smds.fit(X, y)
 
 # Transform to low-dimensional space
