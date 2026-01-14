@@ -6,17 +6,28 @@ from smds.shapes import BaseShape
 
 class ClusterShape(BaseShape):
     """
-    Implements the cluster-shape for categorical data.
+    Compute ideal distances for categorical data (0 for same, 1 for different).
 
     This shape models data where the only meaningful distinction is category
-    membership. The ideal distance is 0 for points within the same category
-    and 1 for points in different categories.
+    membership. The ideal distance is defined as 0 for points within the same
+    category and 1 for points in different categories.
+
+    Parameters
+    ----------
+    normalize_labels : bool, optional
+        Whether to normalize labels using the base class logic. Default is False.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (1). Expects a 1D array of category labels.
     """
 
     y_ndim = 1
 
     @property
     def normalize_labels(self) -> bool:
+        """bool: Whether input labels are normalized."""
         return self._normalize_labels
 
     def __init__(self, normalize_labels: bool = False):
@@ -24,15 +35,18 @@ class ClusterShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Computes the ideal pairwise distance matrix for categorical labels.
+        Compute the binary pairwise distance matrix.
 
-        Args:
-            y: A 1D numpy array of labels of shape (n_samples,).
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input 1D array of categorical labels.
 
         Returns
         -------
-            A (n_samples, n_samples) distance matrix where D[i, j] is 0 if
-            y[i] == y[j] and 1 otherwise.
+        NDArray[np.float64]
+            A pairwise distance matrix where $D_{ij} = 0$ if $y_i = y_j$ and
+            $D_{ij} = 1$ otherwise.
         """
         distance_matrix: NDArray[np.float64] = (y[:, None] != y[None, :]).astype(float)
 

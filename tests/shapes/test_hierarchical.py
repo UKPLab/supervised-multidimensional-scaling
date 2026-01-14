@@ -26,8 +26,8 @@ def test_hierarchical_smoke_test(
     smds_engine: SupervisedMDS,
 ) -> None:
     """
-    A simple "smoke test" to ensure HierarchicalShape can be fit and transformed
-    without errors and produces an output of the correct shape.
+    A simple "smoke test" to ensure HierarchicalShape can be fit and transformed without errors
+     and produces an output of the correct shape.
     """
     X: NDArray[np.float64]
     y: NDArray[np.float64]
@@ -48,8 +48,7 @@ def test_hierarchical_smoke_test(
 @pytest.fixture
 def structured_hierarchical_data_2d() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """
-    Provides a dataset where X geometry matches the Y hierarchy.
-    HierarchicalShape should excel here.
+    Provides a dataset where X geometry matches the Y hierarchy. HierarchicalShape should excel here.
     """
     n_examples = 25
     y_list = [[0, 0, 0], [0, 0, 1], [0, 1, 2], [0, 1, 3], [1, 0, 4], [1, 0, 5], [1, 1, 6], [1, 1, 7]]
@@ -164,8 +163,7 @@ def test_hierarchical_recovers_structure_from_high_dim(
     smds_engine: SupervisedMDS,
 ) -> None:
     """
-    Tests if SMDS can find and recover a hierarchical structure
-    hidden in a noisy, high-dimensional space.
+    Tests if SMDS can find and recover a hierarchical structure hidden in a noisy, high-dimensional space.
     """
     X: NDArray[np.float64]
     y: NDArray[np.float64]
