@@ -2,17 +2,16 @@ import ast
 import json
 import os
 import uuid
+from datetime import datetime
 from pathlib import Path
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
-from datetime import datetime
 
 from smds.pipeline.discovery_pipeline import discover_manifolds
 from smds.pipeline.statistical_testing.analysis import perform_st_analysis
 from smds.stress.stress_metrics import StressMetrics
-
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ST_RESULTS_DIR = os.path.join(BASE_DIR, "statistical_testing", "st_results")
@@ -29,7 +28,6 @@ def run_statistical_validation(
     Runs the discovery pipeline `n_repeats` times with different random seeds.
     Aggregates results and performs statistical analysis.
     """
-
     # Generate Unique ST ID
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     unique_id = uuid.uuid4().hex[:6]

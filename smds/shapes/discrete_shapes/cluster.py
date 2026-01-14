@@ -29,7 +29,8 @@ class ClusterShape(BaseShape):
         Args:
             y: A 1D numpy array of labels of shape (n_samples,).
 
-        Returns:
+        Returns
+        -------
             A (n_samples, n_samples) distance matrix where D[i, j] is 0 if
             y[i] == y[j] and 1 otherwise.
         """

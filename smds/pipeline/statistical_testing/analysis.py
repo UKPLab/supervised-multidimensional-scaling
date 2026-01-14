@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any
+from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -57,13 +57,13 @@ def perform_st_analysis(
     p_values_matrix = sp.posthoc_nemenyi_friedman(sanitized_df)
 
     # Save P-values CSV
-    p_values_matrix.to_csv(os.path.join(metric_dir, f"p_values.csv"))
+    p_values_matrix.to_csv(os.path.join(metric_dir, "p_values.csv"))
 
     # Generate Heatmap
     plt.figure(figsize=(10, 8))
     sp.sign_plot(p_values_matrix)
     plt.suptitle(f"Nemenyi Test P-Values ({metric_name})", y=0.98, fontsize=14)
-    plt.savefig(os.path.join(metric_dir, f"p_values_heatmap.png"), bbox_inches='tight')
+    plt.savefig(os.path.join(metric_dir, "p_values_heatmap.png"), bbox_inches='tight')
     plt.close()
 
     # Critical Difference Diagram

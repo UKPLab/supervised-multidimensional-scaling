@@ -1,6 +1,8 @@
 import json
+
 import numpy as np
 import pytest
+
 from smds.pipeline.statistical_testing.run_statistical_test import run_statistical_validation
 from smds.stress.stress_metrics import StressMetrics
 
@@ -12,7 +14,6 @@ def test_st_pipeline_with_random_data(tmp_path):
     Uses random noise to ensure the pipeline handles 'messy' data without crashing,
     and produces the expected file artifacts.
     """
-
     rng = np.random.default_rng(42)
     X = rng.random((100, 3))
     y = rng.random(100)
@@ -55,7 +56,6 @@ def test_st_pipeline_with_circular(circular_data_10d, tmp_path):
     When given highly structured data (Circular), the Friedman test
     MUST return a significant P-Value (< 0.05).
     """
-
     X, y, _ = circular_data_10d
 
     _, output_dir = run_statistical_validation(

@@ -30,6 +30,7 @@ def non_metric_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) 
     -------
     stress : float
         The non-metric stress value.
+
     References
     ----------
     - Smelser, K., Miller, J., & Kobourov, S. (2024). "Normalized Stress is Not

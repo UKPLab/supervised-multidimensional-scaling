@@ -47,11 +47,11 @@ class DiscreteCircularShape(BaseShape):
         Args:
             y: A 1D numpy array of labels of shape (n_samples,).
 
-        Returns:
+        Returns
+        -------
             A (n_samples, n_samples) distance matrix representing the shortest
             ring distance between each pair of labels.
         """
-
         # Determine cycle length: Use self.num_points if available, else infer.
         if self.num_points is not None:
             cycle_length = float(self.num_points)

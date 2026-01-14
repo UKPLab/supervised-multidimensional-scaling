@@ -42,7 +42,8 @@ class HierarchicalShape(BaseShape):
         Args:
             y: Input array of hierarchical labels.
 
-        Returns:
+        Returns
+        -------
             Validated and processed array.
         """
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
@@ -73,7 +74,8 @@ class HierarchicalShape(BaseShape):
             y: A 2D numpy array of shape (n_samples, n_levels) containing
                hierarchical categorical labels.
 
-        Returns:
+        Returns
+        -------
             A (n_samples, n_samples) distance matrix.
         """
         differences = y[:, None, :] != y[None, :, :]

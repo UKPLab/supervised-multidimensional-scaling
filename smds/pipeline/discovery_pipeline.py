@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
-from sklearn.model_selection import cross_validate, KFold  # type: ignore[import-untyped]
+from sklearn.model_selection import KFold, cross_validate  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.base_shape import BaseShape
@@ -85,7 +85,8 @@ def discover_manifolds(
         random_state: Seed used by the random number generator for Cross-Validation splitting.
         st_run_id: Unique identifier for a Statistical Testing run.
 
-    Returns:
+    Returns
+    -------
         A tuple containing:
         - pd.DataFrame: The aggregated results, sorted by mean score.
         - Optional[str]: The path to the saved CSV file, or None if saving was disabled.

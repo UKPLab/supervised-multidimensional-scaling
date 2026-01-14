@@ -43,7 +43,8 @@ def get_shape_color(shape_name: str) -> str:
     Args:
         shape_name (str): The class name of the shape (e.g., "CircularShape").
 
-    Returns:
+    Returns
+    -------
         str: The corresponding hex color, or a default grey if not found.
     """
     return SHAPE_COLORS.get(shape_name, COL_DEFAULT)

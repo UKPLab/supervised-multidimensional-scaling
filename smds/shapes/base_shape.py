@@ -16,7 +16,8 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
         """
         Dimensionality of the input labels 'y'.
 
-        Examples:
+        Examples
+        --------
         y_ndim = 1: Needs a list of labels (Months, Clusters, etc.)
         y_ndim = 2: Needs a table of labels (Lat/Lon, Multi-level Hierarchy)
         """
