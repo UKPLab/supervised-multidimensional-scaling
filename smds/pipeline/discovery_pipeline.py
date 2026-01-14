@@ -27,7 +27,6 @@ from smds.stress.stress_metrics import StressMetrics
 from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
 from .helpers.interactive_plots import generate_interactive_plot
 from .helpers.plots import create_plots
-from ..stress import stress_metrics
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
@@ -57,8 +56,6 @@ def discover_manifolds(
     n_folds: int = 5,
     n_jobs: int = -1,
     save_results: bool = True,
-    #save_path: Optional[str] = None,   # todo: is this a neccessary feature? Users can change SAVE_DIR if they really
-                                        # todo: want another folder. Id say we leave this out. Remove if agree!
     experiment_name: str = "results",
     create_png_visualization: bool = True,
     clear_cache: bool = True,
@@ -82,12 +79,11 @@ def discover_manifolds(
                  the model is fit and scored directly on all data.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
         save_results: Whether to persist results to a CSV file.
-        save_path: Specific path to save results. If None, generates one based on timestamp.
         experiment_name: Label to include in the generated filename.
         create_png_visualization: Whether to create a visualization of the results as an image file.
         clear_cache: Whether to delete all cache files after successful completion.
-        random_state:
-        st_run_id: todo
+        random_state: Seed used by the random number generator for Cross-Validation splitting.
+        st_run_id: Unique identifier for a Statistical Testing run.
 
     Returns:
         A tuple containing:
@@ -139,10 +135,8 @@ def discover_manifolds(
         filename = f"{unique_suffix}.csv"
         save_path = os.path.join(experiment_dir, filename)
 
-        # === NEW: Save Metadata to JSON ===
-        # todo: This might be used to let the dashboard know which experiments belong to wich st_runs to render the
-        #  st_run plots underneath the current experiment plots. If its non render nothing there or a placeholder
-        #  explaining how to run a st_run
+        # Save Metadata to JSON
+        # used to let the dashboard know which experiments belong to which st_run
         meta_path = os.path.join(experiment_dir, "metadata.json")
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump({"st_run_id": st_run_id}, f, indent=4)

@@ -1,7 +1,10 @@
 import ast
+import json
 import os
 import uuid
 from pathlib import Path
+from typing import Tuple, Dict
+
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -21,7 +24,7 @@ def run_statistical_validation(
         n_repeats: int = 10,
         n_folds: int = 5,
         experiment_name: str = "st_experiment"
-):
+)-> Tuple[Dict[str, pd.DataFrame], Path]:
     """
     Runs the discovery pipeline `n_repeats` times with different random seeds.
     Aggregates results and performs statistical analysis.
@@ -62,49 +65,73 @@ def run_statistical_validation(
     # Aggregate Data
     print("Aggregating results...")
 
-    # todo: For now we only focus on Scale Normalized Stress for the analysis. Ticket expects all metrics
-    target_metric = StressMetrics.SCALE_NORMALIZED_STRESS.value
-    col_mean = f"mean_{target_metric}"
-    col_fold = f"fold_{target_metric}"
-
-    # Matrix: Rows = (Run_i, Fold_j), Cols = Shapes
-    data_records = []
-
+    # Pre-load all CSVs to avoid re-reading files for every metric
+    loaded_dfs = []
     for run_idx, csv_path in enumerate(pipeline_results_paths):
         try:
             df = pd.read_csv(csv_path)
+            loaded_dfs.append((run_idx, df))
         except Exception as e:
             print(f"Error reading {csv_path}: {e}")
+
+    pivot_dfs = {}  # Store pivots to return
+    full_summary_report = {}
+
+    # Iterate over ALL metrics defined in the Enum
+    for metric in StressMetrics:
+        target_metric = metric.value
+        col_fold = f"fold_{target_metric}"
+
+        print(f"Analyzing metric: {target_metric}...")
+
+        data_records = []
+
+        for run_idx, df in loaded_dfs:
+            for _, row in df.iterrows():
+                shape_name = row['shape']
+
+                if col_fold not in row:
+                    continue
+
+                # Parse the string representation of list back to list
+                try:
+                    fold_scores = ast.literal_eval(row[col_fold])
+                    if not isinstance(fold_scores, list):
+                        continue
+                except:
+                    continue
+
+                for fold_idx, score in enumerate(fold_scores):
+                    data_records.append({
+                        "run_id": run_idx,
+                        "fold_id": fold_idx,
+                        "shape": shape_name,
+                        "score": score
+                    })
+
+        if not data_records:
+            print(f"No valid data found for metric {target_metric}")
             continue
 
-        for _, row in df.iterrows():
-            shape_name = row['shape']
-            # Parse the string representation of list back to list
-            try:
-                fold_scores = ast.literal_eval(row[col_fold])
-                if not isinstance(fold_scores, list):
-                    continue
-            except:
-                continue
+        agg_df = pd.DataFrame(data_records)
 
-            for fold_idx, score in enumerate(fold_scores):
-                data_records.append({
-                    "run_id": run_idx,
-                    "fold_id": fold_idx,
-                    "shape": shape_name,
-                    "score": score
-                })
+        # Pivot to get Shapes as columns
+        # Index will be (run_id, fold_id)
+        pivot_df = agg_df.pivot(index=["run_id", "fold_id"], columns="shape", values="score")
+        pivot_dfs[target_metric] = pivot_df
 
-    agg_df = pd.DataFrame(data_records)
+        # Perform Analysis and capture summary
+        print(f"Analyzing {target_metric}...")
+        metric_summary = perform_st_analysis(pivot_df, st_output_dir, target_metric)
 
-    # Pivot to get Shapes as columns
-    # Index will be (run_id, fold_id)
-    pivot_df = agg_df.pivot(index=["run_id", "fold_id"], columns="shape", values="score")
+        # Add to master report
+        full_summary_report[target_metric] = metric_summary
 
-    # Perform Analysis
-    print("Performing Friedman/Nemenyi tests...")
-    perform_st_analysis(pivot_df, st_output_dir, target_metric)
+    # Save Aggregated Summary JSON
+    summary_path = os.path.join(st_output_dir, "st_summary.json")
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(full_summary_report, f, indent=4)
 
     print(f"Statistical validation complete. Results saved in {st_output_dir}")
 
-    return pivot_df, Path(st_output_dir)
+    return pivot_dfs, Path(st_output_dir)
