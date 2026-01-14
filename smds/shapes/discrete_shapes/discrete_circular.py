@@ -62,7 +62,6 @@ class DiscreteCircularShape(BaseShape):
         NDArray[np.float64]
             Pairwise distance matrix representing the shortest path on the ring.
         """
-
         # Determine cycle length: Use self.num_points if available, else infer.
         if self.num_points is not None:
             cycle_length = float(self.num_points)

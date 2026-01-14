@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+from typing import Any, Tuple
 
 import numpy as np
 import pytest
@@ -8,7 +10,7 @@ from smds.stress.stress_metrics import StressMetrics
 
 
 @pytest.mark.slow
-def test_st_pipeline_with_random_data(tmp_path):
+def test_st_pipeline_with_random_data(tmp_path: Path) -> None:
     """
     Validates the architecture of the ST pipeline (File I/O, Aggregation).
     Uses random noise to ensure the pipeline handles 'messy' data without crashing,
@@ -50,7 +52,7 @@ def test_st_pipeline_with_random_data(tmp_path):
 
 
 @pytest.mark.slow
-def test_st_pipeline_with_circular(circular_data_10d, tmp_path):
+def test_st_pipeline_with_circular(circular_data_10d: Tuple[np.ndarray, np.ndarray, Any], tmp_path: Path) -> None:
     """
     Validates the Statistical Logic.
     When given highly structured data (Circular), the Friedman test

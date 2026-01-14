@@ -60,12 +60,17 @@ def create_p_value_heatmap(df: pd.DataFrame, theme: str) -> go.Figure:
     # 2 = p < 0.01
     # 1 = p < 0.05
     # 0 = NS
-    def get_bucket(x, r, c):
-        if r == c: return -1  # Diagonal
-        if np.isnan(x): return 0  # Treat missing as NS or handle separately
-        if x < 0.001: return 3
-        if x < 0.01: return 2
-        if x < 0.05: return 1
+    def get_bucket(x: float, r: int, c: int) -> int:
+        if r == c:
+            return -1  # Diagonal
+        if np.isnan(x):
+            return 0  # Treat missing as NS or handle separately
+        if x < 0.001:
+            return 3
+        if x < 0.01:
+            return 2
+        if x < 0.05:
+            return 1
         return 0
 
     # Apply logic element-wise using indices
@@ -445,8 +450,8 @@ def main() -> None:
 
             with st.expander("How to enable Statistical Validation?"):
                 st.markdown("""
-                        Statistical validation requires running the pipeline multiple times with different random seeds 
-                        to verify that the ranking of shapes is robust and significant. Therefore you need to run the 
+                        Statistical validation requires running the pipeline multiple times with different random seeds
+                        to verify that the ranking of shapes is robust and significant. Therefore you need to run the
                         Statistical Testing wrapper instead of the standard pipeline.
                         Find more details in the README.
                         """)

@@ -2,9 +2,9 @@ import os
 from typing import Any, Dict
 
 import matplotlib.pyplot as plt
-import pandas as pd
-import scikit_posthocs as sp
-from scipy import stats
+import pandas as pd  # type: ignore[import-untyped]
+import scikit_posthocs as sp  # type: ignore[import-untyped]
+from scipy import stats  # type: ignore[import-untyped]
 
 
 def perform_st_analysis(
@@ -32,7 +32,7 @@ def perform_st_analysis(
 
     if sanitized_df.empty:
         print(f"[{metric_name}] Error: No valid data for statistical testing.")
-        return
+        return {"error": "No valid data (NaNs)"}
 
     # Friedman Test
     # Transpose because friedmanchisquare expects samples as columns
@@ -40,7 +40,7 @@ def perform_st_analysis(
         stat, p_value = stats.friedmanchisquare(*[sanitized_df[col] for col in sanitized_df.columns])
     except ValueError as e:
         print(f"[{metric_name}] Friedman test failed: {e}")
-        return
+        return {"error": str(e)}
 
     summary = {
         "test": "Friedman Chi-Square",

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 
 from smds.pipeline.discovery_pipeline import discover_manifolds
 from smds.pipeline.statistical_testing.analysis import perform_st_analysis
@@ -96,7 +96,7 @@ def run_statistical_validation(
                     fold_scores = ast.literal_eval(row[col_fold])
                     if not isinstance(fold_scores, list):
                         continue
-                except:
+                except Exception:
                     continue
 
                 for fold_idx, score in enumerate(fold_scores):
