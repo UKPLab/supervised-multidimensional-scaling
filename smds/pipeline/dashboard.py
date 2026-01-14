@@ -426,7 +426,8 @@ def main() -> None:
                                 if os.path.exists(cd_file):
                                     st.image(cd_file, width="stretch")
                                     st.caption(
-                                        "Lower rank (left) is better. Bars connect insignificant differences.")
+                                        "Lower rank (left) is better. Shapes connected by a thick bar "
+                                        "are **statistically tied** (performed equally well).")
                                 else:
                                     st.warning("CD Diagram missing.")
                     else:
