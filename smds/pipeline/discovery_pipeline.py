@@ -116,6 +116,7 @@ def discover_manifolds(
     experiment_dir = None
     plots_dir = None
     unique_suffix = ""
+    save_path = None
 
     if save_results:
         os.makedirs(SAVE_DIR, exist_ok=True)
