@@ -70,51 +70,36 @@ smds.save("smds_model.pkl")
 loaded_smds = SupervisedMDS.load("smds_model.pkl")
 ```
 
-### Optimization & GPU Support
+## Optimization & GPU Support
 
-For manifolds with undefined distances (like `ChainShape`), this library defaults to a generic SciPy solver. For large datasets, this can be slow. 
+For manifolds with undefined distances (e.g. `ChainShape`), SMDS falls back to a generic SciPy solver.  
+For large datasets, this can be slow.
 
-We provide an optional accelerated solver using `PyTorch`, which is faster on CPU and significantly faster on GPU.
+SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can transparently leverage GPUs when available.
+
+---
 
 ### Enabling the Accelerator
-1.  Install `PyTorch` (see below).
-2.  Initialize the model with `use_gpu=True`:
-    ```python
-    mds = SupervisedMDS(..., manifold=ChainShape(...), use_gpu=True)
-    ```
 
-### Installation Guide
+Install SMDS with the optional `fast` extra:
 
-Since hardware requirements vary, `PyTorch` is **not** installed by default.
+```bash
+  pip install smds[fast]
+```
 
-On **<ins>Windows/Linux</ins>**:
- - **CPU Acceleration [No GPU]**
-   -  Running the standard install will enable the optimized Adam solver **on your CPU**. 
-      This is faster than the default, even **without a GPU**.
-      ```bash
-      uv pip install torch
-       ```
-   
+Then enable it in your model:
+```python
+smds = SupervisedMDS(
+    ...,
+    manifold=ChainShape(...),
+    use_gpu=True,
+)
+```
+If a compatible GPU is available, PyTorch will use it automatically.
+Otherwise, the accelerated solver will run on CPU.
 
-
- - **GPU Acceleration [NVIDIA CUDA]** 
-    - To enable GPU acceleration, you need the specific CUDA-enabled version of PyTorch. Find the correct Index URL for 
-   your system on the [PyTorch Get Started](https://pytorch.org/get-started/locally/) page (under the "Compute Platform" selector).
-        ```bash
-        uv pip install torch --index-url https://download.pytorch.org/whl/<cuda_version>
-        ```
-   
-    - If you are using Conda, your GPU may be detected automatically when you install PyTorch with:
-          ```
-          conda install pytorch -c pytorch -c nvidia
-          ```
-
-On **<ins>MacOS</ins>** (Apple Silicon M1/M2/M3):
-- The standard installation automatically enables GPU acceleration via Apple Metal (MPS).
-    ```bash
-    uv pip install torch
-     ```
-
+>💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
+See the official PyTorch documentation for platform-specific setup.
 
 
 
