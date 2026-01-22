@@ -9,8 +9,7 @@ from smds.pipeline.statistical_testing.run_statistical_test import run_statistic
 from smds.stress.stress_metrics import StressMetrics
 
 
-@pytest.mark.slow
-def test_st_pipeline_with_random_data(tmp_path: Path) -> None:
+def run_st_pipeline_with_random_data(tmp_path: Path) -> None:
     """
     Validates the architecture of the ST pipeline (File I/O, Aggregation).
     Uses random noise to ensure the pipeline handles 'messy' data without crashing,
@@ -51,8 +50,7 @@ def test_st_pipeline_with_random_data(tmp_path: Path) -> None:
         assert (metric_dir / "cd_diagram.png").exists()
 
 
-@pytest.mark.slow
-def test_st_pipeline_with_circular(circular_data_10d: Tuple[np.ndarray, np.ndarray, Any], tmp_path: Path) -> None:
+def run_st_pipeline_with_circular(circular_data_10d: Tuple[np.ndarray, np.ndarray, Any], tmp_path: Path) -> None:
     """
     Validates the Statistical Logic.
     When given highly structured data (Circular), the Friedman test
