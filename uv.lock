@@ -3524,6 +3524,11 @@ dependencies = [
     { name = "zadu" },
 ]
 
+[package.optional-dependencies]
+fast = [
+    { name = "torch" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "black" },
@@ -3564,8 +3569,10 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.7.2" },
     { name = "scipy", specifier = ">=1.16.3" },
     { name = "streamlit", specifier = ">=1.52.2" },
+    { name = "torch", marker = "extra == 'fast'", specifier = ">=2.9.0" },
     { name = "zadu", specifier = ">=0.3.1" },
 ]
+provides-extras = ["fast"]
 
 [package.metadata.requires-dev]
 dev = [
