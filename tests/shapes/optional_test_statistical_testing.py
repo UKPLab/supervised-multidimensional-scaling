@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Tuple
 
 import numpy as np
-import pytest
 
 from smds.pipeline.statistical_testing.run_statistical_test import run_statistical_validation
 from smds.stress.stress_metrics import StressMetrics
