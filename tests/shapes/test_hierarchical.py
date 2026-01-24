@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from smds import SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS
 from smds.shapes.discrete_shapes import HierarchicalShape
 
 
@@ -17,7 +17,11 @@ def random_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
 
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=HierarchicalShape(level_distances=[100.0, 10.0, 1.0]))
+    return SupervisedMDS(
+        ComputedSMDSParametrization(
+            n_components=2, manifold=HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0]))
+        )
+    )
 
 
 @pytest.mark.smoke
@@ -36,7 +40,7 @@ def test_hierarchical_smoke_test(
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
     n_samples = X.shape[0]
-    n_components = smds_engine.n_components
+    n_components = smds_engine.stage_1.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
         f"Output shape is incorrect. "
@@ -77,7 +81,7 @@ def test_hierarchical_preserves_structure_in_2d(
 
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
-    assert X_proj.shape == (X.shape[0], smds_engine.n_components), (
+    assert X_proj.shape == (X.shape[0], smds_engine.stage_1.n_components), (
         f"Output shape should be (n_samples, n_components), but got {X_proj.shape}."
     )
 
@@ -89,7 +93,7 @@ def test_hierarchical_distance_computation() -> None:
     """
     Tests that HierarchicalShape correctly computes distances based on the first differing level.
     """
-    shape = HierarchicalShape(level_distances=[1.0, 2.0, 3.0])
+    shape = HierarchicalShape(level_distances=np.array([1.0, 2.0, 3.0]))
 
     y = np.array([[1, 1, 1], [1, 1, 2], [1, 2, 1], [2, 1, 1], [1, 1, 1]]).astype(float)
 
@@ -107,7 +111,7 @@ def test_hierarchical_validation() -> None:
     """
     Tests that HierarchicalShape correctly validates input dimensions.
     """
-    shape = HierarchicalShape(level_distances=[1.0, 2.0])
+    shape = HierarchicalShape(level_distances=np.array([1.0, 2.0]))
 
     with pytest.raises(ValueError, match="must be 2-dimensional"):
         shape(np.array([1, 2, 3]))
@@ -128,10 +132,10 @@ def test_hierarchical_init_validation() -> None:
     Tests that HierarchicalShape validates level_distances parameter.
     """
     with pytest.raises(ValueError, match="cannot be empty"):
-        HierarchicalShape(level_distances=[])
+        HierarchicalShape(level_distances=np.array([]))
 
     with pytest.raises(ValueError, match="must be non-negative"):
-        HierarchicalShape(level_distances=[1.0, -1.0, 2.0])
+        HierarchicalShape(level_distances=np.array([1.0, -1.0, 2.0]))
 
 
 @pytest.fixture
@@ -171,7 +175,7 @@ def test_hierarchical_recovers_structure_from_high_dim(
 
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
-    assert X_proj.shape == (X.shape[0], smds_engine.n_components), (
+    assert X_proj.shape == (X.shape[0], smds_engine.stage_1.n_components), (
         f"Output shape should be (n_samples, n_components), but got {X_proj.shape}."
     )
 

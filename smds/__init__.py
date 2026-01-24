@@ -1,3 +1,3 @@
-from .smds import SupervisedMDS
+from .smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
 
-__all__ = ["SupervisedMDS"]
+__all__ = ["SupervisedMDS", "ComputedSMDSParametrization", "UserProvidedSMDSParametrization"]

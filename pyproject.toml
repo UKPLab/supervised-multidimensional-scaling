@@ -1,6 +1,6 @@
 [project]
 name = "supervised-multidimensional-scaling"
-version = "0.7.0"
+version = "0.8.0"
 description = "A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling (SMDS) for automatic feature manifold discovery in LLMs."
 requires-python = ">=3.12"
 dependencies = [
@@ -18,11 +18,11 @@ dependencies = [
     "zadu>=0.3.1",
 ]
 authors = [
-    { name = "Vinayak Joshi"},
-    { name="Jan Karas"}, 
-    {name = "Anton Kantsemal"}, 
-    {name = "Simon Kistner"}, 
-    {name = "Arwin Sanee Ghomi"}
+    { name = "Vinayak Joshi" },
+    { name = "Jan Karas" },
+    { name = "Anton Kantsemal" },
+    { name = "Simon Kistner" },
+    { name = "Arwin Sanee Ghomi" }
 ]
 
 [dependency-groups]
