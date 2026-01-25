@@ -16,10 +16,7 @@ Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de)
 
 Don't hesitate to report an issue if you have further questions or spot a bug.
 
-## Installation
-
-### For Users (Lightweight)
-This installation mode is recommended if you just want to use the library for your project.
+## Getting started
 
 With uv (recommended):
 ```shell
@@ -29,19 +26,6 @@ uv add supervised-multidimensional-scaling
 With pip:
 ```bash
 pip install supervised-multidimensional-scaling
-```
-
-### For Contributors (Heavy)
-This installation mode includes development dependencies, such as `torch` and `transformers`. You need this if you plan to run tests, build documentation, or contribute to the code.
-
-With uv:
-```bash
-uv sync
-```
-
-With pip (if installing from source):
-```bash
-pip install -e ".[dev]"
 ```
 
 ## Usage
