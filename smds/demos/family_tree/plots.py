@@ -1,9 +1,10 @@
-import os
 import glob
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import os
 from datetime import datetime
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 
 def get_latest_results(experiment_name, model_name, base_results_dir):
@@ -45,7 +46,7 @@ def plot_results(models, experiment_name="family_tree_experiment"):
     for model in models:
         df = get_latest_results(experiment_name, model, base_results_dir)
         if df is not None:
-            df['model'] = model
+            df["model"] = model
             combined_data.append(df)
 
     if not combined_data:
@@ -78,15 +79,15 @@ def plot_results(models, experiment_name="family_tree_experiment"):
             annot=True,
             fmt=".3f",
             cmap="RdYlGn_r",
-            linewidths=.5,
-            cbar_kws={'label': 'Stress (Lower is Better)'}
+            linewidths=0.5,
+            cbar_kws={"label": "Stress (Lower is Better)"},
         )
 
         clean_metric_name = metric.replace("mean_", "").replace("_", " ").title()
         plt.title(f"{clean_metric_name}\n({experiment_name})")
         plt.xlabel("Shape Hypothesis")
         plt.ylabel("Model")
-        plt.xticks(rotation=45, ha='right')
+        plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
 
         output_filename = f"heatmap_{metric}.png"

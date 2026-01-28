@@ -1,12 +1,10 @@
-import os
 import random
-import torch
+
 import numpy as np
-import pandas as pd
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 from tqdm import tqdm
-from smds import SupervisedMDS
-from smds.shapes.continuous_shapes import EuclideanShape, CircularShape
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from smds.demos.family_tree.data_generation import generate_family_tree_data, load_names
 from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
 
@@ -26,7 +24,8 @@ def find_last_token_idx(tokenizer, text, target):
 
     matched_idx = -1
     for idx, (tok_start, tok_end) in enumerate(offset_mapping):
-        if tok_start == tok_end == 0: continue
+        if tok_start == tok_end == 0:
+            continue
 
         if not (tok_end <= target_start or tok_start >= target_end):
             matched_idx = idx
@@ -42,8 +41,8 @@ def get_activations(df, model, tokenizer, layer=-1):
 
     print("Recording activations...")
     for _, row in tqdm(df.iterrows(), total=len(df)):
-        text = row['text']
-        target_map = row['target_map']
+        text = row["text"]
+        target_map = row["target_map"]
 
         input_ids = tokenizer(text, return_tensors="pt").to(model.device)
 
@@ -89,17 +88,18 @@ def main():
     y = y.astype(np.float64)
 
     results_df, save_path = discover_manifolds(
-        X, y,
+        X,
+        y,
         experiment_name="family_tree_experiment",
         model_name="gpt2",
         n_folds=5,
         n_jobs=-1,
         save_results=True,
-        create_visualization=True
+        create_visualization=True,
     )
 
     print("\nPipeline Results:")
-    print(results_df[['shape', 'mean_scale_normalized_stress', 'std_scale_normalized_stress', 'error']])
+    print(results_df[["shape", "mean_scale_normalized_stress", "std_scale_normalized_stress", "error"]])
 
     if not results_df.empty:
         winner = results_df.iloc[0]
@@ -114,17 +114,18 @@ def main():
     hierarchical_shape = HierarchicalShape(level_distances=[5.0, 1.0])
 
     results_hier, _ = discover_manifolds(
-        X, y_hier,
+        X,
+        y_hier,
         shapes=[hierarchical_shape],
         save_path=save_path,
         n_folds=5,
         n_jobs=-1,
         save_results=True,
-        create_visualization=True
+        create_visualization=True,
     )
 
     print("\nHierarchical Results:")
-    print(results_hier[['shape', 'mean_scale_normalized_stress', 'std_scale_normalized_stress', 'error']])
+    print(results_hier[["shape", "mean_scale_normalized_stress", "std_scale_normalized_stress", "error"]])
 
 
 if __name__ == "__main__":

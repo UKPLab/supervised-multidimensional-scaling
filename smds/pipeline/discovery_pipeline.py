@@ -1,6 +1,5 @@
 import os
 import shutil
-import uuid
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
@@ -48,18 +47,18 @@ DEFAULT_SHAPES = [
 
 
 def discover_manifolds(
-        X: NDArray[np.float64],
-        y: NDArray[np.float64],
-        shapes: Optional[List[BaseShape]] = None,
-        smds_components: int = 2,
-        n_folds: int = 5,
-        n_jobs: int = -1,
-        save_results: bool = True,
-        save_path: Optional[str] = None,
-        experiment_name: str = "results",
-        model_name: Optional[str] = None,
-        create_visualization: bool = True,
-        clear_cache: bool = True,
+    X: NDArray[np.float64],
+    y: NDArray[np.float64],
+    shapes: Optional[List[BaseShape]] = None,
+    smds_components: int = 2,
+    n_folds: int = 5,
+    n_jobs: int = -1,
+    save_results: bool = True,
+    save_path: Optional[str] = None,
+    experiment_name: str = "results",
+    model_name: Optional[str] = None,
+    create_visualization: bool = True,
+    clear_cache: bool = True,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
@@ -120,13 +119,15 @@ def discover_manifolds(
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
             try:
                 import subprocess
+
                 git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).strip().decode("utf-8")
             except Exception:
                 git_hash = "nohash"
 
             # Sanitize names
             safe_exp_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_")).strip()
-            if not safe_exp_name: safe_exp_name = "experiment"
+            if not safe_exp_name:
+                safe_exp_name = "experiment"
 
             # Construct base path: experiment_name/model_name
             path_components = [SAVE_DIR, safe_exp_name]
@@ -146,7 +147,7 @@ def discover_manifolds(
             os.makedirs(experiment_dir, exist_ok=True)
             os.makedirs(plots_dir, exist_ok=True)
 
-            filename = f"results.csv"
+            filename = "results.csv"
             save_path = os.path.join(experiment_dir, filename)
 
         else:
@@ -167,6 +168,7 @@ def discover_manifolds(
     scoring_map: Dict[str, ScorerFunc] = {}
 
     for metric in StressMetrics:
+
         def make_scorer(m: StressMetrics) -> ScorerFunc:
             # estimator.score returns a float
             return lambda estimator, x_data, y_data: float(estimator.score(x_data, y_data, metric=m))

@@ -1,5 +1,6 @@
 import os
 import random
+
 import pandas as pd
 
 
@@ -9,7 +10,7 @@ def load_names():
         path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../resources/names.csv"))
 
     df = pd.read_csv(path)
-    return df['name'].tolist()
+    return df["name"].tolist()
 
 
 def generate_family_tree_data(names, n_samples=50):
@@ -45,11 +46,7 @@ def generate_family_tree_data(names, n_samples=50):
             elif 3 <= i <= 6:
                 dist = 2
 
-            entry = {
-                "text": text,
-                "names": family_names,
-                "target_map": {target_name: dist}
-            }
+            entry = {"text": text, "names": family_names, "target_map": {target_name: dist}}
             data.append(entry)
 
     return pd.DataFrame(data)

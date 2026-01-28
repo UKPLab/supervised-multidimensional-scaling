@@ -79,6 +79,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "smds/shapes/coordinates/base_coordinates.py" = ["F821"]
+"smds/demos/family_tree/*" = ["D103"]
 "tests/**/*" = ["D101", "D102", "D103", "D205", "D400", "D401"]
 # remove in next doc PR
 "smds/pipeline/dashboard.py" = ["D103"]

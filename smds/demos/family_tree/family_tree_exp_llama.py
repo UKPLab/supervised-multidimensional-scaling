@@ -1,12 +1,10 @@
-import os
 import random
-import torch
+
 import numpy as np
-import pandas as pd
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+import torch
 from tqdm import tqdm
-from smds import SupervisedMDS
-from smds.shapes.continuous_shapes import EuclideanShape, CircularShape
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
 from smds.demos.family_tree.data_generation import generate_family_tree_data, load_names
 
 random.seed(42)
@@ -25,7 +23,8 @@ def find_last_token_idx(tokenizer, text, target):
 
     matched_idx = -1
     for idx, (tok_start, tok_end) in enumerate(offset_mapping):
-        if tok_start == tok_end == 0: continue
+        if tok_start == tok_end == 0:
+            continue
 
         if not (tok_end <= target_start or tok_start >= target_end):
             matched_idx = idx
@@ -41,8 +40,8 @@ def get_activations(df, model, tokenizer, layer=-1):
 
     print("Recording activations...")
     for _, row in tqdm(df.iterrows(), total=len(df)):
-        text = row['text']
-        target_map = row['target_map']
+        text = row["text"]
+        target_map = row["target_map"]
 
         input_ids = tokenizer(text, return_tensors="pt").to(model.device)
 
@@ -65,8 +64,6 @@ def get_activations(df, model, tokenizer, layer=-1):
 
 def main():
     print("Setting up experiment...")
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_compute_dtype=torch.float16,
@@ -76,11 +73,7 @@ def main():
     model_name = "meta-llama/Llama-3.1-8B-Instruct"
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            quantization_config=bnb_config,
-            device_map="auto"
-        )
+        model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, device_map="auto")
     except Exception as e:
         print(f"Error loading model {model_name}: {e}")
         raise e
@@ -103,17 +96,18 @@ def main():
     X = X.astype(np.float64)
 
     results_df, save_path = discover_manifolds(
-        X, y,
+        X,
+        y,
         experiment_name="family_tree_experiment",
         model_name="llama",
         n_folds=5,
         n_jobs=-1,
         save_results=True,
-        create_visualization=True
+        create_visualization=True,
     )
 
     print("\nPipeline Results:")
-    print(results_df[['shape', 'mean_scale_normalized_stress', 'std_scale_normalized_stress', 'error']])
+    print(results_df[["shape", "mean_scale_normalized_stress", "std_scale_normalized_stress", "error"]])
 
     if not results_df.empty:
         winner = results_df.iloc[0]
@@ -128,17 +122,18 @@ def main():
     hierarchical_shape = HierarchicalShape(level_distances=[5.0, 1.0])
 
     results_hier, _ = discover_manifolds(
-        X, y_hier,
+        X,
+        y_hier,
         shapes=[hierarchical_shape],
         save_path=save_path,  # Append to existing results
         n_folds=5,
         n_jobs=-1,
         save_results=True,
-        create_visualization=True
+        create_visualization=True,
     )
 
     print("\nHierarchical Results:")
-    print(results_hier[['shape', 'mean_scale_normalized_stress', 'std_scale_normalized_stress', 'error']])
+    print(results_hier[["shape", "mean_scale_normalized_stress", "std_scale_normalized_stress", "error"]])
 
 
 if __name__ == "__main__":
