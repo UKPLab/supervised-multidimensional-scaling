@@ -27,9 +27,12 @@ authors = [
 
 [dependency-groups]
 dev = [
+    "accelerate>=1.12.0",
+    "bitsandbytes>=0.49.1",
     "black>=25.9.0",
     "coverage>=7.11.0",
     "datasets>=4.4.1",
+    "dotenv>=0.9.9",
     "gitchangelog>=3.0.4",
     "isort>=7.0.0",
     "matplotlib>=3.10.7",

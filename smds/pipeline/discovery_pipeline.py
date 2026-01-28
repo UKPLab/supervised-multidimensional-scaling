@@ -48,17 +48,18 @@ DEFAULT_SHAPES = [
 
 
 def discover_manifolds(
-    X: NDArray[np.float64],
-    y: NDArray[np.float64],
-    shapes: Optional[List[BaseShape]] = None,
-    smds_components: int = 2,
-    n_folds: int = 5,
-    n_jobs: int = -1,
-    save_results: bool = True,
-    save_path: Optional[str] = None,
-    experiment_name: str = "results",
-    create_visualization: bool = True,
-    clear_cache: bool = True,
+        X: NDArray[np.float64],
+        y: NDArray[np.float64],
+        shapes: Optional[List[BaseShape]] = None,
+        smds_components: int = 2,
+        n_folds: int = 5,
+        n_jobs: int = -1,
+        save_results: bool = True,
+        save_path: Optional[str] = None,
+        experiment_name: str = "results",
+        model_name: Optional[str] = None,
+        create_visualization: bool = True,
+        clear_cache: bool = True,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
@@ -74,11 +75,12 @@ def discover_manifolds(
         smds_components: Tells SMDS on how many dimensions to map
         shapes: List of Shape objects to test. Defaults to a standard set if None.
         n_folds: Number of Cross-Validation folds. If 0, Cross-Validation is skipped and
-                 the model is fit and scored directly on all data.
+                  the model is fit and scored directly on all data.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
         save_results: Whether to persist results to a CSV file.
         save_path: Specific path to save results. If None, generates one based on timestamp.
-        experiment_name: Label to include in the generated filename.
+        experiment_name: Label to include in the generated filename (top-level directory).
+        model_name: Optional label for the model (sub-directory).
         create_visualization: Whether to create a visualization of the results as an image file.
         clear_cache: Whether to delete all cache files after successful completion.
 
@@ -114,20 +116,37 @@ def discover_manifolds(
         os.makedirs(SAVE_DIR, exist_ok=True)
 
         if save_path is None:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            unique_id = uuid.uuid4().hex[:6]
+            # Requested format: yyyy-mm-dd_hh-mm
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+            try:
+                import subprocess
+                git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).strip().decode("utf-8")
+            except Exception:
+                git_hash = "nohash"
 
-            safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
+            # Sanitize names
+            safe_exp_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_")).strip()
+            if not safe_exp_name: safe_exp_name = "experiment"
 
-            # Create a unique folder for this experiment
-            unique_suffix = f"{safe_name}_{timestamp}_{unique_id}"
-            experiment_dir = os.path.join(SAVE_DIR, unique_suffix)
+            # Construct base path: experiment_name/model_name
+            path_components = [SAVE_DIR, safe_exp_name]
+
+            if model_name:
+                safe_model_name = "".join(c for c in model_name if c.isalnum() or c in ("-", "_")).strip()
+                if safe_model_name:
+                    path_components.append(safe_model_name)
+
+            # Final subfolder: timestamp_hash
+            unique_suffix = f"{timestamp}_{git_hash}"
+            path_components.append(unique_suffix)
+
+            experiment_dir = os.path.join(*path_components)
             plots_dir = os.path.join(experiment_dir, "plots")
 
             os.makedirs(experiment_dir, exist_ok=True)
             os.makedirs(plots_dir, exist_ok=True)
 
-            filename = f"{unique_suffix}.csv"
+            filename = f"results.csv"
             save_path = os.path.join(experiment_dir, filename)
 
         else:
@@ -148,7 +167,6 @@ def discover_manifolds(
     scoring_map: Dict[str, ScorerFunc] = {}
 
     for metric in StressMetrics:
-
         def make_scorer(m: StressMetrics) -> ScorerFunc:
             # estimator.score returns a float
             return lambda estimator, x_data, y_data: float(estimator.score(x_data, y_data, metric=m))
@@ -274,7 +292,7 @@ def discover_manifolds(
     if not df.empty and primary_metric in df.columns:
         df = df.sort_values(primary_metric, ascending=False).reset_index(drop=True)
 
-    if save_results and save_path is not None and create_visualization:
+    if save_results and save_path is not None and create_visualization and not df.empty:
         create_plots(X, y, df, valid_shapes, save_path, experiment_name)
 
     if clear_cache:

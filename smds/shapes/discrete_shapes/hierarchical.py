@@ -44,11 +44,11 @@ class HierarchicalShape(BaseShape):
         return self._normalize_labels
 
     def __init__(self, level_distances: List[float], normalize_labels: bool = False) -> None:
-        if not level_distances:
+        if len(level_distances) == 0:
             raise ValueError("level_distances cannot be empty.")
         if any(d < 0 for d in level_distances):
             raise ValueError("All level_distances must be non-negative.")
-        self.level_distances = np.array(level_distances, dtype=np.float64)
+        self.level_distances = level_distances
         self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -68,7 +68,7 @@ class HierarchicalShape(BaseShape):
         Raises
         ------
         ValueError
-            If `y` is empty, not 2D, or the number of columns (levels) does not
+            If `y` is empty, or the number of columns (levels) does not
             match the length of `level_distances`.
         """
         y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
@@ -115,7 +115,9 @@ class HierarchicalShape(BaseShape):
         first_diff_level = np.argmax(differences, axis=2)
         has_difference = np.any(differences, axis=2)
 
+        level_distances_arr = np.array(self.level_distances, dtype=np.float64)
+
         # Map indices to distances; identical rows (no difference) get 0.0
-        distance_matrix = np.where(has_difference, self.level_distances[first_diff_level], 0.0)
+        distance_matrix = np.where(has_difference, level_distances_arr[first_diff_level], 0.0)
 
         return distance_matrix
