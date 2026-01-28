@@ -137,3 +137,7 @@ dmypy.json
 # Project files
 sketch*
 supervised_multidimensional_scaling/sketch*
+
+# Manifold Discovery Results
+.cache/
+saved_results/
