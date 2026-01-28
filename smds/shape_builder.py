@@ -75,6 +75,21 @@ class ShapeBuilder:
         t = ShapeBuilder._normalize(vals)
         angles = np.pi * t
         return angles
+    
+    @staticmethod
+    def _get_cluster_centers(n_clusters: int, outer_radius: float = 3.0) -> NDArray[np.float64]:
+        """
+        Generate cluster center positions using Fibonacci sphere.
+        """
+        indices = np.arange(n_clusters, dtype=np.float64)
+        phi = np.arccos(1 - 2 * (indices + 0.5) / n_clusters)
+        theta = np.pi * (1 + 5**0.5) * indices
+
+        x = outer_radius * np.sin(phi) * np.cos(theta)
+        y = outer_radius * np.sin(phi) * np.sin(theta)
+        z = outer_radius * np.cos(phi)
+
+        return np.column_stack([x, y, z])
 
     # -------------------------------------------------------------------------
     # 2D Shapes
@@ -122,129 +137,80 @@ class ShapeBuilder:
         
         Y = np.column_stack([x, y]).astype(np.float64)
         return Y, df
-
+    
+    
     @staticmethod
-    def distinct_points(
-        a_categories: NDArray,
-        b_categories: NDArray,
+    def clusters_of_circles(
+        categories: NDArray,
+        angle_values: NDArray,
         *,
+        radius: float = 1.0,
         outer_radius: float = 3.0,
-        inner_radius: float = 1.0,
-        a_name: str = "a",
-        b_name: str = "b",
-    ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
+        cat_name: str = "category",
+        angle_name: str = "angle",
+    ) -> Tuple[NDArray[np.float64], pd.DataFrame]:
         """
-        Categorical + Categorical -> Nested clusters (maximum distance grouping).
-        
-        Creates a two-level hierarchy:
-        - Outer category (a_categories): clusters placed on a large circle
-        - Inner category (b_categories): points within each cluster on a smaller circle
-        
-        This ensures both categorical levels are maximally separated at their
-        respective scales.
-        
-        Parameters
-        ----------
-        a_categories : array-like
-            Outer categorical values (each gets a cluster).
-        b_categories : array-like
-            Inner categorical values (points within each cluster).
-        outer_radius : float, default=3.0
-            Radius of the circle on which outer category centers are placed.
-        inner_radius : float, default=1.0
-            Radius of the small circle for points within each cluster.
-        
-        Returns
-        -------
-        Y : NDArray of shape (n_points, 2)
-            2D coordinates for each point.
-        labels : DataFrame
-            Labels for each point (includes 'pair' column with combined label).
-        
-        Examples
-        --------
-        >>> # A/B with 1/2/3: creates 2 clusters with 3 points each
-        >>> Y, labels = ShapeBuilder.distinct_points(['A', 'B'], [1, 2, 3])
-        >>> Y.shape  # (6, 2)
+        Categorical + Circular -> Circles at cluster positions.
+
+        - 2-3 clusters: positioned in 2D
+        - 4+ clusters: positioned in 3D (Fibonacci sphere)
+        - Circles in local XY plane
         """
-        import pandas as pd
-        a_grid, b_grid, df = ShapeBuilder._make_grid(a_categories, b_categories, a_name, b_name)
-        
-        # Create combined pair labels
-        df["pair"] = [f"{a}|{b}" for a, b in zip(a_grid, b_grid)]
-        
-        # Outer category: place cluster centers on a large circle
-        outer_angles, _ = ShapeBuilder._map_to_circle(a_grid)
-        cx = outer_radius * np.cos(outer_angles)
-        cy = outer_radius * np.sin(outer_angles)
-        
-        # Inner category: place points within each cluster on a small circle
-        inner_angles, _ = ShapeBuilder._map_to_circle(b_grid)
-        dx = inner_radius * np.cos(inner_angles)
-        dy = inner_radius * np.sin(inner_angles)
-        
-        # Final position: cluster center + offset
-        x = cx + dx
-        y = cy + dy
-        
-        Y = np.column_stack([x, y]).astype(np.float64)
+        cat_grid, angle_grid, df = ShapeBuilder._make_grid(categories, angle_values, cat_name, angle_name)
+
+        unique_cats = np.unique(np.asarray(categories).ravel())
+        n_clusters = len(unique_cats)
+        cluster_centers_3d = ShapeBuilder._get_cluster_centers(n_clusters, outer_radius)
+
+        cat_to_idx = {val: i for i, val in enumerate(unique_cats)}
+        cluster_indices = np.array([cat_to_idx[val] for val in cat_grid])
+        centers = cluster_centers_3d[cluster_indices]
+
+        theta, _ = ShapeBuilder._map_to_circle(angle_grid)
+        dx = radius * np.cos(theta)
+        dy = radius * np.sin(theta)
+        dz = np.zeros_like(dx)
+
+        positions_3d = centers + np.column_stack([dx, dy, dz])
+        Y = positions_3d.astype(np.float64)
+
         return Y, df
 
 
     @staticmethod
-    def parallel_lines(
+    def clusters_of_lines(
         categories: NDArray,
         line_values: NDArray,
         *,
         length: float = 2.0,
-        center_radius: Optional[float] = None,
+        outer_radius: float = 3.0,
         cat_name: str = "category",
         val_name: str = "value",
-    ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
+    ) -> Tuple[NDArray[np.float64], pd.DataFrame]:
         """
-        Categorical + Linear -> N parallel line segments.
-        
-        Each category gets its own line segment. The *centers* of the line
-        segments are placed equally spaced around a circle in 2D, so categories
-        are maximally separated while the line directions remain parallel.
-        
-        Parameters
-        ----------
-        categories : array-like
-            Categorical values (each category = one line).
-        line_values : array-like
-            Linear values along each line (mapped to x).
-        length : float, default=2.0
-            Length of each line.
-        center_radius : float, optional
-            Radius of the circle on which category centers are placed.
-            If None, defaults to 3 * length.
-        
-        Returns
-        -------
-        Y : NDArray of shape (n_points, 2)
-            2D coordinates for each point.
-        labels : DataFrame
-            Labels for each point.
+        Categorical + Linear -> Lines at cluster positions.
+
+        - 2-3 clusters: positioned in 2D
+        - 4+ clusters: positioned in 3D (Fibonacci sphere)
+        - Lines parallel to local x-axis
         """
         cat_grid, val_grid, df = ShapeBuilder._make_grid(categories, line_values, cat_name, val_name)
 
-        if center_radius is None:
-            center_radius = 3.0 * float(length)
-        
-        # Local line coordinate (all lines parallel to x-axis)
-        t = ShapeBuilder._normalize(val_grid)
-        x_local = float(length) * (t - 0.5)
-        
-        # Category centers arranged on a circle (between-category separation)
-        phi, _ = ShapeBuilder._map_to_circle(cat_grid)
-        cx = float(center_radius) * np.cos(phi)
-        cy = float(center_radius) * np.sin(phi)
+        unique_cats = np.unique(np.asarray(categories).ravel())
+        n_clusters = len(unique_cats)
+        cluster_centers_3d = ShapeBuilder._get_cluster_centers(n_clusters, outer_radius)
 
-        x = cx + x_local
-        y = cy
-        
-        Y = np.column_stack([x, y]).astype(np.float64)
+        cat_to_idx = {val: i for i, val in enumerate(unique_cats)}
+        cluster_indices = np.array([cat_to_idx[val] for val in cat_grid])
+        centers = cluster_centers_3d[cluster_indices]
+
+        t = ShapeBuilder._normalize(val_grid)
+        x_local = length * (t - 0.5)
+
+        positions_3d = centers + np.column_stack([x_local, np.zeros_like(x_local), np.zeros_like(x_local)])
+
+        Y = positions_3d.astype(np.float64)
+
         return Y, df
     
 
@@ -548,42 +514,41 @@ class ShapeBuilder:
         return Y, df
     
     @staticmethod
-    def helix_surface(
-        linear_values: NDArray,
-        t_values: NDArray,
+    def helix_plus_line(
+        line_values: NDArray,
+        helix_t_values: NDArray,
         *,
-        radius: float = 1.0,
-        pitch: float = 1.0,
-        turns: float = 2.0,
-        spacing: float = 0.5,
-        linear_name: str = "linear",
-        t_name: str = "t",
+        line_spacing: float = 1.0,
+        helix_radius: float = 0.5,
+        helix_pitch: float = 1.0,
+        helix_turns: float = 2.0,
+        line_name: str = "line",
+        helix_name: str = "helix_t",
     ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
         """
-        Linear + Helix -> 3D helical surface (parallel helix curves).
+        Linear + Helix -> 3D shape with helices perpendicular to a base line.
         
-        Creates a surface made of parallel helix curves, with each curve
-        displaced linearly perpendicular to the helix axis. Think of it
-        as a corrugated or ribbed surface where each "rib" is a helix.
+        Creates a base line along the x-axis, with a helix extending perpendicular
+        (spiraling around a vertical axis) from each point on the line. Think of it 
+        as a row of vertical corkscrews.
         
         Parameters
         ----------
-        linear_values : array-like
-            Linear values that create parallel copies of the helix.
-            Each value generates one helix curve.
-        t_values : array-like
-            Parameter values along each helix curve.
-        radius : float, default=1.0
+        line_values : array-like
+            Values along the base line (x-axis positions).
+        helix_t_values : array-like
+            Parameter values along each helix (0 to 1 or similar).
+        line_spacing : float, default=1.0
+            Distance between consecutive points on the base line.
+        helix_radius : float, default=0.5
             Radius of each helix spiral.
-        pitch : float, default=1.0
-            Vertical distance per complete turn.
-        turns : float, default=2.0
+        helix_pitch : float, default=1.0
+            Vertical distance per complete helix turn.
+        helix_turns : float, default=2.0
             Number of complete rotations for each helix.
-        spacing : float, default=0.5
-            Distance between adjacent helix curves.
-        linear_name : str, default="linear"
-            Name for the linear dimension column in labels.
-        t_name : str, default="t"
+        line_name : str, default="line"
+            Name for the line position column in labels.
+        helix_name : str, default="helix_t"
             Name for the helix parameter column in labels.
         
         Returns
@@ -595,102 +560,75 @@ class ShapeBuilder:
         
         Examples
         --------
-        >>> # Helical surface with 5 parallel helices
-        >>> linear = np.arange(5)
-        >>> t = np.linspace(0, 10, 100)
-        >>> Y, labels = ShapeBuilder.helix_surface(linear, t)
-        >>> plot_shape(Y, labels, color_by='linear')
+        >>> # Create 5 helices along a line
+        >>> line_positions = np.arange(5)
+        >>> helix_param = np.linspace(0, 10, 50)
+        >>> Y, labels = ShapeBuilder.helix_plus_line(line_positions, helix_param)
+        >>> plot_shape(Y, labels, color_by='line')
         """
-        lin_grid, t_grid, df = ShapeBuilder._make_grid(linear_values, t_values, linear_name, t_name)
+        line_grid, helix_grid, df = ShapeBuilder._make_grid(
+            line_values, helix_t_values, line_name, helix_name
+        )
         
-        # Normalize linear dimension to [0, 1]
-        t_lin = ShapeBuilder._normalize(lin_grid)
+        # Base line: position along x-axis
+        t_line = ShapeBuilder._normalize(line_grid)
+        n_line = len(np.unique(line_values))
+        total_length = line_spacing * (n_line - 1) if n_line > 1 else 0
+        x_base = line_spacing * t_line * (n_line - 1) - total_length / 2
         
-        # Normalize helix parameter to [0, 1]
-        t_norm = ShapeBuilder._normalize(t_grid)
+        # Helix: spirals around y-axis (vertical), rising along y
+        t_helix = ShapeBuilder._normalize(helix_grid)
+        theta = 2 * np.pi * helix_turns * t_helix
         
-        # Helix spiral coordinates
-        theta = 2 * np.pi * turns * t_norm
-        x_helix = float(radius) * np.cos(theta)
-        y_helix = float(radius) * np.sin(theta)
-        z = pitch * turns * t_norm
+        # Helix spirals in xz-plane, rises along y-axis
+        x_offset = helix_radius * np.cos(theta)  # Spiral component in x
+        z = helix_radius * np.sin(theta)         # Spiral component in z
+        y = helix_pitch * helix_turns * t_helix  # Rise along y-axis
         
-        # Linear offset: shift each helix perpendicular to spiral axis
-        # Place helices along a line in the x-direction
-        n_linear = len(np.unique(linear_values))
-        total_width = spacing * (n_linear - 1) if n_linear > 1 else 0
-        x_offset = spacing * t_lin * (n_linear - 1) - total_width / 2
-        
-        # Final coordinates: helix + linear offset
-        x = x_helix + x_offset
-        y = y_helix
+        # Combine: base line position + helix spiral offset
+        x = x_base + x_offset
         
         Y = np.column_stack([x, y, z]).astype(np.float64)
         return Y, df
 
 
     @staticmethod
-    def parallel_circles(
-        categories: NDArray,
-        angle_values: NDArray,
+    def clusters_of_clusters(
+        a_categories: NDArray,
+        b_categories: NDArray,
         *,
-        radius: float = 1.0,
-        center_radius: Optional[float] = None,
-        cat_name: str = "category",
-        angle_name: str = "angle",
-    ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
+        outer_radius: float = 3.0,
+        inner_radius: float = 1.0,
+        a_name: str = "a",
+        b_name: str = "b",
+    ) -> Tuple[NDArray[np.float64], pd.DataFrame]:
         """
-        Categorical + Circular -> N distinct circles in a circle layout (3D).
-        
-        Each category gets its own circle in the XY plane. Circle *centers* are
-        placed equally spaced around a larger circle (also in the XY plane),
-        so categories are clearly separated.
-        
-        Parameters
-        ----------
-        categories : array-like
-            Categorical values (each category = one circle).
-        angle_values : array-like
-            Circular values around each circle.
-        radius : float, default=1.0
-            Radius of each circle.
-        center_radius : float, optional
-            Radius of the circle on which category centers are placed.
-            If None, defaults to 3 * radius.
-        
-        Returns
-        -------
-        Y : NDArray of shape (n_points, 3)
-            3D coordinates for each point.
-        labels : DataFrame
-            Labels for each point.
+        Categorical + Categorical -> Clusters of clusters.
+
+        - 2-3 clusters: positioned in 2D (line or triangle)
+        - 4+ clusters: positioned in 3D (Fibonacci sphere)
+        - Inner points within each cluster placed on a small circle
         """
-        cat_grid, angle_grid, df = ShapeBuilder._make_grid(categories, angle_values, cat_name, angle_name)
-    
-        # Ensure sufficient separation between circles
-        unique_cats = np.unique(np.asarray(categories).ravel())
-        n_cats = len(unique_cats)
-        
-        if center_radius is None:
-            # Increase separation: ensure circles don't overlap
-            # Need center_radius > radius * (1 + 2*sin(π/n_cats)) for no overlap
-            min_separation = radius * (1 + 2 * np.sin(np.pi / n_cats))
-            center_radius = max(4.0 * float(radius), min_separation * 1.5)
+        a_grid, b_grid, df = ShapeBuilder._make_grid(a_categories, b_categories, a_name, b_name)
+        df["pair"] = [f"{a}|{b}" for a, b in zip(a_grid, b_grid)]
 
-        # Angles along each circle (within-category)
-        theta, _ = ShapeBuilder._map_to_circle(angle_grid)
+        unique_a = np.unique(np.asarray(a_categories).ravel())
+        n_clusters = len(unique_a)
+        cluster_centers_3d = ShapeBuilder._get_cluster_centers(n_clusters, outer_radius)
 
-        # Category centers arranged on a circle
-        phi, _ = ShapeBuilder._map_to_circle(cat_grid)
-        cx = float(center_radius) * np.cos(phi)
-        cy = float(center_radius) * np.sin(phi)
+        a_to_idx = {val: i for i, val in enumerate(unique_a)}
+        cluster_indices = np.array([a_to_idx[val] for val in a_grid])
+        centers = cluster_centers_3d[cluster_indices]
 
-        # Local circle around each center
-        x = cx + float(radius) * np.cos(theta)
-        y = cy + float(radius) * np.sin(theta)
-        z = np.zeros_like(x)
+        inner_angles, _ = ShapeBuilder._map_to_circle(b_grid)
+        dx = inner_radius * np.cos(inner_angles)
+        dy = inner_radius * np.sin(inner_angles)
+        dz = np.zeros_like(dx)
 
-        Y = np.column_stack([x, y, z]).astype(np.float64)
+        positions_3d = centers + np.column_stack([dx, dy, dz])
+
+        Y = positions_3d.astype(np.float64)
+
         return Y, df
 
     @staticmethod
@@ -863,75 +801,20 @@ def plot_shape(
     size: int = 8,
     opacity: float = 0.7,
     output_file: Optional[str] = None,
-    show: bool = True,
 ) -> go.Figure:
-    """
-    Plot any ShapeBuilder output with interactive 3D/2D visualization.
-    
-    Parameters
-    ----------
-    Y : NDArray
-        Coordinate array from ShapeBuilder (shape: n_points × 2 or 3).
-    labels_df : DataFrame
-        Labels DataFrame from ShapeBuilder.
-    color_by : str, optional
-        Column name in labels_df to use for coloring points.
-        If None, uses the first column.
-    title : str, optional
-        Plot title. If None, auto-generated from labels.
-    size : int, default=8
-        Marker size.
-    opacity : float, default=0.7
-        Marker opacity (0-1).
-    output_file : str, optional
-        Path to save HTML file. If None, doesn't save.
-    show : bool, default=True
-        Whether to display the plot.
-    
-    Returns
-    -------
-    fig : plotly Figure
-        The generated figure.
-    
-    Examples
-    --------
-    >>> # 2D shape
-    >>> Y, labels = ShapeBuilder.distinct_points(['A', 'B'], [1, 2, 3])
-    >>> plot_shape(Y, labels, color_by='a')
-    
-    >>> # 3D shape
-    >>> Y, labels = ShapeBuilder.cylinder(np.arange(2020, 2025), np.arange(1, 13))
-    >>> plot_shape(Y, labels, color_by='angle', output_file='cylinder.html')
-    
-    >>> # Hierarchical shape
-    >>> Y, labels = ShapeBuilder.hierarchical_clusters(['A', 'B'], [1, 2, 3])
-    >>> plot_shape(Y, labels, color_by='level_1', title='Nested Clusters')
-    """
-    
-    # Validate input
-    if Y.shape[0] != len(labels_df):
-        raise ValueError(f"Y has {Y.shape[0]} points but labels_df has {len(labels_df)} rows")
-    
+    """Plot shape with interactive 3D/2D visualization."""
+
     n_dims = Y.shape[1]
-    if n_dims not in [2, 3]:
-        raise ValueError(f"Y must be 2D or 3D, got shape {Y.shape}")
-    
-    # Determine color column
+
     if color_by is None:
         color_by = labels_df.columns[0]
-    elif color_by not in labels_df.columns:
-        raise ValueError(f"color_by='{color_by}' not found in labels. Available: {list(labels_df.columns)}")
-    
-    # Extract coordinates
+
     x, y = Y[:, 0], Y[:, 1]
     z = Y[:, 2] if n_dims == 3 else None
-    
-    # Prepare color data
+
     color_data = labels_df[color_by].values
-    
-    # Convert categorical to numeric for colorscale
     is_categorical = labels_df[color_by].dtype == object or pd.api.types.is_categorical_dtype(labels_df[color_by])
-    
+
     if is_categorical:
         unique_vals = pd.unique(color_data)
         color_map = {val: i for i, val in enumerate(unique_vals)}
@@ -946,195 +829,174 @@ def plot_shape(
         colorbar_title = color_by
         tickvals = None
         ticktext = None
-    
-    # Build hover text with all labels
+
     hover_parts = []
     for col in labels_df.columns:
         hover_parts.append(f"{col}=%{{customdata[{list(labels_df.columns).index(col)}]}}")
     hovertemplate = "<br>".join(hover_parts) + "<extra></extra>"
-    
+
     customdata = labels_df.values
+
+    trace = go.Scatter3d(
+        x=x, y=y, z=z,
+        mode="markers",
+        customdata=customdata,
+        hovertemplate=hovertemplate,
+        marker=dict(
+            size=size,
+            opacity=opacity,
+            color=color_numeric,
+            colorscale=colorscale,
+            showscale=True,
+            colorbar=dict(
+                title=colorbar_title,
+                tickvals=tickvals,
+                ticktext=ticktext,
+            ) if is_categorical and tickvals else dict(title=colorbar_title),
+        ),
+        showlegend=False,
+    )
+
+    fig = go.Figure(data=[trace])
+    fig.update_layout(
+        scene=dict(
+            aspectmode="data",
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Z",
+        ),
+    )
     
-    # Create trace
-    if n_dims == 3:
-        trace = go.Scatter3d(
-            x=x, y=y, z=z,
-            mode="markers",
-            customdata=customdata,
-            hovertemplate=hovertemplate,
-            marker=dict(
-                size=size,
-                opacity=opacity,
-                color=color_numeric,
-                colorscale=colorscale,
-                showscale=True,
-                colorbar=dict(
-                    title=colorbar_title,
-                    tickvals=tickvals,
-                    ticktext=ticktext,
-                ) if is_categorical and tickvals else dict(title=colorbar_title),
-            ),
-            showlegend=False,
-        )
-        
-        fig = go.Figure(data=[trace])
-        fig.update_layout(
-            scene=dict(
-                aspectmode="data",
-                xaxis_title="X",
-                yaxis_title="Y",
-                zaxis_title="Z",
-            ),
-        )
-    else:  # 2D
-        trace = go.Scatter(
-            x=x, y=y,
-            mode="markers",
-            customdata=customdata,
-            hovertemplate=hovertemplate,
-            marker=dict(
-                size=size,
-                opacity=opacity,
-                color=color_numeric,
-                colorscale=colorscale,
-                showscale=True,
-                colorbar=dict(
-                    title=colorbar_title,
-                    tickvals=tickvals,
-                    ticktext=ticktext,
-                ) if is_categorical and tickvals else dict(title=colorbar_title),
-            ),
-            showlegend=False,
-        )
-        
-        fig = go.Figure(data=[trace])
-        fig.update_xaxes(title="X", scaleanchor="y", scaleratio=1)
-        fig.update_yaxes(title="Y")
-    
-    # Set title
+
     if title is None:
         label_cols = [col for col in labels_df.columns if col != 'pair']
         title = f"Shape: {' × '.join(label_cols)}"
-    
+
     fig.update_layout(
         title=title,
         width=800,
         height=700,
         margin=dict(l=10, r=10, t=60, b=10),
     )
-    
-    # Save if requested
+
     if output_file:
         fig.write_html(output_file, include_plotlyjs="cdn")
-        print(f"Saved plot to {output_file}")
-    
-    # Show if requested
-    if show:
-        fig.show()
-    
+        print(f"  ✓ {output_file}")
+
     return fig
 
-
 def main():
-    """Demonstrate all ShapeBuilder shapes with 5x5 or equivalent inputs."""
-    import numpy as np
-    
-    print("=" * 70)
-    print("ShapeBuilder - All Shapes Demo")
-    print("=" * 70)
-    
-    # Common inputs
-    linear_5 = np.arange(5)
-    categories_5 = ['A', 'B', 'C', 'D', 'E']
-    circular_5 = np.arange(5)
-    
-    # -------------------------------------------------------------------------
-    # 2D Shapes
-    # -------------------------------------------------------------------------
-    
-    print("\n[1/13] Plane (Linear + Linear)")
-    Y, labels = ShapeBuilder.plane(linear_5, linear_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Plane: 5×5 Grid", output_file="01_plane.html", show=False)
-    
-    print("\n[2/13] Distinct Points (Categorical + Categorical)")
-    Y, labels = ShapeBuilder.distinct_points(categories_5[:3], categories_5[:3])
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Distinct Points: 3×3 Nested Clusters", 
-               output_file="02_distinct_points.html", show=False)
-    
-    print("\n[3/13] Parallel Lines (Categorical + Linear)")
-    Y, labels = ShapeBuilder.parallel_lines(categories_5[:3], linear_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Parallel Lines: 3 Categories × 5 Points", 
-               output_file="03_parallel_lines.html", show=False)
-    
-    print("\n[4/13] Half Circle (Circular)")
-    Y, labels = ShapeBuilder.half_circle(circular_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Half Circle: 5 Points", 
-               output_file="04_half_circle.html", show=False)
-    
-    # -------------------------------------------------------------------------
-    # 3D Shapes - Single/Double Parameter
-    # -------------------------------------------------------------------------
-    
-    print("\n[5/13] Cylinder (Linear + Circular)")
-    Y, labels = ShapeBuilder.cylinder(linear_5, circular_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Cylinder: 5×5 Surface", 
-               output_file="05_cylinder.html", show=False)
-    
-    print("\n[6/13] Torus (Circular + Circular)")
-    Y, labels = ShapeBuilder.torus(circular_5, circular_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Torus: 5×5 Surface", 
-               output_file="06_torus.html", show=False)
-    
-    print("\n[7/13] Sphere (Circular + Circular)")
-    Y, labels = ShapeBuilder.sphere(linear_5, circular_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Sphere: 5×5 Surface", 
-               output_file="07_sphere.html", show=False)
-    
-    print("\n[8/13] Helix (Linear)")
-    Y, labels = ShapeBuilder.helix(np.linspace(0, 10, 50))
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Helix: 50 Points", 
-               output_file="08_helix.html", show=False)
-    
-    print("\n[9/13] Half Cylinder (Linear + Circular)")
-    Y, labels = ShapeBuilder.half_cylinder(linear_5, circular_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Half Cylinder: 5×5 Surface", 
-               output_file="09_half_cylinder.html", show=False)
-    
-    # -------------------------------------------------------------------------
-    # 3D Shapes - With Categories
-    # -------------------------------------------------------------------------
-    
-    print("\n[10/13] Parallel Circles (Categorical + Circular)")
-    Y, labels = ShapeBuilder.parallel_circles(categories_5[:3], circular_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Parallel Circles: 3 Categories × 5 Angles", 
-               output_file="10_parallel_circles.html", show=False)
-    
-    print("\n[11/13] Parallel Cylinders (Categorical + Linear + Circular)")
-    Y, labels = ShapeBuilder.parallel_cylinders(categories_5[:3], linear_5, circular_5)
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Parallel Cylinders: 3 Categories × 5×5", 
-               output_file="11_parallel_cylinders.html", show=False)
-    
-    print("\n[12/13] Helix Surface (Linear + Helix)")
-    Y, labels = ShapeBuilder.helix_surface(linear_5, np.linspace(0, 10, 50))
-    print(f"  Shape: {Y.shape}, Labels: {list(labels.columns)}")
-    plot_shape(Y, labels, title="Helix Surface: 5 Parallel Helices", 
-               output_file="12_helix_surface.html", show=False)
-    
-    print("\n" + "=" * 70)
-    print("All shapes generated! HTML files saved.")
-    print("=" * 70)
+    """Generate all HTML visualizations."""
 
+    print("="*80)
+    print("ShapeBuilder - Generating HTML Visualizations")
+    print("="*80)
+
+    # Test configurations
+    test_configs = [
+        (2, "2_clusters"),
+        (3, "3_clusters"),
+        (4, "4_clusters"),
+        (5, "5_clusters"),
+        (6, "6_clusters"),
+        (8, "8_clusters"),
+    ]
+
+    inner_categories = ['X', 'Y', 'Z']
+    line_points = np.linspace(0, 10, 7)
+    circle_angles = np.arange(8)
+
+    # 1. Clusters of Clusters
+    print("\n[1/4] Clusters of Clusters (Categorical + Categorical)")
+    print("-"*80)
+    for n_clusters, label in test_configs:
+        cats = [chr(65+i) for i in range(n_clusters)]  # A, B, C, ...
+        Y, labels = ShapeBuilder.clusters_of_clusters(
+            cats, inner_categories, outer_radius=3.0, inner_radius=0.5
+        )
+
+        filename = f"clusters_of_clusters_{label}.html"
+        plot_shape(
+            Y, labels, color_by='a',
+            title=f"Clusters of Clusters: {n_clusters} × 3 (3D)",
+            output_file=filename, size=10
+        )
+
+    # 2. Clusters of Lines
+    print("\n[2/4] Clusters of Lines (Categorical + Linear)")
+    print("-"*80)
+    for n_clusters, label in test_configs:
+        cats = [chr(65+i) for i in range(n_clusters)]
+        Y, labels = ShapeBuilder.clusters_of_lines(
+            cats, line_points, length=2.0, outer_radius=3.0
+        )
+
+        filename = f"clusters_of_lines_{label}.html"
+        plot_shape(
+            Y, labels, color_by='category',
+            title=f"Clusters of Lines: {n_clusters} × 7 (3D)",
+            output_file=filename, size=10
+        )
+
+    # 3. Clusters of Circles
+    print("\n[3/4] Clusters of Circles (Categorical + Circular)")
+    print("-"*80)
+    for n_clusters, label in test_configs:
+        cats = [chr(65+i) for i in range(n_clusters)]
+        Y, labels = ShapeBuilder.clusters_of_circles(
+            cats, circle_angles, radius=0.8, outer_radius=3.0
+        )
+
+        filename = f"clusters_of_circles_{label}.html"
+        plot_shape(
+            Y, labels, color_by='category',
+            title=f"Clusters of Circles: {n_clusters} × 8 (3D)",
+            output_file=filename, size=10
+        )
+
+    # 4. Helix + Line (NEW!)
+    print("\n[4/4] Helix + Line (Linear + Helix)")
+    print("-"*80)
+    
+    helix_configs = [
+        (3, 30, "3_helices", 2.5, 0.4, 1.0, 2.0),
+        (5, 40, "5_helices", 2.0, 0.5, 1.0, 3.0),
+        (7, 50, "7_helices", 1.5, 0.4, 0.8, 2.5),
+        (4, 60, "4_helices_dense", 2.0, 0.6, 1.5, 4.0),
+        (6, 35, "6_helices_tight", 1.8, 0.3, 0.6, 2.0),
+        (8, 45, "8_helices", 1.5, 0.4, 1.0, 2.5),
+    ]
+    
+    for n_lines, n_helix_points, label, spacing, radius, pitch, turns in helix_configs:
+        line_positions = np.arange(n_lines)
+        helix_param = np.linspace(0, 10, n_helix_points)
+        
+        Y, labels = ShapeBuilder.helix_plus_line(
+            line_positions,
+            helix_param,
+            line_spacing=spacing,
+            helix_radius=radius,
+            helix_pitch=pitch,
+            helix_turns=turns
+        )
+        
+        filename = f"helix_plus_line_{label}.html"
+        plot_shape(
+            Y, labels,
+            color_by='line',
+            title=f"Helix + Line: {n_lines} helices × {n_helix_points} points (spacing={spacing}, turns={turns})",
+            output_file=filename,
+            size=8
+        )
+
+    print("\n" + "="*80)
+    print(f"✓ Generated {len(test_configs) * 3 + len(helix_configs)} HTML visualizations")
+    print("="*80)
+    print("\nFiles created:")
+    print("  - clusters_of_clusters_{2,3,4,5,6,8}_clusters.html")
+    print("  - clusters_of_lines_{2,3,4,5,6,8}_clusters.html")
+    print("  - clusters_of_circles_{2,3,4,5,6,8}_clusters.html")
+    print("  - helix_plus_line_{3,5,7,4_dense,6_tight,8}_helices.html")
 
 if __name__ == "__main__":
     main()
