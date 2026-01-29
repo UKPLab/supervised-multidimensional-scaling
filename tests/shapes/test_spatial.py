@@ -1,23 +1,23 @@
 import numpy as np
 import pytest
 
-from smds import SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 
 
 @pytest.fixture
 def engine_cylindrical() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=CylindricalShape(radius=1.0), alpha=0.1)
+    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=CylindricalShape(radius=1.0)), alpha=0.1)
 
 
 @pytest.fixture
 def engine_geodesic() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=GeodesicShape(radius=1.0), alpha=0.1)
+    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=GeodesicShape(radius=1.0)), alpha=0.1)
 
 
 @pytest.fixture
 def engine_spherical() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=SphericalShape(radius=1.0), alpha=0.1)
+    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=SphericalShape(radius=1.0)), alpha=0.1)
 
 
 @pytest.fixture

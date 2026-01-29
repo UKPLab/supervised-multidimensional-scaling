@@ -1,12 +1,13 @@
 import os
 import pickle
+from abc import ABC, abstractmethod
 from math import exp
 from typing import Callable
 
 import numpy as np
 from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
-from sklearn.base import BaseEstimator, TransformerMixin  # type: ignore[import-untyped]
+from sklearn.base import BaseEstimator, TransformerMixin, clone  # type: ignore[import-untyped]
 from sklearn.utils.multiclass import type_of_target  # type: ignore[import-untyped]
 from sklearn.utils.validation import check_array, check_is_fitted, validate_data  # type: ignore[import-untyped]
 
@@ -19,44 +20,60 @@ from smds.stress import (
     shepard_goodness_stress,
 )
 
+# TODO: stage 2 - for mapping to the lower space
+#   result: X_proj
 
-class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
-    def __init__(
-        self,
-        manifold: Callable[[np.ndarray], np.ndarray],
-        n_components: int = 2,
-        alpha: float = 0.1,
-        orthonormal: bool = False,
-        radius: float = 6371,
-    ):
+
+# smds stage 1 - for the manifold Y_
+class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
+    @property
+    @abstractmethod
+    def n_components(self) -> int:
         """
-        Parameters
-        ----------
-            n_components:
-                Dimensionality of the target subspace.
-            manifold:
-                If callable, should return a (n x n) ideal distance matrix given y.
-            metric:
-                The metric to use for scoring the embedding.
+        Subclasses must implement this.
+        Number of components of the projected manifold.
         """
-        self.n_components = n_components
+        pass
+
+    @abstractmethod
+    def fit(self, X, y=None):
+        """
+        Subclasses must implement this.
+        It is required for TransformerMixin.fit_transform to work.
+        """
+        pass
+
+    @abstractmethod
+    def transform(self, X):
+        """
+        Subclasses must implement this.
+        It is required for TransformerMixin.fit_transform to work.
+        """
+        pass
+
+    @abstractmethod
+    def compute_ideal_distances(self, y: np.typing.NDArray):
+        """
+        Subclasses must implement this.
+        Return the pairwise distance matrix for the given labels or coordinates.
+        """
+        pass
+
+
+class ComputedSMDSParametrization(SMDSParametrization):
+    def __init__(self, manifold: Callable[[np.ndarray], np.ndarray], n_components: int):
+        # fixme: set manifold to be BaseShape
         self.manifold = manifold
-        self.alpha = alpha
-        self.orthonormal = orthonormal
-        self.radius = radius
+        self._n_components = n_components
 
-    def _validate_and_convert_metric(self, metric: str | StressMetrics) -> StressMetrics:
+    @property
+    def n_components(self) -> int:
         """
-        Validate and convert the metric to a StressMetrics enum.
+        Number of manifold coordinates produced by this stage.
         """
-        if isinstance(metric, StressMetrics):
-            return metric
-        valid_metrics = {m.value for m in StressMetrics}
-        if metric not in valid_metrics:
-            raise ValueError(f"Unknown metric: {metric}. Valid options are: {sorted(valid_metrics)}")
-        return StressMetrics(metric)
+        return self._n_components
 
-    def _compute_ideal_distances(self, y: np.ndarray, threshold: int = 2) -> np.ndarray:
+    def compute_ideal_distances(self, y: np.typing.NDArray, threshold: int = 2) -> np.ndarray:
         """
         Compute ideal pairwise distance matrix D based on labels y and specified self.manifold.
         """
@@ -90,11 +107,95 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Y: np.ndarray = eigvecs * np.sqrt(np.maximum(eigvals, 0))
         return Y
 
+    def fit(self, X, y=None) -> "ComputedSMDSParametrization":
+        """
+        Compute the ideal distance matrix and its MDS embedding from input labels.
+        """
+        self.D_ = self.compute_ideal_distances(X)
+        self.Y_ = self._classical_mds(self.D_)
+        return self
+
+    def transform(self, X=None) -> np.typing.NDArray:
+        """
+        Return the stage-1 embedding computed during fit.
+        """
+        return self.Y_
+
+
+class UserProvidedSMDSParametrization(SMDSParametrization):
+    def __init__(self, y: np.typing.NDArray, n_components: int):
+        self._n_components = n_components
+        if y.shape[-1] != n_components:
+            raise ValueError(f"y must have last shape == n_components ({n_components}), got {y.shape[-1]}")
+        # todo: maybe no need to pass it here if we pass it in fit()?
+        self.y = y
+
+    @property
+    def n_components(self) -> int:
+        """
+        Number of manifold coordinates represented by the provided embedding.
+        """
+        return self._n_components
+
+    def compute_ideal_distances(self, y: np.typing.NDArray):
+        """
+        Compute pairwise distances between the stored embedding points.
+        """
+        return np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
+
+    def fit(self, X=None, y=None) -> "UserProvidedSMDSParametrization":
+        """
+        Store provided coordinates and compute their distance matrix.
+        """
+        self.Y_ = self.y
+        self.D_ = self.compute_ideal_distances(None)
+        return self
+
+    def transform(self, X):
+        """
+        Return the provided embedding coordinates.
+        """
+        return self.Y_
+
+
+class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
+    def __init__(
+        self,
+        stage_1: SMDSParametrization,
+        alpha: float = 0.1,
+        orthonormal: bool = False,
+        radius: float = 6371,
+    ):
+        """
+        Parameters
+        ----------
+            stage_1:
+                Stage 1 of SMDS.
+                Defines the method of obtaining Y_.
+            metric:
+                The metric to use for scoring the embedding.
+        """
+        self.stage_1 = stage_1
+        self.alpha = alpha
+        self.orthonormal = orthonormal
+        self.radius = radius
+
+    def _validate_and_convert_metric(self, metric: str | StressMetrics) -> StressMetrics:
+        """
+        Validate and convert the metric to a StressMetrics enum.
+        """
+        if isinstance(metric, StressMetrics):
+            return metric
+        valid_metrics = {m.value for m in StressMetrics}
+        if metric not in valid_metrics:
+            raise ValueError(f"Unknown metric: {metric}. Valid options are: {sorted(valid_metrics)}")
+        return StressMetrics(metric)
+
     def _masked_loss(self, W_flat: np.ndarray, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> float:
         """
         Compute the loss only on the defined distances (where mask is True).
         """
-        W = W_flat.reshape((self.n_components, X.shape[1]))
+        W = W_flat.reshape((self.stage_1.n_components, X.shape[1]))
         X_proj = (W @ X.T).T
         D_pred = np.linalg.norm(X_proj[:, None, :] - X_proj[None, :, :], axis=-1)
         loss = (D_pred - D)[mask]
@@ -105,7 +206,11 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Validate and process X and y based on the manifold's expected y dimensionality.
         """
-        expected_y_ndim = getattr(self.manifold, "y_ndim", 1)
+        if isinstance(self.stage_1, UserProvidedSMDSParametrization):
+            # todo: probably not the right way
+            expected_y_ndim = y.ndim
+        else:
+            expected_y_ndim = getattr(self.stage_1.manifold, "y_ndim", 1)
 
         if expected_y_ndim == 1:
             X, y = validate_data(self, X, y, reset=reset)
@@ -152,21 +257,29 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             raise ValueError("Found array with n_samples=1. SupervisedMDS requires at least 2 samples.")
         if self.orthonormal and self.alpha != 0:
             print("Warning: orthonormal=True and alpha!=0. alpha will be ignored.")
-        D = self._compute_ideal_distances(y)
+
+        X = np.asarray(X)
+        y = np.asarray(y).squeeze()  # Ensure y is 1D
+
+        self.stage_1_fitted_: SMDSParametrization = clone(self.stage_1)
+        self.stage_1_fitted_.fit(y)
+
+        self.Y_ = self.stage_1_fitted_.Y_
+
+        D = self.stage_1_fitted_.D_
 
         if np.any(D < 0):
             # Raise warning if any distances are negative
             print("Warning: Distance matrix is incomplete. Using optimization to fit W.")
             mask = D >= 0
             rng = np.random.default_rng(42)
-            W0 = rng.normal(scale=0.01, size=(self.n_components, X.shape[1]))
+            W0 = rng.normal(scale=0.01, size=(self.stage_1_fitted_.n_components, X.shape[1]))
 
             result = minimize(self._masked_loss, W0.ravel(), args=(X, D, mask), method="L-BFGS-B")
-            self.W_ = result.x.reshape((self.n_components, X.shape[1]))
+            self.W_ = result.x.reshape((self.stage_1_fitted_.n_components, X.shape[1]))
         else:
             # Use classical MDS + closed-form least squares
-            Y = self._classical_mds(D)
-            self.Y_ = Y
+            Y = self.Y_
 
             self._X_mean = X.mean(axis=0)  # Centering
             self._Y_mean = Y.mean(axis=0)  # Centering Y
@@ -280,7 +393,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         check_is_fitted(self)
         metric = self._validate_and_convert_metric(metric)
         X, y = self._validate_data(X, y, reset=False)
-        D_ideal = self._compute_ideal_distances(y)
+        D_ideal = self.stage_1_fitted_.compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
         X_proj = self.transform(X)
