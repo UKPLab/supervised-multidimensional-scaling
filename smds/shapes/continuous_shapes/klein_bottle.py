@@ -34,10 +34,12 @@ class KleinBottleShape(BaseShape):
 
     @property
     def y_ndim(self) -> int:
+        """int: Dimensionality of input labels (2). Expects (u, v) parameters."""
         return 2
 
     @property
     def normalize_labels(self) -> bool:
+        """bool: Whether input labels are normalized."""
         return self._normalize_labels_flag
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
