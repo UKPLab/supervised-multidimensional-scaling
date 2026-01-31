@@ -18,7 +18,7 @@ Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de)
 
 [UKP Lab](https://www.ukp.tu-darmstadt.de/) | [TU Darmstadt](https://www.tu-darmstadt.de/)
 
-Don't hesitate to send us an e-mail or report an issue or if you have further questions.
+Don't hesitate to report an issue if you have further questions or spot a bug.
 
 ## Getting Started (TODO)
 
@@ -49,40 +49,55 @@ X_proj = smds.transform(X)
 print(X_proj.shape)  # (100, 2)
 ```
 
-### Extra functionalities
+### Manifold Discovery
 
 Once fitted, you can use the learned transformation for inverse projections and to assess how well the embedding matches
 the target geometry:
 
 ```python
-# Inverse transform: approximate reconstruction of original features
-X_reconstructed = smds.inverse_transform(X_proj)
-print(X_reconstructed.shape)  # (100, 20)
+from smds.pipeline.discovery_pipeline import discover_manifolds
+from smds.pipeline import open_dashboard
 
-# Scoring: measure alignment between transformed distances and ideal distances
-score = smds.score(X, y)
-print(f"Model score: {score:.3f}")
+# Run discovery pipeline
+# Evaluates default shapes (Cluster, Circular, Hierarchical, etc.)
+# Returns a DataFrame sorted by best fit (lowest stress / highest score)
+df_results, save_path = discover_manifolds(
+    X, 
+    y, 
+    smds_components=2,           # Target dimensionality
+    n_folds=5,                   # Cross-validation folds
+    experiment_name="My_Exp",    # Name for saved results
+    n_jobs=-1                    # Use all available cores
+)
+
+print(f"Best matching shape: {df_results.iloc[0]['shape']}")
+print(df_results.head())
+
+# Launch the interactive Streamlit dashboard to explore results and plots
+open_dashboard.main(save_path)
 ```
 
-### Saving & loading
+The discovery pipeline handles:
+- **Hypothesis Testing**: Iterates through a default or custom list of manifold shapes.
+- **Cross-Validation**: Uses k-fold CV to ensure robust scoring.
+- **Caching**: Caches intermediate results to resume interrupted experiments.
+- **Visualization**: Generates interactive plots for the dashboard.
 
-Models can be persisted to disk, including the learned transformation, and reloaded later for reuse:
+## Development
 
-```python
-# Save to file
-smds.save("smds_model.pkl")
+This seciton is especially usefull if you consider contributing to the library!
 
-# Load from file
-loaded_smds = SupervisedMDS.load("smds_model.pkl")
+### Documentation
+
+To build and serve the documentation locally:
+
+```bash
+mkdocs serve
 ```
 
-## Coming Soon...
+> [!NOTE]
+> The `dev` dependency group includes heavy libraries such as `torch` and `transformers`.
 
-- [Feature]: A comprehensive test suite
-- [Feature]: Advanced support for hypothesis manifolds
-- [Feature]: A manifold discovery utility
-- [Docs]: Setup instructions.
-- [Docs]: A documentation website with class descriptions and examples.
 
 ## Cite
 
