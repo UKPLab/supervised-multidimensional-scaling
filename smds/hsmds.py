@@ -7,6 +7,7 @@ from sklearn.utils.validation import check_is_fitted, validate_data  # type: ign
 
 from smds.smds import (
     ComputedSMDSParametrization,
+    SMDSParametrization,
     SupervisedMDS,
     UserProvidedSMDSParametrization,
 )
@@ -16,7 +17,7 @@ def _resolve_stage_1(
     manifold: Callable[[NDArray[np.float64]], NDArray[np.float64]],
     n_components: object,
     bypass_mds: object,
-) -> Tuple[object, int, bool]:
+) -> Tuple[SMDSParametrization, int, bool]:
     n_comp = 2
     if np.isscalar(n_components) and isinstance(n_components, (int, float)):
         n = int(n_components)
@@ -25,15 +26,9 @@ def _resolve_stage_1(
     arr_b = np.asarray(bypass_mds)
     bypass = bool(bypass_mds) if np.isscalar(bypass_mds) else (bool(arr_b.flat[0]) if arr_b.size else False)
     if bypass:
-        stage_1 = UserProvidedSMDSParametrization(
-            np.zeros((2, n_comp), dtype=np.float64), n_comp
-        )
+        stage_1 = UserProvidedSMDSParametrization(np.zeros((2, n_comp), dtype=np.float64), n_comp)
     else:
-        manifold_fn = (
-            manifold
-            if callable(manifold)
-            else (lambda y: np.zeros((len(y), len(y)), dtype=np.float64))
-        )
+        manifold_fn = manifold if callable(manifold) else (lambda y: np.zeros((len(y), len(y)), dtype=np.float64))
         stage_1 = ComputedSMDSParametrization(manifold=manifold_fn, n_components=n_comp)
     return stage_1, n_comp, bypass
 
@@ -75,9 +70,7 @@ class HybridSMDS(SupervisedMDS):
         If bypass_mds=False, y are labels used to compute MDS embedding.
         """
         if self.reducer is None:
-            raise ValueError(
-                "HybridSMDS requires a reducer object (e.g. PCA, PLSRegression, etc.)"
-            )
+            raise ValueError("HybridSMDS requires a reducer object (e.g. PCA, PLSRegression, etc.)")
         X, y = self._validate_data(X, y)
 
         if self.bypass_mds:
