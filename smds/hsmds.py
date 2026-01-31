@@ -1,15 +1,41 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 from sklearn.base import BaseEstimator, clone  # type: ignore[import-untyped]
-from sklearn.utils.validation import check_array, check_is_fitted, validate_data  # type: ignore[import-untyped]
+from sklearn.utils.validation import check_is_fitted, validate_data  # type: ignore[import-untyped]
 
 from smds.smds import (
     ComputedSMDSParametrization,
     SupervisedMDS,
     UserProvidedSMDSParametrization,
 )
+
+
+def _resolve_stage_1(
+    manifold: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+    n_components: object,
+    bypass_mds: object,
+) -> Tuple[object, int, bool]:
+    n_comp = 2
+    if np.isscalar(n_components) and isinstance(n_components, (int, float)):
+        n = int(n_components)
+        if n > 0:
+            n_comp = n
+    arr_b = np.asarray(bypass_mds)
+    bypass = bool(bypass_mds) if np.isscalar(bypass_mds) else (bool(arr_b.flat[0]) if arr_b.size else False)
+    if bypass:
+        stage_1 = UserProvidedSMDSParametrization(
+            np.zeros((2, n_comp), dtype=np.float64), n_comp
+        )
+    else:
+        manifold_fn = (
+            manifold
+            if callable(manifold)
+            else (lambda y: np.zeros((len(y), len(y)), dtype=np.float64))
+        )
+        stage_1 = ComputedSMDSParametrization(manifold=manifold_fn, n_components=n_comp)
+    return stage_1, n_comp, bypass
 
 
 class HybridSMDS(SupervisedMDS):
@@ -30,21 +56,17 @@ class HybridSMDS(SupervisedMDS):
         reducer: Optional[BaseEstimator] = None,
         bypass_mds: bool = False,
     ):
-        if reducer is None:
-            raise ValueError("HybridSMDS requires a reducer object (e.g. PCA, PLSRegression, etc.)")
-        if bypass_mds:
-            stage_1 = UserProvidedSMDSParametrization(np.zeros((2, n_components), dtype=np.float64), n_components)
-        else:
-            stage_1 = ComputedSMDSParametrization(manifold=manifold, n_components=n_components)
+        stage_1, n_comp, bypass = _resolve_stage_1(manifold, n_components, bypass_mds)
         super().__init__(
             stage_1=stage_1,
             alpha=alpha,
             orthonormal=orthonormal,
             radius=radius,
         )
+        self.n_components = n_comp
         self.manifold = manifold
         self.reducer = reducer
-        self.bypass_mds = bypass_mds
+        self.bypass_mds = bypass
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> "HybridSMDS":
         """
@@ -52,24 +74,15 @@ class HybridSMDS(SupervisedMDS):
         If bypass_mds=True, y is used as target embedding directly.
         If bypass_mds=False, y are labels used to compute MDS embedding.
         """
-        X = np.asarray(X, dtype=np.float64)
-        y = np.asarray(y, dtype=np.float64)
+        if self.reducer is None:
+            raise ValueError(
+                "HybridSMDS requires a reducer object (e.g. PCA, PLSRegression, etc.)"
+            )
+        X, y = self._validate_data(X, y)
 
         if self.bypass_mds:
-            X = check_array(X)
-            if y.ndim != 2 or y.shape[1] != self.stage_1.n_components:
-                raise ValueError(
-                    f"When bypass_mds=True, y must be target coordinates with shape "
-                    f"(n_samples, {self.stage_1.n_components}). Got shape {y.shape}."
-                )
-            if X.shape[0] != y.shape[0]:
-                raise ValueError(
-                    f"X and y must have the same number of samples. "
-                    f"Got X.shape[0]={X.shape[0]} and y.shape[0]={y.shape[0]}."
-                )
             Y = y
         else:
-            X, y = self._validate_data(X, y)
             distances = self.stage_1.compute_ideal_distances(y)
             if isinstance(distances, np.ndarray) and np.any(distances < 0):
                 raise ValueError("HybridSMDS does not support incomplete distance matrices.")

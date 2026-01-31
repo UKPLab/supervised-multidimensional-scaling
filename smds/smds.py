@@ -126,11 +126,12 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
 
 class UserProvidedSMDSParametrization(SMDSParametrization):
+    y_ndim = 2
+
     def __init__(self, y: NDArrayFloat[np.float64], n_components: int) -> None:
         self._n_components = n_components
         if y.shape[-1] != n_components:
             raise ValueError(f"y must have last shape == n_components ({n_components}), got {y.shape[-1]}")
-        # todo: maybe no need to pass it here if we pass it in fit()?
         self.y = y
 
     @property
@@ -148,6 +149,17 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
             self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1
         )
         return result
+
+    def validate_y(self, y: NDArrayFloat[np.float64]) -> None:
+        if y.ndim != 2:
+            raise ValueError(
+                f"Input 'y' must be 2-dimensional for UserProvidedSMDSParametrization, "
+                f"but got shape {y.shape} with {y.ndim} dimensions."
+            )
+        if y.shape[1] != self.n_components:
+            raise ValueError(
+                f"Input 'y' must have shape (n_samples, {self.n_components}). Got shape {y.shape}."
+            )
 
     def fit(self, X: Any = None, y: Any = None) -> "UserProvidedSMDSParametrization":
         """
@@ -211,12 +223,17 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     def _validate_data(self, X: np.ndarray, y: np.ndarray, reset: bool = True) -> tuple[np.ndarray, np.ndarray]:
         """
         Validate and process X and y based on the manifold's expected y dimensionality.
+        Rejects sparse and complex input; converts to float64.
         """
-        if isinstance(self.stage_1, UserProvidedSMDSParametrization):
-            # todo: probably not the right way
-            expected_y_ndim = y.ndim
-        else:
-            expected_y_ndim = getattr(self.stage_1.manifold, "y_ndim", 1)
+        X = check_array(X, accept_sparse=False)
+        y = check_array(y, accept_sparse=False, ensure_2d=False)
+        if np.iscomplexobj(X) or np.iscomplexobj(y):
+            raise ValueError("Complex data not supported")
+        X = np.asarray(X, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        expected_y_ndim = getattr(self.stage_1, "y_ndim", None) or getattr(
+            self.stage_1.manifold, "y_ndim", 1
+        )
 
         if expected_y_ndim == 1:
             X, y = validate_data(self, X, y, reset=reset)
@@ -225,13 +242,13 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             if y.ndim == 0:
                 y = y.reshape(1)
         else:
-            X = check_array(X)
-            y = np.asarray(y)
             if y.ndim != expected_y_ndim:
                 raise ValueError(
                     f"Input 'y' must be {expected_y_ndim}-dimensional, "
                     f"but got shape {y.shape} with {y.ndim} dimensions."
                 )
+            if hasattr(self.stage_1, "validate_y"):
+                self.stage_1.validate_y(y)
             if X.shape[0] != y.shape[0]:
                 raise ValueError(
                     f"X and y must have the same number of samples. "
