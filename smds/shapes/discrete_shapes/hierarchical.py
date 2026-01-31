@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -19,8 +17,8 @@ class HierarchicalShape(BaseShape):
 
     Parameters
     ----------
-    level_distances : List[float]
-        A list of distance penalties corresponding to each level of the hierarchy.
+    level_distances : NDArray[np.float64]
+        An array of distance penalties corresponding to each level of the hierarchy.
         `level_distances[0]` is the distance applied if points differ at the
         root level (column 0). `level_distances[i]` is used if points match
         up to level `i-1` but differ at level `i`.
@@ -33,7 +31,7 @@ class HierarchicalShape(BaseShape):
     y_ndim : int
         Dimensionality of input labels (2). Expects (n_samples, n_levels).
     level_distances : NDArray[np.float64]
-        The array of distances converted from the input list.
+        The array of distances converted from the input array.
     """
 
     y_ndim = 2
@@ -43,12 +41,12 @@ class HierarchicalShape(BaseShape):
         """bool: Whether input labels are normalized."""
         return self._normalize_labels
 
-    def __init__(self, level_distances: List[float], normalize_labels: bool = False) -> None:
-        if not level_distances:
+    def __init__(self, level_distances: NDArray[np.float64], normalize_labels: bool = False) -> None:
+        if level_distances.size == 0:
             raise ValueError("level_distances cannot be empty.")
-        if any(d < 0 for d in level_distances):
+        if np.any(level_distances < 0):
             raise ValueError("All level_distances must be non-negative.")
-        self.level_distances = np.array(level_distances, dtype=np.float64)
+        self.level_distances = level_distances
         self._normalize_labels = normalize_labels
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
