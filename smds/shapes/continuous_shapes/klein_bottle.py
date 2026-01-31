@@ -9,56 +9,60 @@ class KleinBottleShape(BaseShape):
     Manifold hypothesis representing a Klein Bottle topology.
 
     This shape assumes the data lies on a 2D surface that is non-orientable.
+    Requires exactly 2 dimensions as (u, v) parameters. If < 2 dimensions,
+    zeros are padded. If > 2 dimensions, raises an error. Maps these 2
+    dimensions to the unit square [0, 1] x [0, 1]. Computes pairwise distances
+    respecting the Klein bottle identifications:
+    - Top/Bottom edges match (Cylinder): (u, 0) ~ (u, 1)
+    - Left/Right edges match with a Twist (Möbius): (0, v) ~ (1, 1-v)
 
-    Logic:
-    1. Dimensionality: Requires exactly 2 dimensions as (u, v) parameters.
-       If < 2 dimensions, zeros are padded. If > 2 dimensions, raises an error.
-    2. Parametrization: Maps these 2 dimensions to the unit square [0, 1] x [0, 1].
-    3. Distance Calculation: Computes pairwise distances respecting the Klein
-       bottle identifications:
-       - Top/Bottom edges match (Cylinder): (u, 0) ~ (u, 1)
-       - Left/Right edges match with a Twist (Möbius): (0, v) ~ (1, 1-v)
+    Reference: Wolfram MathWorld: https://mathworld.wolfram.com/KleinBottle.html
+
+    Parameters
+    ----------
+    normalize_labels : bool, optional
+        Whether to normalize labels to the range [0, 1]. Default is True.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (2). Expects (u, v) parameters.
     """
-
-    y_ndim = 2
 
     def __init__(self, normalize_labels: bool = True):
         self._normalize_labels_flag = normalize_labels
 
     @property
+    def y_ndim(self) -> int:
+        return 2
+
+    @property
     def normalize_labels(self) -> bool:
-        """bool: Whether input labels are normalized."""
         return self._normalize_labels_flag
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Validate input is 2D with shape (n_samples, 2).
-
-        Parameters
-        ----------
-        y : NDArray[np.float64]
-            Input coordinates (u, v) parameters for Klein Bottle.
-
-        Returns
-        -------
-        NDArray[np.float64]
-            Validated input array.
-
-        Raises
-        ------
-        ValueError
-            If input is empty or shape is not (n_samples, 2).
+        Validates input and ensures exactly 2 dimensions for (u, v) parameters.
         """
         y_proc = np.asarray(y, dtype=np.float64)
 
         if y_proc.size == 0:
             raise ValueError("Input 'y' cannot be empty.")
 
-        if y_proc.ndim != 2 or y_proc.shape[1] != 2:
+        if y_proc.ndim == 1:
+            y_proc = y_proc.reshape(-1, 1)
+
+        n_samples, n_features = y_proc.shape
+
+        if n_features > 2:
             raise ValueError(
-                f"Klein Bottle requires exactly 2 dimensions (u, v). "
-                f"Expected shape (n_samples, 2), but got shape {y_proc.shape}."
+                f"Klein Bottle requires exactly 2 dimensions (u, v), but got {n_features} dimensions. "
+                "Please provide y with shape (n_samples, 2)."
             )
+
+        elif n_features < 2:
+            zeros = np.zeros((n_samples, 2 - n_features))
+            y_proc = np.hstack([y_proc, zeros])
 
         return y_proc
 
@@ -86,13 +90,13 @@ class KleinBottleShape(BaseShape):
 
         # 3. Möbius Twist (Wrap U -> Flip V)
         dist_u_twist = 1.0 - diff_u
-        dist_v_flipped = np.abs(v1 + v2 - 1.0)
+        dist_v_twist = np.abs(v1 + v2 - 1.0)
 
-        dist_sq_twist = dist_u_twist**2 + dist_v_flipped**2
+        dist_sq_twist = dist_u_twist**2 + dist_v_twist**2
 
         # 4. Combined Wrap (Wrap U + Wrap V)
-        dist_v_flipped_wrapped = np.minimum(dist_v_flipped, 1.0 - dist_v_flipped)
-        dist_sq_twist_wrap = dist_u_twist**2 + dist_v_flipped_wrapped**2
+        dist_v_twist_wrap = 1.0 - dist_v_twist
+        dist_sq_twist_wrap = dist_u_twist**2 + dist_v_twist_wrap**2
 
         # Minimum distance
         D_sq = np.minimum(dist_sq_direct, dist_sq_cylinder)
