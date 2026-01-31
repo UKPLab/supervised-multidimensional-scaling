@@ -19,12 +19,14 @@ import pytest
 from numpy.typing import NDArray
 from scipy.spatial.distance import squareform  # type: ignore[import-untyped]
 
-from smds.stress.kl_divergence import kl_divergence_stress
-from smds.stress.non_metric_stress import non_metric_stress
-from smds.stress.normalized_stress import normalized_stress
-from smds.stress.scale_normalized_stress import scale_normalized_stress
-from smds.stress.shepard_goodness_score import shepard_goodness_stress
-from smds.stress.stress_metrics import StressMetrics
+from smds.stress import (
+    StressMetrics,
+    kl_divergence_stress,
+    non_metric_stress,
+    normalized_stress,
+    scale_normalized_stress,
+    shepard_goodness_stress,
+)
 
 STRESS_TEST_CASES = [
     (

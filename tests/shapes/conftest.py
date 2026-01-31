@@ -2,19 +2,17 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from smds import SupervisedMDS
-from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.continuous_shapes.euclidean import EuclideanShape
-from smds.shapes.continuous_shapes.log_linear import LogLinearShape
-from smds.shapes.continuous_shapes.semicircular import SemicircularShape
-from smds.shapes.discrete_shapes.chain import ChainShape
-from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
-from smds.shapes.discrete_shapes.hierarchical import HierarchicalShape
-from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
-from smds.shapes.spatial_shapes.geodesic import GeodesicShape
-from smds.shapes.spatial_shapes.spherical import SphericalShape
-from smds.shapes.spiral_shape import SpiralShape
+from smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
+from smds.shapes.continuous_shapes import (
+    CircularShape,
+    EuclideanShape,
+    KleinBottleShape,
+    LogLinearShape,
+    SemicircularShape,
+    SpiralShape,
+)
+from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 
 
 def _project_and_shuffle(
@@ -63,8 +61,16 @@ def _generate_lat_lon(n_samples: int, seed: int = 42) -> NDArray[np.float64]:
 # CHAIN SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def chain_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=ChainShape(threshold=1.1))
+def chain_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=2, manifold=ChainShape(threshold=1.1)))
+
+
+@pytest.fixture(scope="module")
+def chain_engine_user_provided_stage1(
+    chain_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    _, _, y_latent = chain_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=2))
 
 
 @pytest.fixture(scope="module")
@@ -87,8 +93,16 @@ def chain_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[
 # CLUSTER SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def cluster_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=ClusterShape())
+def cluster_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=2, manifold=ClusterShape()))
+
+
+@pytest.fixture(scope="module")
+def cluster_engine_user_provided_stage1(
+    cluster_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    _, _, y_latent = cluster_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=2))
 
 
 @pytest.fixture(scope="module")
@@ -110,8 +124,18 @@ def cluster_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArra
 # DISCRETE CIRCULAR SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def disc_circular_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=DiscreteCircularShape(num_points=12))
+def disc_circular_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(
+        stage_1=ComputedSMDSParametrization(n_components=2, manifold=DiscreteCircularShape(num_points=12))
+    )
+
+
+@pytest.fixture(scope="module")
+def disc_circular_engine_user_provided_stage1(
+    disc_circular_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    _, _, y_latent = disc_circular_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=2))
 
 
 @pytest.fixture(scope="module")
@@ -131,8 +155,20 @@ def disc_circular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], 
 # HIERARCHICAL SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def hierarchical_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=HierarchicalShape(level_distances=[100.0, 10.0, 1.0]))
+def hierarchical_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(
+        stage_1=ComputedSMDSParametrization(
+            n_components=2, manifold=HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0]))
+        )
+    )
+
+
+@pytest.fixture(scope="module")
+def hierarchical_engine_user_provided_stage1(
+    hierarchical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    _, _, y_latent = hierarchical_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=2))
 
 
 @pytest.fixture(scope="module")
@@ -157,9 +193,18 @@ def hierarchical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 
 
 @pytest.fixture(scope="module")
-def circular_engine() -> SupervisedMDS:
+def circular_engine_computed_stage1() -> SupervisedMDS:
     """Provides a default engine with Continuous Circular Shape."""
-    return SupervisedMDS(n_components=2, manifold=CircularShape(radious=1.0))
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=2, manifold=CircularShape(radious=1.0)))
+
+
+@pytest.fixture(scope="module")
+def circular_engine_user_provided_stage1(
+    circular_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    """Provides a default engine with Continuous Circular Shape."""
+    _, _, y_latent = circular_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=2))
 
 
 @pytest.fixture(scope="module")
@@ -179,9 +224,18 @@ def circular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArr
 # CYLINDRICAL SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def cylindrical_engine() -> SupervisedMDS:
+def cylindrical_engine_computed_stage1() -> SupervisedMDS:
     # Cylinder is a 3D object
-    return SupervisedMDS(n_components=3, manifold=CylindricalShape(radius=1.0))
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=3, manifold=CylindricalShape(radius=1.0)))
+
+
+@pytest.fixture(scope="module")
+def cylindrical_engine_user_provided_stage1(
+    cylindrical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    # Cylinder is a 3D object
+    _, _, y_latent = cylindrical_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=3))
 
 
 @pytest.fixture(scope="module")
@@ -203,9 +257,18 @@ def cylindrical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], ND
 # SPHERICAL SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def spherical_engine() -> SupervisedMDS:
+def spherical_engine_computed_stage1() -> SupervisedMDS:
     # Sphere is a 3D object
-    return SupervisedMDS(n_components=3, manifold=SphericalShape(radius=1.0))
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=3, manifold=SphericalShape(radius=1.0)))
+
+
+@pytest.fixture(scope="module")
+def spherical_engine_user_provided_stage1(
+    spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    # Sphere is a 3D object
+    _, _, y_latent = spherical_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=3))
 
 
 @pytest.fixture(scope="module")
@@ -243,16 +306,36 @@ def spherical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDAr
 # GEODESIC SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def geodesic_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=3, manifold=GeodesicShape(radius=1.0))
+def geodesic_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=3, manifold=GeodesicShape(radius=1.0)))
+
+
+@pytest.fixture(scope="module")
+def geodesic_engine_user_provided_stage1(
+    spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    _, _, y_latent = spherical_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=3))
 
 
 # =============================================================================
 # SPIRAL SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def spiral_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=SpiralShape(initial_radius=0.5, growth_rate=1.0, num_turns=2.0))
+def spiral_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(
+        stage_1=ComputedSMDSParametrization(
+            n_components=2, manifold=SpiralShape(initial_radius=0.5, growth_rate=1.0, num_turns=2.0)
+        )
+    )
+
+
+@pytest.fixture(scope="module")
+def spiral_engine_user_provided_stage1(
+    spiral_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    _, _, y_latent = spiral_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=2))
 
 
 @pytest.fixture(scope="module")
@@ -280,9 +363,18 @@ def spiral_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray
 # LOG LINEAR SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def log_linear_engine() -> SupervisedMDS:
+def log_linear_engine_computed_stage1() -> SupervisedMDS:
     # LogLinear is intrinsically 1D (a line where distance is log-scale)
-    return SupervisedMDS(n_components=1, manifold=LogLinearShape(), alpha=0.1)
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=1, manifold=LogLinearShape()), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def log_linear_engine_user_provided_stage1(
+    log_linear_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    # LogLinear is intrinsically 1D (a line where distance is log-scale)
+    _, _, Y_ = log_linear_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=Y_, n_components=1), alpha=0.1)
 
 
 @pytest.fixture(scope="module")
@@ -301,9 +393,18 @@ def log_linear_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDA
 # EUCLIDEAN SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def euclidean_engine() -> SupervisedMDS:
+def euclidean_engine_computed_stage1() -> SupervisedMDS:
     # Euclidean maps to a 1D line
-    return SupervisedMDS(n_components=1, manifold=EuclideanShape(), alpha=0.1)
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=1, manifold=EuclideanShape()), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def euclidean_engine_user_provided_stage1(
+    euclidean_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    # Euclidean maps to a 1D line
+    _, _, y_latent = euclidean_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=1), alpha=0.1)
 
 
 @pytest.fixture(scope="module")
@@ -320,9 +421,18 @@ def euclidean_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDAr
 # SEMICIRCULAR SETUP
 # =============================================================================
 @pytest.fixture(scope="module")
-def semicircular_engine() -> SupervisedMDS:
+def semicircular_engine_computed_stage1() -> SupervisedMDS:
     # Semicircle is a 2D arc
-    return SupervisedMDS(n_components=2, manifold=SemicircularShape(), alpha=0.1)
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=2, manifold=SemicircularShape()), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def semicircular_engine_user_provided_stage1(
+    semicircular_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    # Semicircle is a 2D arc
+    _, _, y_latent = semicircular_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=2), alpha=0.1)
 
 
 @pytest.fixture(scope="module")
@@ -333,5 +443,50 @@ def semicircular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 
     angles = y * np.pi
     X_latent = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# KLEIN BOTTLE SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def klein_bottle_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=4, manifold=KleinBottleShape()), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def klein_bottle_engine_user_provided_stage1(
+    klein_bottle_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    _, _, y_latent = klein_bottle_data_10d
+    return SupervisedMDS(stage_1=UserProvidedSMDSParametrization(y=y_latent, n_components=4), alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """
+    Generates 10D data with a latent 4D Klein Bottle structure.
+    Using 4D ensures the topology is mathematically valid (intersection-free).
+    """
+    n_samples = 50
+    rng = np.random.default_rng(42)
+
+    u_raw = rng.uniform(0, 1, n_samples)
+    v_raw = rng.uniform(0, 1, n_samples)
+    y = np.stack([u_raw, v_raw], axis=1)
+
+    u = u_raw * 2 * np.pi
+    v = v_raw * 2 * np.pi
+
+    R = 3
+    P = 1
+
+    x1 = (R + P * np.cos(v)) * np.cos(u)
+    x2 = (R + P * np.cos(v)) * np.sin(u)
+    x3 = P * np.sin(v) * np.cos(u / 2)
+    x4 = P * np.sin(v) * np.sin(u / 2)
+
+    X_latent = np.stack([x1, x2, x3, x4], axis=1)
 
     return _project_and_shuffle(X_latent, y)

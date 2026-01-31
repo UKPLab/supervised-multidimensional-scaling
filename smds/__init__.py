@@ -1,4 +1,4 @@
 from .hsmds import HybridSMDS
-from .smds import SupervisedMDS
+from .smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
 
-__all__ = ["SupervisedMDS", "HybridSMDS"]
+__all__ = ["SupervisedMDS", "ComputedSMDSParametrization", "UserProvidedSMDSParametrization", "HybridSMDS"]

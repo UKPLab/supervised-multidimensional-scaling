@@ -9,19 +9,18 @@ import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
 
-from smds import SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS
 from smds.shapes.base_shape import BaseShape
-from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.continuous_shapes.euclidean import EuclideanShape
-from smds.shapes.continuous_shapes.log_linear import LogLinearShape
-from smds.shapes.continuous_shapes.semicircular import SemicircularShape
-from smds.shapes.discrete_shapes.chain import ChainShape
-from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
-from smds.shapes.spatial_shapes.cylindrical import CylindricalShape
-from smds.shapes.spatial_shapes.geodesic import GeodesicShape
-from smds.shapes.spatial_shapes.spherical import SphericalShape
-from smds.shapes.spiral_shape import SpiralShape
+from smds.shapes.continuous_shapes import (
+    CircularShape,
+    EuclideanShape,
+    KleinBottleShape,
+    LogLinearShape,
+    SemicircularShape,
+    SpiralShape,
+)
+from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 from smds.stress.stress_metrics import StressMetrics
 
 from .helpers.hash import compute_shape_hash, hash_data, load_cached_shape_result, save_shape_result
@@ -44,6 +43,7 @@ DEFAULT_SHAPES = [
     LogLinearShape(),
     EuclideanShape(),
     SemicircularShape(),
+    KleinBottleShape(),
 ]
 
 
@@ -82,7 +82,8 @@ def discover_manifolds(
         create_visualization: Whether to create a visualization of the results as an image file.
         clear_cache: Whether to delete all cache files after successful completion.
 
-    Returns:
+    Returns
+    -------
         A tuple containing:
         - pd.DataFrame: The aggregated results, sorted by mean score.
         - Optional[str]: The path to the saved CSV file, or None if saving was disabled.
@@ -183,7 +184,7 @@ def discover_manifolds(
             results_list.append(row)
             continue
 
-        estimator = SupervisedMDS(n_components=smds_components, manifold=shape)
+        estimator = SupervisedMDS(ComputedSMDSParametrization(n_components=smds_components, manifold=shape))
 
         try:
             cv_results = cross_validate(
@@ -218,7 +219,9 @@ def discover_manifolds(
             # Generate Interactive Plot
             if save_results and plots_dir is not None:
                 try:
-                    full_estimator = SupervisedMDS(n_components=smds_components, manifold=shape)
+                    full_estimator = SupervisedMDS(
+                        ComputedSMDSParametrization(n_components=smds_components, manifold=shape)
+                    )
                     X_embedded = full_estimator.fit_transform(X, y)
 
                     plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name

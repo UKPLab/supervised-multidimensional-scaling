@@ -1,6 +1,6 @@
 [project]
 name = "supervised-multidimensional-scaling"
-version = "0.6.0"
+version = "0.8.0"
 description = "A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling (SMDS) for automatic feature manifold discovery in LLMs."
 requires-python = ">=3.12"
 dependencies = [
@@ -18,11 +18,11 @@ dependencies = [
     "zadu>=0.3.1",
 ]
 authors = [
-    { name = "Vinayak Joshi"},
-    { name="Jan Karas"}, 
-    {name = "Anton Kantsemal"}, 
-    {name = "Simon Kistner"}, 
-    {name = "Arwin Sanee Ghomi"}
+    { name = "Vinayak Joshi" },
+    { name = "Jan Karas" },
+    { name = "Anton Kantsemal" },
+    { name = "Simon Kistner" },
+    { name = "Arwin Sanee Ghomi" }
 ]
 
 [dependency-groups]
@@ -61,11 +61,30 @@ target-version = "py312"
 output-format = "grouped"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W", "I", "D"]
 fixable = ["ALL"]
+ignore = [
+    "D104",
+    "D100",
+    "D401",
+    "D301",
+    "D200",
+    "D101",
+    "D205"
+]
+
 
 [tool.ruff.lint.per-file-ignores]
 "smds/shapes/coordinates/base_coordinates.py" = ["F821"]
+"tests/**/*" = ["D101", "D102", "D103", "D205", "D400", "D401"]
+# remove in next doc PR
+"smds/pipeline/dashboard.py" = ["D103"]
+"smds/pipeline/helpers/hash.py" = ["D103"]
+"smds/pipeline/open_dashboard.py" = ["D103"]
+"smds/pipeline/run_pipeline.py" = ["D103"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.mypy]
 strict = true

@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 from numpy.typing import NDArray
 
-from smds.shapes.discrete_shapes.discrete_circular import DiscreteCircularShape
+from smds.shapes.discrete_shapes import DiscreteCircularShape
 
 
 def test_discrete_circular_init_validation() -> None:

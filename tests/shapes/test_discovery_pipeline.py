@@ -9,11 +9,10 @@ import pandas as pd  # type: ignore[import-untyped]
 import pytest
 from numpy.typing import NDArray
 
-from smds.pipeline.discovery_pipeline import discover_manifolds
-from smds.shapes.continuous_shapes.circular import CircularShape
-from smds.shapes.discrete_shapes.cluster import ClusterShape
-from smds.shapes.spiral_shape import SpiralShape
-from smds.stress.stress_metrics import StressMetrics
+from smds.pipeline import discover_manifolds
+from smds.shapes.continuous_shapes import CircularShape, SpiralShape
+from smds.shapes.discrete_shapes import ClusterShape
+from smds.stress import StressMetrics
 
 
 @pytest.mark.smoke
@@ -25,7 +24,7 @@ def test_pipeline_returns_dataframe(
     shapes = [ClusterShape(), CircularShape()]
 
     results, _ = discover_manifolds(
-        X, y, shapes=shapes, n_folds=2, experiment_name="Smoke_Test", save_results=False, clear_cache=True
+        X, y, shapes=shapes, n_folds=2, n_jobs=None, experiment_name="Smoke_Test", save_results=False, clear_cache=True
     )
 
     assert isinstance(results, pd.DataFrame)
@@ -58,7 +57,14 @@ def test_cluster_wins_on_cluster_data(
     ]
 
     results, _ = discover_manifolds(
-        X, y, shapes=shapes, n_folds=5, experiment_name="Cluster_Test", save_results=False, clear_cache=True
+        X,
+        y,
+        shapes=shapes,
+        n_folds=5,
+        n_jobs=None,
+        experiment_name="Cluster_Test",
+        save_results=False,
+        clear_cache=True,
     )
 
     # Sort by score descending
@@ -77,7 +83,7 @@ def test_circular_wins_on_circular_data(
 
     # Using default shapes list (shapes=None)
     results, _ = discover_manifolds(
-        X, y, n_folds=5, experiment_name="Circular_Test", save_results=False, clear_cache=True
+        X, y, n_folds=5, n_jobs=None, experiment_name="Circular_Test", save_results=False, clear_cache=True
     )
 
     results = results.sort_values("mean_scale_normalized_stress", ascending=False)

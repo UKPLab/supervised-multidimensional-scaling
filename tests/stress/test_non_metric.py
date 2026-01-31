@@ -1,6 +1,6 @@
 import numpy as np
 
-from smds.stress.non_metric_stress import non_metric_stress
+from smds.stress import non_metric_stress
 
 
 def test_non_metric_stress_perfect_match() -> None:

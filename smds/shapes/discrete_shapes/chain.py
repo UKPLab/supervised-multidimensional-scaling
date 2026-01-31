@@ -1,33 +1,41 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from smds.shapes.base_shape import BaseShape
+from smds.shapes import BaseShape
 
 
 class ChainShape(BaseShape):
     """
-    Implements a cyclical chain shape for ordered, sequential data.
+    Compute sparse cyclic distances where non-neighbors are disconnected.
 
-    This shape models a sequence of points in a closed loop where only adjacent
-    items have a defined distance. Distances between non-neighbors are marked as
-    undefined (-1.0).
+    This shape models a closed loop sequence. Unlike `DiscreteCircularShape`,
+    which computes the full distance matrix, this shape enforces locality:
+    points separated by a distance greater than or equal to `threshold` are
+    marked as disconnected (distance = -1.0).
+
+    Parameters
+    ----------
+    threshold : float, optional
+        The distance cutoff for defining neighbors. Pairs with a cyclic distance
+        less than this value are connected. Default is 2.0 (connects adjacent
+        integers with distance 1).
+    normalize_labels : bool, optional
+        Whether to normalize labels using the base class logic. Default is False.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (1). Expects ordered sequential data.
     """
 
     y_ndim = 1
 
     @property
     def normalize_labels(self) -> bool:
+        """bool: Whether input labels are normalized."""
         return self._normalize_labels
 
     def __init__(self, threshold: float = 2.0, normalize_labels: bool = False):
-        """
-        Initialize the ChainShape.
-
-        Args:
-            threshold (float): The distance below which points are considered neighbors.
-                               The original default was 2.0, which connects points
-                               with an integer distance of 1.
-        """
         if threshold <= 0:
             raise ValueError("threshold must be positive.")
         self.threshold = threshold
@@ -35,7 +43,20 @@ class ChainShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Computes a sparse distance matrix where only neighbors in a cycle are connected.
+        Compute the thresholded cyclic distance matrix.
+
+        Calculates the shortest ring distance $d_{cycle}$. If $d_{cycle} < \\text{threshold}$,
+        the distance is preserved; otherwise, it is set to -1.0 to indicate no connection.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input 1D array of ordered labels.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            A pairwise distance matrix where disconnected pairs have value -1.0.
         """
         cycle_length = np.max(y) + 1
 
