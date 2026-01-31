@@ -62,7 +62,9 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
 
 
 class ComputedSMDSParametrization(SMDSParametrization):
-    def __init__(self, manifold: Callable[[np.ndarray], np.ndarray], n_components: int):
+    def __init__(
+        self, manifold: Callable[[NDArrayFloat[np.float64]], NDArrayFloat[np.float64]], n_components: int
+    ) -> None:
         # fixme: set manifold to be BaseShape
         self.manifold = manifold
         self._n_components = n_components
@@ -85,7 +87,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
         return D
 
-    def _classical_mds(self, D: np.ndarray) -> np.ndarray:
+    def _classical_mds(self, D: NDArrayFloat[np.float64]) -> NDArrayFloat[np.float64]:
         """
         Perform Classical MDS on the distance matrix D to obtain a low-dimensional embedding.
         This is the template manifold for the supervised MDS.
