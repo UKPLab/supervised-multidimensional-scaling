@@ -5,16 +5,19 @@ from numpy.typing import NDArray
 from sklearn.base import BaseEstimator, clone  # type: ignore[import-untyped]
 from sklearn.utils.validation import check_array, check_is_fitted, validate_data  # type: ignore[import-untyped]
 
-from smds import SupervisedMDS
+from smds.smds import (
+    ComputedSMDSParametrization,
+    SupervisedMDS,
+    UserProvidedSMDSParametrization,
+)
 
 
 class HybridSMDS(SupervisedMDS):
     """
-    HybridSMDS: Allows explicit separation between target generation and mapping learning.
+    HybridSMDS: Combines supervised distance-matching from SupervisedMDS
+    with a user-specified dimensionality reduction model.
 
-    Supports Issue #53/#65:
-    If 'y' passed to fit() has shape (n_samples, n_components), it is treated directly
-    as the target embedding Y, bypassing the internal MDS step.
+    Supports 'bypass_mds' mode where 'y' is treated directly as target coordinates Y.
     """
 
     def __init__(
@@ -27,61 +30,64 @@ class HybridSMDS(SupervisedMDS):
         reducer: Optional[BaseEstimator] = None,
         bypass_mds: bool = False,
     ):
+        if reducer is None:
+            raise ValueError("HybridSMDS requires a reducer object (e.g. PCA, PLSRegression, etc.)")
+        if bypass_mds:
+            stage_1 = UserProvidedSMDSParametrization(np.zeros((2, n_components), dtype=np.float64), n_components)
+        else:
+            stage_1 = ComputedSMDSParametrization(manifold=manifold, n_components=n_components)
         super().__init__(
-            manifold=manifold, n_components=n_components, alpha=alpha, orthonormal=orthonormal, radius=radius
+            stage_1=stage_1,
+            alpha=alpha,
+            orthonormal=orthonormal,
+            radius=radius,
         )
+        self.manifold = manifold
         self.reducer = reducer
         self.bypass_mds = bypass_mds
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> "HybridSMDS":
         """
-        Fit HybridSMDS by computing ideal distances (via SupervisedMDS) and fitting
-        the reducer so its output approximates classical MDS embeddings.
-
-        Parameters:
-            X: Input data (n_samples, n_features).
-            y: Target information.
-               - If shape is (n_samples,): Treated as labels. Ideal distances are computed,
-                 and MDS generates Y.
-               - If shape is (n_samples, n_components): Treated directly as target coordinates Y.
-                 MDS step is skipped (Direct Input Mode).
+        Fit HybridSMDS.
+        If bypass_mds=True, y is used as target embedding directly.
+        If bypass_mds=False, y are labels used to compute MDS embedding.
         """
-        if self.reducer is None:
-            raise ValueError("HybridSMDS requires a reducer object (e.g. PLSRegression).")
-
-        self.reducer_ = clone(self.reducer)
+        X = np.asarray(X, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
 
         if self.bypass_mds:
             X = check_array(X)
-            y = np.asarray(y)
-            if y.ndim != 2 or y.shape[1] != self.n_components:
+            if y.ndim != 2 or y.shape[1] != self.stage_1.n_components:
                 raise ValueError(
                     f"When bypass_mds=True, y must be target coordinates with shape "
-                    f"(n_samples, {self.n_components}). Got shape {y.shape}."
+                    f"(n_samples, {self.stage_1.n_components}). Got shape {y.shape}."
                 )
             if X.shape[0] != y.shape[0]:
                 raise ValueError(
                     f"X and y must have the same number of samples. "
                     f"Got X.shape[0]={X.shape[0]} and y.shape[0]={y.shape[0]}."
                 )
-            self.n_features_in_ = X.shape[1]
             Y = y
-            self.Y_ = Y
         else:
             X, y = self._validate_data(X, y)
-            distances = self._compute_ideal_distances(y)
-
+            distances = self.stage_1.compute_ideal_distances(y)
             if isinstance(distances, np.ndarray) and np.any(distances < 0):
-                raise ValueError("HybridSMDS: does not support incomplete distance matrices.")
+                raise ValueError("HybridSMDS does not support incomplete distance matrices.")
+            Y = self.stage_1._classical_mds(distances)
+            n_comp = self.stage_1.n_components
+            if Y.shape[1] < n_comp:
+                pad = np.zeros((Y.shape[0], n_comp - Y.shape[1]), dtype=np.float64)
+                Y = np.hstack([Y, pad])
 
-            Y = self._classical_mds(distances)
-            self.Y_ = Y
-
-        self.reducer_.fit(X, Y)
-
+        self.Y_ = Y
+        self.stage_1_fitted_ = UserProvidedSMDSParametrization(Y, self.stage_1.n_components)
+        self.stage_1_fitted_.fit()
+        self.reducer_ = clone(self.reducer)
+        self.reducer_.fit(X, self.Y_)
         return self
 
     def transform(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
+        """Projects X using the fitted reducer."""
         check_is_fitted(self, ["reducer_"])
         X = validate_data(self, X, reset=False)
 
@@ -91,8 +97,8 @@ class HybridSMDS(SupervisedMDS):
         return X_proj
 
     def inverse_transform(self, X_proj: NDArray[np.float64]) -> NDArray[np.float64]:
+        """Optional inverse projection, if the reducer supports it."""
         check_is_fitted(self, ["reducer_"])
-
         if not hasattr(self.reducer_, "inverse_transform"):
             raise NotImplementedError("This reducer does not support inverse_transform.")
         X_reconstructed: NDArray[np.float64] = self.reducer_.inverse_transform(X_proj)

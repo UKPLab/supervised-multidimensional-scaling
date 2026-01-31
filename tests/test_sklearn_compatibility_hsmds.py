@@ -25,18 +25,18 @@ class DummyReducer(BaseEstimator, TransformerMixin):  # type: ignore[misc]
     Serves as a placeholder for e.g. PLSRegression.
     """
 
-    def fit(self, X, y):
+    def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> "DummyReducer":
         self.n_features_in_ = X.shape[1]
         self.output_dim_ = y.shape[1]
         self._is_fitted = True
         return self
 
-    def transform(self, X):
+    def transform(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
         if not hasattr(self, "_is_fitted"):
             raise RuntimeError("Not fitted")
         return np.zeros((X.shape[0], self.output_dim_))
 
-    def inverse_transform(self, X):
+    def inverse_transform(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
         return np.zeros((X.shape[0], self.n_features_in_))
 
 
@@ -51,4 +51,3 @@ def test_sklearn_compatibility() -> None:
         check_estimator(estimator)
     except (AssertionError, ValueError, TypeError, AttributeError) as e:
         pytest.fail(f"❌ Error in check_estimator: {e}")
-

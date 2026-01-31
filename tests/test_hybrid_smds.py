@@ -183,7 +183,7 @@ def test_2d_manifold_cylindrical_single_point(mock_reducer: MockReducer, X_singl
 
 def test_2d_manifold_hierarchical_single_point(mock_reducer: MockReducer, X_single: NDArray[np.float64]) -> None:
     """Test HierarchicalShape with N=1 edge case."""
-    manifold = HierarchicalShape(level_distances=[100.0, 10.0, 1.0])
+    manifold = HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0], dtype=np.float64))
     y = np.array([[0, 1, 2]], dtype=np.float64)  # Shape: (1, 3) - hierarchical labels
 
     hsmds = HybridSMDS(manifold=manifold, reducer=mock_reducer, n_components=2)

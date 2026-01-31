@@ -53,7 +53,7 @@ def discover_manifolds(
     shapes: Optional[List[BaseShape]] = None,
     smds_components: int = 2,
     n_folds: int = 5,
-    n_jobs: int = -1,
+    n_jobs: Optional[int] = -1,
     save_results: bool = True,
     save_path: Optional[str] = None,
     experiment_name: str = "results",
