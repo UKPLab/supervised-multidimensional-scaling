@@ -18,12 +18,8 @@ ST_RESULTS_DIR = os.path.join(BASE_DIR, "statistical_testing", "st_results")
 
 
 def run_statistical_validation(
-        X: np.ndarray,
-        y: np.ndarray,
-        n_repeats: int = 10,
-        n_folds: int = 5,
-        experiment_name: str = "st_experiment"
-)-> Tuple[Dict[str, pd.DataFrame], Path]:
+    X: np.ndarray, y: np.ndarray, n_repeats: int = 10, n_folds: int = 5, experiment_name: str = "st_experiment"
+) -> Tuple[Dict[str, pd.DataFrame], Path]:
     """
     Runs the discovery pipeline `n_repeats` times with different random seeds.
     Aggregates results and performs statistical analysis.
@@ -48,13 +44,14 @@ def run_statistical_validation(
         print(f"--- Run {i + 1}/{n_repeats} (Seed: {seed}) ---")
 
         _, csv_path = discover_manifolds(
-            X, y,
+            X,
+            y,
             n_folds=n_folds,
             save_results=True,
             experiment_name=f"{experiment_name}_rep{i + 1}",
             random_state=seed,
             st_run_id=st_run_id,
-            clear_cache=True
+            clear_cache=True,
         )
 
         if csv_path:
@@ -86,7 +83,7 @@ def run_statistical_validation(
 
         for run_idx, df in loaded_dfs:
             for _, row in df.iterrows():
-                shape_name = row['shape']
+                shape_name = row["shape"]
 
                 if col_fold not in row:
                     continue
@@ -100,12 +97,7 @@ def run_statistical_validation(
                     continue
 
                 for fold_idx, score in enumerate(fold_scores):
-                    data_records.append({
-                        "run_id": run_idx,
-                        "fold_id": fold_idx,
-                        "shape": shape_name,
-                        "score": score
-                    })
+                    data_records.append({"run_id": run_idx, "fold_id": fold_idx, "shape": shape_name, "score": score})
 
         if not data_records:
             print(f"No valid data found for metric {target_metric}")

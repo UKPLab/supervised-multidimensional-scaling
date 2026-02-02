@@ -3,8 +3,8 @@ import re
 from typing import Optional
 
 import numpy as np
-import plotly.graph_objects as go  # type: ignore[import-untyped]
 import plotly.express as px  # type: ignore[import-untyped]
+import plotly.graph_objects as go  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 
 
@@ -92,7 +92,7 @@ def generate_interactive_plot(
             color_continuous_scale="Viridis",
             color_discrete_sequence=px.colors.qualitative.T10,
         )
-       
+
         # Enforce 1:1 Aspect Ratio
         if Y_ideal is not None and Y_ideal.shape[1] >= 2:
             order = np.argsort(y.ravel())

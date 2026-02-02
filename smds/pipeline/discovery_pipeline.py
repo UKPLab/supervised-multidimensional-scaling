@@ -46,14 +46,17 @@ def _params_for_csv(params: Any) -> str:
                 safe[k] = f"<array shape={getattr(v, 'shape', ())}>"
             elif isinstance(v, (int, float, str, bool, type(None))):
                 safe[k] = v
-            elif isinstance(v, (list, tuple)) and len(v) < 50 and all(
-                isinstance(x, (int, float, str, bool, type(None))) for x in v
+            elif (
+                isinstance(v, (list, tuple))
+                and len(v) < 50
+                and all(isinstance(x, (int, float, str, bool, type(None))) for x in v)
             ):
                 safe[k] = v
             else:
                 safe[k] = f"<{type(v).__name__}>"
         return str(safe)
     return str(params).replace("\n", " ").replace("\r", " ")
+
 
 DEFAULT_SHAPES = [
     ChainShape(),
@@ -166,7 +169,7 @@ def discover_manifolds(
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump({"st_run_id": st_run_id}, f, indent=4)
 
-        with open(save_path, 'w', encoding='utf-8') as f:
+        with open(save_path, "w", encoding="utf-8") as f:
             pd.DataFrame(columns=csv_headers).to_csv(save_path, index=False)
 
         print("Saving to:", save_path)
@@ -286,9 +289,7 @@ def discover_manifolds(
                         X_embedded = np.full((X.shape[0], n_comp), np.nan, dtype=np.float64)
                         for train_idx, test_idx in kf.split(X):
                             X_embedded[test_idx] = (
-                                SupervisedMDS(parametrization)
-                                .fit(X[train_idx], y[train_idx])
-                                .transform(X[test_idx])
+                                SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])
                             )
                     else:
                         X_embedded = SupervisedMDS(parametrization).fit_transform(X, y)
@@ -353,7 +354,7 @@ def discover_manifolds(
     if not df.empty and primary_metric in df.columns:
         df = df.sort_values(primary_metric, ascending=False).reset_index(drop=True)
 
-    if save_results and save_path is not None and create_visualization:
+    if save_results and save_path is not None and create_png_visualization:
         valid_shapes = [
             h
             for h in shapes

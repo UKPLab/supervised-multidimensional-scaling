@@ -116,7 +116,7 @@ def test_discover_manifolds_bypass(
         n_folds=2,
         n_jobs=-1,
         save_results=False,
-        create_visualization=False,
+        create_png_visualization=False,
         clear_cache=True,
         experiment_name="Bypass_Test",
     )

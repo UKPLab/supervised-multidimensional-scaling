@@ -7,11 +7,7 @@ import scikit_posthocs as sp  # type: ignore[import-untyped]
 from scipy import stats  # type: ignore[import-untyped]
 
 
-def perform_st_analysis(
-        aggregated_scores: pd.DataFrame,
-        output_dir: str,
-        metric_name: str
-) -> Dict[str, Any]:
+def perform_st_analysis(aggregated_scores: pd.DataFrame, output_dir: str, metric_name: str) -> Dict[str, Any]:
     """
     Performs Friedman test and Nemenyi post-hoc analysis on aggregated fold scores.
     Generates and saves:
@@ -46,7 +42,7 @@ def perform_st_analysis(
         "test": "Friedman Chi-Square",
         "statistic": float(stat),
         "p_value": float(p_value),
-        "significant": bool(p_value < 0.05)
+        "significant": bool(p_value < 0.05),
     }
 
     if p_value >= 0.05:
@@ -63,7 +59,7 @@ def perform_st_analysis(
     plt.figure(figsize=(10, 8))
     sp.sign_plot(p_values_matrix)
     plt.suptitle(f"Nemenyi Test P-Values ({metric_name})", y=0.98, fontsize=14)
-    plt.savefig(os.path.join(metric_dir, "p_values_heatmap.png"), bbox_inches='tight')
+    plt.savefig(os.path.join(metric_dir, "p_values_heatmap.png"), bbox_inches="tight")
     plt.close()
 
     # Critical Difference Diagram
