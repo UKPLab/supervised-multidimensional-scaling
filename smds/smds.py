@@ -45,7 +45,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
         pass
 
     @abstractmethod
-    def transform(self, X: Any) -> NDArray[Any]:
+    def transform(self, X: Any) -> Any:
         """
         Subclasses must implement this.
         It is required for TransformerMixin.fit_transform to work.
@@ -53,7 +53,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
         pass
 
     @abstractmethod
-    def compute_ideal_distances(self, y: NDArray[Any]) -> NDArray[Any]:
+    def compute_ideal_distances(self, y: Any) -> Any:
         """
         Subclasses must implement this.
         Return the pairwise distance matrix for the given labels or coordinates.
@@ -62,7 +62,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
 
 
 class ComputedSMDSParametrization(SMDSParametrization):
-    def __init__(self, manifold: Callable[[np.ndarray], np.ndarray], n_components: int):
+    def __init__(self, manifold: Callable[[NDArray[Any]], NDArray[Any]], n_components: int):
         # fixme: set manifold to be BaseShape
         self.manifold = manifold
         self._n_components = n_components
@@ -85,7 +85,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
         return D
 
-    def _classical_mds(self, D: np.ndarray) -> np.ndarray:
+    def _classical_mds(self, D: NDArray[Any]) -> NDArray[Any]:
         """
         Perform Classical MDS on the distance matrix D to obtain a low-dimensional embedding.
         This is the template manifold for the supervised MDS.
