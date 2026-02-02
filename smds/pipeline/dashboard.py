@@ -8,12 +8,20 @@ import os
 import sys
 from typing import Any
 
+import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import plotly.graph_objects as go  # type: ignore[import-untyped]
 import streamlit as st
 import streamlit.components.v1 as components
 
-from smds.pipeline.helpers.styling import COL_CONTINUOUS, COL_DEFAULT, COL_DISCRETE, COL_SPATIAL, SHAPE_COLORS
+from smds.pipeline.helpers.styling import (
+    COL_CONTINUOUS,
+    COL_DEFAULT,
+    COL_DISCRETE,
+    COL_SPATIAL,
+    COL_USER_PROVIDED,
+    get_shape_color,
+)
 
 # Locate results directory relative to this script
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +75,20 @@ def main() -> None:
         "Select Experiment",
         experiments,
         index=default_index,  # Auto-select the specific experiment folder
+    )
+
+    st.sidebar.markdown("---")
+    st.sidebar.caption("Shape categories (bar colors)")
+    st.sidebar.markdown(
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_USER_PROVIDED};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> User-provided<br>'
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_CONTINUOUS};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> Continuous<br>'
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_DISCRETE};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> Discrete<br>'
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_SPATIAL};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> Spatial',
+        unsafe_allow_html=True,
     )
 
     if selected_exp_dir:
@@ -150,7 +172,15 @@ def main() -> None:
             c1.metric("Winner", best_shape)
             c2.metric("Best Score", f"{best_score:.4f}")
 
-        df_sorted["display_name"] = df_sorted["shape"].apply(lambda x: x.replace("Shape", ""))
+        def to_display_name(shape: str) -> str:
+            if shape == "UserProvidedSMDSParametrization":
+                return "User-provided"
+            return shape.replace("Shape", "")
+
+        base_name = df_sorted["shape"].apply(to_display_name)
+        dup_count = base_name.groupby(base_name).cumcount()
+        suffix = np.where(dup_count > 0, " (" + (dup_count + 1).astype(str) + ")", "")
+        df_sorted["display_name"] = base_name + suffix
 
         std_col = selected_metric.replace("mean_", "std_")
 
@@ -159,11 +189,12 @@ def main() -> None:
             COL_CONTINUOUS: "Continuous",
             COL_DISCRETE: "Discrete",
             COL_SPATIAL: "Spatial",
+            COL_USER_PROVIDED: "User-provided",
             COL_DEFAULT: "Other",
         }
 
         def get_category(shape_name: str) -> str:
-            hex_color = SHAPE_COLORS.get(shape_name, COL_DEFAULT)
+            hex_color = get_shape_color(shape_name)
             return category_map.get(hex_color, "Other")
 
         df_sorted["category"] = df_sorted["shape"].apply(get_category)

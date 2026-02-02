@@ -7,7 +7,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
-from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
+from sklearn.base import clone  # type: ignore[import-untyped]
+from sklearn.model_selection import KFold, cross_validate  # type: ignore[import-untyped]
 
 from smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
 from smds.shapes.base_shape import BaseShape
@@ -30,6 +31,28 @@ from .helpers.plots import create_plots
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
 CACHE_DIR = os.path.join(SAVE_DIR, ".cache")
+
+
+def _params_for_csv(params: Any) -> str:
+    if params is None or isinstance(params, (int, float, str, bool)):
+        return str(params)
+    if isinstance(params, dict):
+        safe: Dict[str, Any] = {}
+        for k, v in params.items():
+            if callable(v):
+                safe[k] = "<callable>"
+            elif hasattr(v, "shape"):
+                safe[k] = f"<array shape={getattr(v, 'shape', ())}>"
+            elif isinstance(v, (int, float, str, bool, type(None))):
+                safe[k] = v
+            elif isinstance(v, (list, tuple)) and len(v) < 50 and all(
+                isinstance(x, (int, float, str, bool, type(None))) for x in v
+            ):
+                safe[k] = v
+            else:
+                safe[k] = f"<{type(v).__name__}>"
+        return str(safe)
+    return str(params).replace("\n", " ").replace("\r", " ")
 
 DEFAULT_SHAPES = [
     ChainShape(),
@@ -236,19 +259,33 @@ def discover_manifolds(
 
             row["error"] = None
 
-            # Generate Interactive Plot
+            # Generate Interactive Plot (out-of-sample when n_folds >= 2; same splits as cross_validate)
             if save_results and plots_dir is not None:
                 try:
-                    full_estimator = SupervisedMDS(parametrization)
-                    X_embedded = full_estimator.fit_transform(X, y)
+                    n_comp = getattr(parametrization, "n_components", smds_components)
+                    if n_folds >= 2:
+                        kf = KFold(n_splits=n_folds, shuffle=False)
+                        X_embedded = np.full((X.shape[0], n_comp), np.nan, dtype=np.float64)
+                        for train_idx, test_idx in kf.split(X):
+                            X_embedded[test_idx] = (
+                                SupervisedMDS(parametrization)
+                                .fit(X[train_idx], y[train_idx])
+                                .transform(X[test_idx])
+                            )
+                    else:
+                        X_embedded = SupervisedMDS(parametrization).fit_transform(X, y)
 
                     plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name
+                    stage_1_for_ideal = clone(parametrization)
+                    stage_1_for_ideal.fit(y)
+                    Y_ideal = getattr(stage_1_for_ideal, "Y_", None)
 
                     plot_filename = generate_interactive_plot(
                         X_embedded=X_embedded,
                         y=y,
                         shape_name=plot_name_prefix,
                         save_dir=plots_dir,
+                        Y_ideal=Y_ideal,
                     )
 
                     row["plot_path"] = os.path.join("plots", plot_filename)
@@ -282,7 +319,8 @@ def discover_manifolds(
         results_list.append(row)
 
         if save_results and save_path is not None:
-            pd.DataFrame([row], columns=csv_headers).to_csv(
+            row_for_csv = {**row, "params": _params_for_csv(row["params"])}
+            pd.DataFrame([row_for_csv], columns=csv_headers).to_csv(
                 save_path,
                 mode="a",
                 header=False,

@@ -19,7 +19,6 @@ COL_DEFAULT = "#95a5a6"
 COL_USER_PROVIDED = "#9b59b6"
 
 SHAPE_COLORS = {
-    "UserProvidedSMDSParametrization": COL_USER_PROVIDED,
     # Continuous Shapes
     "CircularShape": COL_CONTINUOUS,
     "EuclideanShape": COL_CONTINUOUS,
@@ -49,4 +48,5 @@ def get_shape_color(shape_name: str) -> str:
     -------
         str: The corresponding hex color, or a default grey if not found.
     """
-    return SHAPE_COLORS.get(shape_name, COL_DEFAULT)
+    known = SHAPE_COLORS.get(shape_name)
+    return known if known is not None else COL_USER_PROVIDED

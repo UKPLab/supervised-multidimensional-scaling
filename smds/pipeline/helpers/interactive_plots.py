@@ -1,13 +1,19 @@
 import os
 import re
+from typing import Optional
 
 import numpy as np
+import plotly.graph_objects as go  # type: ignore[import-untyped]
 import plotly.express as px  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 
 
 def generate_interactive_plot(
-    X_embedded: NDArray[np.float64], y: NDArray[np.float64], shape_name: str, save_dir: str
+    X_embedded: NDArray[np.float64],
+    y: NDArray[np.float64],
+    shape_name: str,
+    save_dir: str,
+    Y_ideal: Optional[NDArray[np.float64]] = None,
 ) -> str:
     """
     Generates an interactive Plotly scatter plot (2D or 3D) and saves it as an HTML file.
@@ -18,6 +24,7 @@ def generate_interactive_plot(
         y: The labels or target values (n_samples,).
         shape_name: The name of the shape hypothesis (used for filename).
         save_dir: The directory where the HTML file should be saved.
+        Y_ideal: Optional (n_samples, n_components) ideal manifold coordinates to draw as a line.
 
     Returns
     -------
@@ -52,11 +59,27 @@ def generate_interactive_plot(
             color_continuous_scale="Viridis",
             color_discrete_sequence=px.colors.qualitative.T10,
         )
-
         # Enforce correct aspect ratio in 3D
+        if Y_ideal is not None and Y_ideal.shape[1] >= 3:
+            order = np.argsort(y.ravel())
+            line_x = Y_ideal[order, 0]
+            line_y = Y_ideal[order, 1]
+            line_z = Y_ideal[order, 2]
+            fig.add_trace(
+                go.Scatter3d(
+                    x=line_x,
+                    y=line_y,
+                    z=line_z,
+                    mode="lines",
+                    name="Ideal shape",
+                    line=dict(color="rgba(128,128,128,0.9)", width=4),
+                )
+            )
         fig.update_layout(
             scene=dict(xaxis_title="Dim 1", yaxis_title="Dim 2", zaxis_title="Dim 3", aspectmode="data"),
-            margin=dict(l=0, r=0, b=0, t=10),
+            margin=dict(l=0, r=120, b=0, t=10),
+            showlegend=True,
+            legend=dict(orientation="v", x=1.02, xanchor="left"),
         )
 
     else:
@@ -69,8 +92,21 @@ def generate_interactive_plot(
             color_continuous_scale="Viridis",
             color_discrete_sequence=px.colors.qualitative.T10,
         )
-
+       
         # Enforce 1:1 Aspect Ratio
+        if Y_ideal is not None and Y_ideal.shape[1] >= 2:
+            order = np.argsort(y.ravel())
+            line_x = Y_ideal[order, 0]
+            line_y = Y_ideal[order, 1]
+            fig.add_trace(
+                go.Scatter(
+                    x=line_x,
+                    y=line_y,
+                    mode="lines",
+                    name="Ideal shape",
+                    line=dict(color="rgba(128,128,128,0.9)", width=2),
+                )
+            )
         fig.update_layout(
             xaxis=dict(title="Dim 1"),
             yaxis=dict(title="Dim 2", scaleanchor="x", scaleratio=1),
