@@ -25,13 +25,7 @@ dependencies = [
     "streamlit>=1.52.2",
     "zadu>=0.3.1",
 ]
-authors = [
-    { name = "Vinayak Joshi" },
-    { name = "Jan Karas" },
-    { name = "Anton Kantsemal" },
-    { name = "Simon Kistner" },
-    { name = "Arwin Sanee Ghomi" }
-]
+
 
 [dependency-groups]
 dev = [
