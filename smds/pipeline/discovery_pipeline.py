@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import uuid
@@ -78,10 +79,11 @@ def discover_manifolds(
     n_folds: int = 5,
     n_jobs: int = -1,
     save_results: bool = True,
-    save_path: Optional[str] = None,
     experiment_name: str = "results",
-    create_visualization: bool = True,
+    create_png_visualization: bool = True,
     clear_cache: bool = True,
+    random_state: Optional[int] = None,
+    st_run_id: Optional[str] = None,
 ) -> tuple[pd.DataFrame, Optional[str]]:
     """
     Evaluates a list of Shape hypotheses on the given data using Cross-Validation or direct scoring.
@@ -100,10 +102,11 @@ def discover_manifolds(
                 the model is fit and scored directly on all data.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
         save_results: Whether to persist results to a CSV file.
-        save_path: Specific path to save results. If None, generates one based on timestamp.
         experiment_name: Label to include in the generated filename.
-        create_visualization: Whether to create a visualization of the results as an image file.
+        create_png_visualization: Whether to create a visualization of the results as an image file.
         clear_cache: Whether to delete all cache files after successful completion.
+        random_state: Seed used by the random number generator for Cross-Validation splitting.
+        st_run_id: Unique identifier for a Statistical Testing run.
 
     Returns
     -------
@@ -117,6 +120,10 @@ def discover_manifolds(
     """
     if shapes is None:
         shapes = DEFAULT_SHAPES
+
+    if st_run_id is not None:
+        # to avoid loding cached manifolds from prev pipeline_run in st_run
+        clear_cache = True
 
     results_list = []
 
@@ -132,37 +139,48 @@ def discover_manifolds(
     experiment_dir = None
     plots_dir = None
     unique_suffix = ""
+    save_path = None
 
     if save_results:
         os.makedirs(SAVE_DIR, exist_ok=True)
 
-        if save_path is None:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            unique_id = uuid.uuid4().hex[:6]
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        unique_id = uuid.uuid4().hex[:6]
 
-            safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
+        safe_name = "".join(c for c in experiment_name if c.isalnum() or c in ("-", "_"))
 
-            # Create a unique folder for this experiment
-            unique_suffix = f"{safe_name}_{timestamp}_{unique_id}"
-            experiment_dir = os.path.join(SAVE_DIR, unique_suffix)
-            plots_dir = os.path.join(experiment_dir, "plots")
+        # Create a unique folder for this experiment
+        unique_suffix = f"{safe_name}_{timestamp}_{unique_id}"
+        experiment_dir = os.path.join(SAVE_DIR, unique_suffix)
+        plots_dir = os.path.join(experiment_dir, "plots")
 
-            os.makedirs(experiment_dir, exist_ok=True)
-            os.makedirs(plots_dir, exist_ok=True)
+        os.makedirs(experiment_dir, exist_ok=True)
+        os.makedirs(plots_dir, exist_ok=True)
 
-            filename = f"{unique_suffix}.csv"
-            save_path = os.path.join(experiment_dir, filename)
+        filename = f"{unique_suffix}.csv"
+        save_path = os.path.join(experiment_dir, filename)
 
-        else:
-            experiment_dir = os.path.dirname(os.path.abspath(save_path))
-            plots_dir = os.path.join(experiment_dir, "plots")
-            if not os.path.exists(plots_dir):
-                os.makedirs(plots_dir, exist_ok=True)
+        # Save Metadata to JSON
+        # used to let the dashboard know which experiments belong to which st_run
+        meta_path = os.path.join(experiment_dir, "metadata.json")
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump({"st_run_id": st_run_id}, f, indent=4)
 
-        if not os.path.exists(save_path):
+        with open(save_path, 'w', encoding='utf-8') as f:
             pd.DataFrame(columns=csv_headers).to_csv(save_path, index=False)
 
-    print("Saving to:", save_path)
+        print("Saving to:", save_path)
+
+    # Setup Cross-Validation Strategy
+    cv_strategy: Any
+
+    # If a seed is provided (ST run), we MUST build the splitter manually to inject the seed.
+    if random_state is not None:
+        cv_strategy = KFold(n_splits=n_folds, shuffle=True, random_state=random_state)
+
+    # If no seed (Standard run), keep original behavior (let sklearn handle it via int)
+    else:
+        cv_strategy = n_folds
 
     # Construct the scoring map for cross_validate
 
@@ -234,7 +252,7 @@ def discover_manifolds(
                 estimator,
                 X,
                 y,
-                cv=n_folds,
+                cv=cv_strategy,
                 n_jobs=n_jobs,
                 scoring=scoring_map,
                 return_train_score=False,
