@@ -18,11 +18,19 @@ ST_RESULTS_DIR = os.path.join(BASE_DIR, "statistical_testing", "st_results")
 
 
 def run_statistical_validation(
-    X: np.ndarray, y: np.ndarray, n_repeats: int = 10, n_folds: int = 5, experiment_name: str = "st_experiment"
+    X: np.ndarray,
+    y: np.ndarray,
+    n_repeats: int = 10,
+    n_folds: int = 5,
+    experiment_name: str = "st_experiment",
+    shapes: Optional[List[Any]] = None,
 ) -> Tuple[Dict[str, pd.DataFrame], Path]:
     """
     Runs the discovery pipeline `n_repeats` times with different random seeds.
     Aggregates results and performs statistical analysis.
+
+    shapes: If None, uses the pipeline default shapes (built-in only).
+            Pass a list including UserProvidedSMDSParametrization to include user-provided shapes.
     """
     # Generate Unique ST ID
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -46,6 +54,7 @@ def run_statistical_validation(
         _, csv_path = discover_manifolds(
             X,
             y,
+            shapes=shapes,
             n_folds=n_folds,
             save_results=True,
             experiment_name=f"{experiment_name}_rep{i + 1}",
