@@ -2,14 +2,14 @@ import os
 import shutil
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
 from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
 from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes import (
     CircularShape,
@@ -50,7 +50,7 @@ DEFAULT_SHAPES = [
 def discover_manifolds(
     X: NDArray[np.float64],
     y: NDArray[np.float64],
-    shapes: Optional[List[BaseShape]] = None,
+    shapes: Optional[List[Union[BaseShape, UserProvidedSMDSParametrization]]] = None,
     smds_components: int = 2,
     n_folds: int = 5,
     n_jobs: int = -1,
@@ -74,7 +74,7 @@ def discover_manifolds(
         smds_components: Tells SMDS on how many dimensions to map
         shapes: List of Shape objects to test. Defaults to a standard set if None.
         n_folds: Number of Cross-Validation folds. If 0, Cross-Validation is skipped and
-                 the model is fit and scored directly on all data.
+                the model is fit and scored directly on all data.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
         save_results: Whether to persist results to a CSV file.
         save_path: Specific path to save results. If None, generates one based on timestamp.
@@ -158,21 +158,41 @@ def discover_manifolds(
     # Filter shapes based on input dimension compatibility
     user_y_ndim = np.asarray(y).ndim
 
-    valid_shapes = [s for s in shapes if s.y_ndim == user_y_ndim]
-
-    skipped = len(shapes) - len(valid_shapes)
-    if skipped > 0:
-        print(
-            f"Filtering: Kept {len(valid_shapes)} shapes, "
-            f"skipped {skipped} due to dimension mismatch (Expected {user_y_ndim}D)."
-        )
-
     if X.shape[0] < 100:
         print("[WARNING] Less than 100 datapoints in X might lead to noisy results")
 
-    for shape in valid_shapes:
-        shape_name = shape.__class__.__name__
-        params = shape.__dict__
+    for shape in shapes:
+        parametrization = None
+        shape_name = ""
+        params = {}
+
+        if isinstance(shape, BaseShape):
+            if shape.y_ndim != user_y_ndim:
+                continue
+
+            shape_name = shape.__class__.__name__
+            params = shape.__dict__
+            parametrization = ComputedSMDSParametrization(n_components=smds_components, manifold=shape)
+
+        elif isinstance(shape, UserProvidedSMDSParametrization):
+            parametrization = shape
+            shape_name = getattr(shape, "name", None) or shape.__class__.__name__
+
+            n_comp = getattr(shape, "n_components", smds_components)
+            params = shape.__dict__ if hasattr(shape, "__dict__") else {"n_components": n_comp}
+
+            has_mapper = (
+                getattr(shape, "fixed_template", None) is not None and getattr(shape, "mapper", None) is not None
+            )
+
+            if not has_mapper:
+                current_y_dim = 1 if y.ndim == 1 else y.shape[-1]
+                if current_y_dim != n_comp:
+                    print(f"Skipping {shape_name}: y dimension {current_y_dim} != expected components {n_comp}")
+                    continue
+        else:
+            print(f"Skipping unknown hypothesis type: {type(shape)}")
+            continue
 
         shape_hash = compute_shape_hash(shape_name, params, data_hash, n_folds)
         cache_file = os.path.join(CACHE_DIR, f"{shape_hash}.pkl")
@@ -184,7 +204,7 @@ def discover_manifolds(
             results_list.append(row)
             continue
 
-        estimator = SupervisedMDS(ComputedSMDSParametrization(n_components=smds_components, manifold=shape))
+        estimator = SupervisedMDS(parametrization)
 
         try:
             cv_results = cross_validate(
@@ -219,15 +239,16 @@ def discover_manifolds(
             # Generate Interactive Plot
             if save_results and plots_dir is not None:
                 try:
-                    full_estimator = SupervisedMDS(
-                        ComputedSMDSParametrization(n_components=smds_components, manifold=shape)
-                    )
+                    full_estimator = SupervisedMDS(parametrization)
                     X_embedded = full_estimator.fit_transform(X, y)
 
                     plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name
 
                     plot_filename = generate_interactive_plot(
-                        X_embedded=X_embedded, y=y, shape_name=plot_name_prefix, save_dir=plots_dir
+                        X_embedded=X_embedded,
+                        y=y,
+                        shape_name=plot_name_prefix,
+                        save_dir=plots_dir,
                     )
 
                     row["plot_path"] = os.path.join("plots", plot_filename)
@@ -277,7 +298,13 @@ def discover_manifolds(
         df = df.sort_values(primary_metric, ascending=False).reset_index(drop=True)
 
     if save_results and save_path is not None and create_visualization:
-        create_plots(X, y, df, valid_shapes, save_path, experiment_name)
+        valid_shapes = [
+            h
+            for h in shapes
+            if (isinstance(h, BaseShape) and h.y_ndim == user_y_ndim) or isinstance(h, UserProvidedSMDSParametrization)
+        ]
+        if valid_shapes:
+            create_plots(X, y, df, valid_shapes, save_path, experiment_name)
 
     if clear_cache:
         if os.path.exists(CACHE_DIR):

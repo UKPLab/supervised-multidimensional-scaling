@@ -2,9 +2,10 @@ import os
 import pickle
 from abc import ABC, abstractmethod
 from math import exp
-from typing import Callable
+from typing import Any, Callable, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
 from sklearn.base import BaseEstimator, TransformerMixin, clone  # type: ignore[import-untyped]
@@ -25,7 +26,7 @@ from smds.stress import (
 
 
 # smds stage 1 - for the manifold Y_
-class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
+class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore[misc]
     @property
     @abstractmethod
     def n_components(self) -> int:
@@ -36,7 +37,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def fit(self, X, y=None):
+    def fit(self, X: Any, y: Any = None) -> Any:
         """
         Subclasses must implement this.
         It is required for TransformerMixin.fit_transform to work.
@@ -44,7 +45,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def transform(self, X):
+    def transform(self, X: Any) -> NDArray[Any]:
         """
         Subclasses must implement this.
         It is required for TransformerMixin.fit_transform to work.
@@ -52,7 +53,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def compute_ideal_distances(self, y: np.typing.NDArray):
+    def compute_ideal_distances(self, y: NDArray[Any]) -> NDArray[Any]:
         """
         Subclasses must implement this.
         Return the pairwise distance matrix for the given labels or coordinates.
@@ -73,7 +74,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
         """
         return self._n_components
 
-    def compute_ideal_distances(self, y: np.typing.NDArray, threshold: int = 2) -> np.ndarray:
+    def compute_ideal_distances(self, y: NDArray[Any], threshold: int = 2) -> NDArray[Any]:
         """
         Compute ideal pairwise distance matrix D based on labels y and specified self.manifold.
         """
@@ -107,7 +108,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
         Y: np.ndarray = eigvecs * np.sqrt(np.maximum(eigvals, 0))
         return Y
 
-    def fit(self, X, y=None) -> "ComputedSMDSParametrization":
+    def fit(self, X: Any, y: Any = None) -> "ComputedSMDSParametrization":
         """
         Compute the ideal distance matrix and its MDS embedding from input labels.
         """
@@ -115,7 +116,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
         self.Y_ = self._classical_mds(self.D_)
         return self
 
-    def transform(self, X=None) -> np.typing.NDArray:
+    def transform(self, X: Any = None) -> NDArray[Any]:
         """
         Return the stage-1 embedding computed during fit.
         """
@@ -123,12 +124,30 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
 
 class UserProvidedSMDSParametrization(SMDSParametrization):
-    def __init__(self, y: np.typing.NDArray, n_components: int):
+    def __init__(
+        self,
+        n_components: int,
+        y: Optional[NDArray[Any]] = None,
+        fixed_template: Optional[np.ndarray] = None,
+        mapper: Optional[Callable[[np.ndarray, np.ndarray], np.ndarray]] = None,
+        name: Optional[str] = None,
+    ):
         self._n_components = n_components
-        if y.shape[-1] != n_components:
-            raise ValueError(f"y must have last shape == n_components ({n_components}), got {y.shape[-1]}")
-        # todo: maybe no need to pass it here if we pass it in fit()?
+        self.fixed_template = fixed_template
+        self.mapper = mapper
+        self.name = name
         self.y = y
+
+        if self.y is not None:
+            self.y = np.asarray(self.y)
+            if self.y.ndim == 1:
+                self.y = self.y.reshape(-1, 1)
+
+            if self.y.shape[-1] != self._n_components:
+                if self._n_components == 2 and self.y.shape[-1] != 2:
+                    raise ValueError(
+                        f"y must have last shape == n_components ({self._n_components}), got {self.y.shape[-1]}"
+                    )
 
     @property
     def n_components(self) -> int:
@@ -137,21 +156,66 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         """
         return self._n_components
 
-    def compute_ideal_distances(self, y: np.typing.NDArray):
+    def _calc_dist(self, coords: NDArray[Any]) -> NDArray[Any]:
+        if coords.ndim == 1:
+            coords = coords.reshape(-1, 1)
+        dist: NDArray[Any] = np.linalg.norm(coords[:, np.newaxis, :] - coords[np.newaxis, :, :], axis=-1)
+        return dist
+
+    def compute_ideal_distances(self, y: Optional[NDArray[Any]] = None) -> NDArray[Any]:
         """
         Compute pairwise distances between the stored embedding points.
         """
-        return np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
+        if self.y is not None:
+            return self._calc_dist(self.Y_)
 
-    def fit(self, X=None, y=None) -> "UserProvidedSMDSParametrization":
+        if y is None:
+            return self._calc_dist(self.Y_)
+
+        y = np.asarray(y)
+
+        if self.fixed_template is not None and self.mapper is not None:
+            coords = self.mapper(y.squeeze(), self.fixed_template)
+            return self._calc_dist(coords)
+        else:
+            return self._calc_dist(y)
+
+    def fit(self, X: NDArray[Any], y: Optional[NDArray[Any]] = None) -> "UserProvidedSMDSParametrization":
         """
         Store provided coordinates and compute their distance matrix.
         """
-        self.Y_ = self.y
+        if self.y is not None:
+            self.Y_ = self.y
+            self.D_ = self.compute_ideal_distances(None)
+            return self
+
+        target_data = y if y is not None else X
+
+        if target_data is None:
+            raise ValueError("y is required for fit (unless y was provided in __init__).")
+
+        target_data = np.asarray(target_data)
+
+        if self.fixed_template is not None and self.mapper is not None:
+            mapped_coords = self.mapper(target_data.squeeze(), self.fixed_template)
+            mapped_coords = np.asarray(mapped_coords)
+            if mapped_coords.ndim == 1:
+                mapped_coords = mapped_coords.reshape(-1, 1)
+            self.Y_ = mapped_coords
+        else:
+            if target_data.ndim == 1:
+                target_data = target_data.reshape(-1, 1)
+
+            if target_data.shape[-1] != self.n_components:
+                raise ValueError(
+                    f"y shape mismatch. Expected last dim {self.n_components}, got {target_data.shape[-1]}"
+                )
+            self.Y_ = target_data
+
         self.D_ = self.compute_ideal_distances(None)
         return self
 
-    def transform(self, X):
+    def transform(self, X: Any) -> NDArray[Any]:
         """
         Return the provided embedding coordinates.
         """

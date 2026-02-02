@@ -14,10 +14,12 @@ COL_DISCRETE = "#e67e22"
 COL_SPATIAL = "#2ecc71"
 
 # Fallback color for unknown shapes
-COL_DEFAULT = "#95a5a6"  # Grey
+COL_DEFAULT = "#95a5a6"
 
-# Mapping of Class Name -> Color
+COL_USER_PROVIDED = "#9b59b6"
+
 SHAPE_COLORS = {
+    "UserProvidedSMDSParametrization": COL_USER_PROVIDED,
     # Continuous Shapes
     "CircularShape": COL_CONTINUOUS,
     "EuclideanShape": COL_CONTINUOUS,
