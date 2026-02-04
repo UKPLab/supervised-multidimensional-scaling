@@ -2,6 +2,7 @@ import os
 from typing import List, Union
 
 import matplotlib
+from sklearn.model_selection import KFold  # type: ignore[import-untyped]
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
@@ -32,10 +33,12 @@ def create_plots(
     shapes: List[Union[BaseShape, UserProvidedSMDSParametrization]],
     csv_path: str,
     experiment_name: str,
+    n_folds: int = 5,
+    smds_components: int = 2,
 ) -> None:
     """
     Creates a combined visualization:
-    1. Scatter plot of the best manifold projection (left).
+    1. Scatter plot of the best manifold projection (left; out-of-sample when n_folds >= 2).
     2. Grid of bar charts showing rankings for ALL computed metrics (right).
     """
     sns.set_theme(style="whitegrid")
@@ -112,12 +115,22 @@ def create_plots(
 
         if best_shape_obj:
             if isinstance(best_shape_obj, BaseShape):
-                estimator = SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=best_shape_obj))
+                parametrization = ComputedSMDSParametrization(n_components=smds_components, manifold=best_shape_obj)
             else:
-                estimator = SupervisedMDS(best_shape_obj)
+                parametrization = best_shape_obj
             try:
-                X_embedded = estimator.fit_transform(X, y)
-                n_comp = X_embedded.shape[1]
+                n_comp = getattr(parametrization, "n_components", smds_components)
+                if n_folds >= 2:
+                    kf = KFold(n_splits=n_folds, shuffle=False)
+                    X_embedded = np.full((X.shape[0], n_comp), np.nan, dtype=np.float64)
+                    for train_idx, test_idx in kf.split(X):
+                        X_embedded[test_idx] = (
+                            SupervisedMDS(parametrization)
+                            .fit(X[train_idx], y[train_idx])
+                            .transform(X[test_idx])
+                        )
+                else:
+                    X_embedded = SupervisedMDS(parametrization).fit_transform(X, y)
                 hue_vals = y[:, 0] if y.ndim > 1 else y
                 is_discrete = len(np.unique(hue_vals)) < 20
                 palette = "tab10" if is_discrete else "viridis"

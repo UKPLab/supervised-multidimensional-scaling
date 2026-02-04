@@ -59,6 +59,7 @@ def generate_interactive_plot(
             color_continuous_scale="Viridis",
             color_discrete_sequence=px.colors.qualitative.T10,
         )
+        fig.update_traces(marker=dict(size=4))
         # Enforce correct aspect ratio in 3D
         if Y_ideal is not None and Y_ideal.shape[1] >= 3:
             order = np.argsort(y.ravel())
@@ -72,7 +73,7 @@ def generate_interactive_plot(
                     z=line_z,
                     mode="lines",
                     name="Ideal shape",
-                    line=dict(color="rgba(128,128,128,0.9)", width=4),
+                    line=dict(color="rgba(180,180,180,0.5)", width=4),
                 )
             )
         fig.update_layout(
@@ -104,7 +105,7 @@ def generate_interactive_plot(
                     y=line_y,
                     mode="lines",
                     name="Ideal shape",
-                    line=dict(color="rgba(128,128,128,0.9)", width=2),
+                    line=dict(color="rgba(180,180,180,0.5)", width=2),
                 )
             )
         fig.update_layout(
