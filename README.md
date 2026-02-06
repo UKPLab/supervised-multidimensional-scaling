@@ -20,12 +20,12 @@ Don't hesitate to report an issue if you have further questions or spot a bug.
 
 With uv (recommended):
 ```shell
-uv add supervised-multidimensional-scaling
+uv add smds
 ```
 
 With pip:
 ```bash
-pip install supervised-multidimensional-scaling
+pip install smds
 ```
 
 ## Usage
