@@ -2,6 +2,8 @@ site_name: smds
 site_url: https://ukplab.github.io/smds
 nav:
   - Home: index.md
+  - Examples:
+      - Family Tree Experiment: notebooks/family_tree.ipynb
 
 theme:
   name: material
@@ -13,3 +15,7 @@ plugins:
         python:
           options:
             docstring_style: numpy
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
+      show_input: true
