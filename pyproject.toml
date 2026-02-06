@@ -1,6 +1,6 @@
 [project]
 name = "smds"
-version = "1.0.0"
+version = "1.0.1"
 description = "A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling (SMDS) for automatic feature manifold discovery in LLMs."
 requires-python = ">=3.12"
 dependencies = [
@@ -15,11 +15,12 @@ dependencies = [
     "zadu>=0.3.1",
 ]
 authors = [
-    { name = "Vinayak Joshi"},
-    { name="Jan Karas"}, 
-    {name = "Anton Kantsemal"}, 
-    {name = "Simon Kistner"}, 
-    {name = "Arwin Sanee Ghomi"}
+    { name = "Federico Tiblias" },
+    { name = "Vinayak Joshi" },
+    { name = "Jan Karas" },
+    { name = "Anton Kantsemal" },
+    { name = "Simon Kistner" },
+    { name = "Arwin Sanee Ghomi" }
 ]
 readme = "README.md"
 
@@ -44,6 +45,7 @@ dev = [
 ]
 docs = [
     "mkdocs>=1.6.1",
+    "mkdocs-jupyter>=0.25.1",
     "mkdocs-material>=9.7.1",
     "mkdocstrings>=1.0.2",
     "mkdocstrings-python>=2.0.1",
@@ -59,6 +61,7 @@ testpaths = ["."]
 line-length = 120
 target-version = "py312"
 output-format = "grouped"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "D"]
@@ -89,6 +92,7 @@ convention = "numpy"
 [tool.mypy]
 strict = true
 implicit_reexport = true
+extend = ["notebooks/"]
 
 [build-system]
 requires = ["hatchling"]
