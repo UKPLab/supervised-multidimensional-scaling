@@ -3420,6 +3420,91 @@ wheels = [
 ]
 
 [[package]]
+name = "smds"
+version = "1.0.0"
+source = { editable = "." }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "notebook" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "streamlit" },
+    { name = "zadu" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "black" },
+    { name = "coverage" },
+    { name = "datasets" },
+    { name = "gitchangelog" },
+    { name = "isort" },
+    { name = "matplotlib" },
+    { name = "mypy" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "pylint" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "seaborn" },
+    { name = "torch" },
+    { name = "transformers" },
+]
+docs = [
+    { name = "mkdocs" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings" },
+    { name = "mkdocstrings-python" },
+]
+pipeline = [
+    { name = "scipy-stubs" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "matplotlib", specifier = ">=3.10.7" },
+    { name = "notebook", specifier = ">=7.4.7" },
+    { name = "numpy", specifier = ">=2.3.4" },
+    { name = "pandas", specifier = ">=2.3.3" },
+    { name = "plotly", specifier = ">=6.5.0" },
+    { name = "scikit-learn", specifier = ">=1.7.2" },
+    { name = "scipy", specifier = ">=1.16.3" },
+    { name = "streamlit", specifier = ">=1.52.2" },
+    { name = "zadu", specifier = ">=0.3.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "black", specifier = ">=25.9.0" },
+    { name = "coverage", specifier = ">=7.11.0" },
+    { name = "datasets", specifier = ">=4.4.1" },
+    { name = "gitchangelog", specifier = ">=3.0.4" },
+    { name = "isort", specifier = ">=7.0.0" },
+    { name = "matplotlib", specifier = ">=3.10.7" },
+    { name = "mypy", specifier = ">=1.18.2" },
+    { name = "pandas", specifier = ">=2.3.3" },
+    { name = "plotly", specifier = ">=6.4.0" },
+    { name = "pylint", specifier = ">=4.0.2" },
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "ruff", specifier = ">=0.14.3" },
+    { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "torch", specifier = ">=2.9.0" },
+    { name = "transformers", specifier = ">=4.57.1" },
+]
+docs = [
+    { name = "mkdocs", specifier = ">=1.6.1" },
+    { name = "mkdocs-material", specifier = ">=9.7.1" },
+    { name = "mkdocstrings", specifier = ">=1.0.2" },
+    { name = "mkdocstrings-python", specifier = ">=2.0.1" },
+]
+pipeline = [{ name = "scipy-stubs", specifier = ">=1.16.3.0" }]
+
+[[package]]
 name = "smmap"
 version = "5.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3504,91 +3589,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/43/20/434aaceccc6e19126
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c0/95/6b7873f0267973ebd55ba9cd33a690b35a116f2779901ef6185a0e21864d/streamlit-1.52.2-py3-none-any.whl", hash = "sha256:a16bb4fbc9781e173ce9dfbd8ffb189c174f148f9ca4fb8fa56423e84e193fc8", size = 9025937, upload-time = "2025-12-17T17:07:57.67Z" },
 ]
-
-[[package]]
-name = "supervised-multidimensional-scaling"
-version = "0.9.1"
-source = { editable = "." }
-dependencies = [
-    { name = "matplotlib" },
-    { name = "notebook" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "plotly" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "streamlit" },
-    { name = "zadu" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "black" },
-    { name = "coverage" },
-    { name = "datasets" },
-    { name = "gitchangelog" },
-    { name = "isort" },
-    { name = "matplotlib" },
-    { name = "mypy" },
-    { name = "pandas" },
-    { name = "plotly" },
-    { name = "pylint" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "seaborn" },
-    { name = "torch" },
-    { name = "transformers" },
-]
-docs = [
-    { name = "mkdocs" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings" },
-    { name = "mkdocstrings-python" },
-]
-pipeline = [
-    { name = "scipy-stubs" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "matplotlib", specifier = ">=3.10.7" },
-    { name = "notebook", specifier = ">=7.4.7" },
-    { name = "numpy", specifier = ">=2.3.4" },
-    { name = "pandas", specifier = ">=2.3.3" },
-    { name = "plotly", specifier = ">=6.5.0" },
-    { name = "scikit-learn", specifier = ">=1.7.2" },
-    { name = "scipy", specifier = ">=1.16.3" },
-    { name = "streamlit", specifier = ">=1.52.2" },
-    { name = "zadu", specifier = ">=0.3.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "black", specifier = ">=25.9.0" },
-    { name = "coverage", specifier = ">=7.11.0" },
-    { name = "datasets", specifier = ">=4.4.1" },
-    { name = "gitchangelog", specifier = ">=3.0.4" },
-    { name = "isort", specifier = ">=7.0.0" },
-    { name = "matplotlib", specifier = ">=3.10.7" },
-    { name = "mypy", specifier = ">=1.18.2" },
-    { name = "pandas", specifier = ">=2.3.3" },
-    { name = "plotly", specifier = ">=6.4.0" },
-    { name = "pylint", specifier = ">=4.0.2" },
-    { name = "pytest", specifier = ">=8.4.2" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
-    { name = "ruff", specifier = ">=0.14.3" },
-    { name = "seaborn", specifier = ">=0.13.2" },
-    { name = "torch", specifier = ">=2.9.0" },
-    { name = "transformers", specifier = ">=4.57.1" },
-]
-docs = [
-    { name = "mkdocs", specifier = ">=1.6.1" },
-    { name = "mkdocs-material", specifier = ">=9.7.1" },
-    { name = "mkdocstrings", specifier = ">=1.0.2" },
-    { name = "mkdocstrings-python", specifier = ">=2.0.1" },
-]
-pipeline = [{ name = "scipy-stubs", specifier = ">=1.16.3.0" }]
 
 [[package]]
 name = "sympy"
