@@ -15,11 +15,12 @@ dependencies = [
     "zadu>=0.3.1",
 ]
 authors = [
-    { name = "Vinayak Joshi"},
-    { name="Jan Karas"}, 
-    {name = "Anton Kantsemal"}, 
-    {name = "Simon Kistner"}, 
-    {name = "Arwin Sanee Ghomi"}
+    { name = "Federico Tiblias" },
+    { name = "Vinayak Joshi" },
+    { name = "Jan Karas" },
+    { name = "Anton Kantsemal" },
+    { name = "Simon Kistner" },
+    { name = "Arwin Sanee Ghomi" }
 ]
 readme = "README.md"
 
