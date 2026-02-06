@@ -60,6 +60,7 @@ testpaths = ["."]
 line-length = 120
 target-version = "py312"
 output-format = "grouped"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "D"]
@@ -90,6 +91,7 @@ convention = "numpy"
 [tool.mypy]
 strict = true
 implicit_reexport = true
+extend = ["notebooks/"]
 
 [build-system]
 requires = ["hatchling"]

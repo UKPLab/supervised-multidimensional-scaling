@@ -4,6 +4,7 @@ nav:
   - Home: index.md
   - Examples:
       - Family Tree Experiment: notebooks/family_tree.ipynb
+      - Find Manifold Location: notebooks/find_manifold_location.ipynb
 
 theme:
   name: material
