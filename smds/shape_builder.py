@@ -504,11 +504,11 @@ class ShapeBuilder:
         
         # Normalize t to [0, 1]
         t_norm = ShapeBuilder._normalize(t)
-        
+
         theta = 2 * np.pi * turns * t_norm
         x = radius * np.cos(theta)
         y = radius * np.sin(theta)
-        z = pitch * turns * t_norm
+        z = pitch * turns * (t_norm - 0.5)  # Centered around zero
         
         Y = np.column_stack([x, y, z]).astype(np.float64)
         return Y, df
@@ -519,19 +519,23 @@ class ShapeBuilder:
         helix_t_values: NDArray,
         *,
         line_spacing: float = 1.0,
-        helix_radius: float = 0.5,
+        helix_radius: float = 0.3,
         helix_pitch: float = 1.0,
         helix_turns: float = 2.0,
         line_name: str = "line",
         helix_name: str = "helix_t",
     ) -> Tuple[NDArray[np.float64], "pd.DataFrame"]:
         """
-        Linear + Helix -> 3D shape with helices perpendicular to a base line.
-        
-        Creates a base line along the x-axis, with a helix extending perpendicular
-        (spiraling around a vertical axis) from each point on the line. Think of it 
-        as a row of vertical corkscrews.
-        
+        Linear + Helix -> 3D shape: parallel corkscrews extending from a
+        base line.
+
+        The base line runs along x. At each line position a helix extends
+        outward (perpendicular to the line) along y, spiraling in the x-z
+        plane.  A true 3D helix requires 3 independent axes — 2 for the
+        circular spiral and 1 for advancement — so the spiral necessarily
+        shares x with the line, adding a small radial oscillation
+        (``helix_radius``) around each line position.
+
         Parameters
         ----------
         line_values : array-like
@@ -540,24 +544,25 @@ class ShapeBuilder:
             Parameter values along each helix (0 to 1 or similar).
         line_spacing : float, default=1.0
             Distance between consecutive points on the base line.
-        helix_radius : float, default=0.5
-            Radius of each helix spiral.
+        helix_radius : float, default=0.3
+            Radius of each helix spiral.  Kept smaller than
+            ``line_spacing / 2`` to avoid overlap between adjacent helices.
         helix_pitch : float, default=1.0
-            Vertical distance per complete helix turn.
+            Distance per complete helix turn along y.
         helix_turns : float, default=2.0
             Number of complete rotations for each helix.
         line_name : str, default="line"
             Name for the line position column in labels.
         helix_name : str, default="helix_t"
             Name for the helix parameter column in labels.
-        
+
         Returns
         -------
         Y : NDArray of shape (n_points, 3)
             3D coordinates for each point.
         labels : DataFrame
             Labels for each point.
-        
+
         Examples
         --------
         >>> # Create 5 helices along a line
@@ -569,25 +574,28 @@ class ShapeBuilder:
         line_grid, helix_grid, df = ShapeBuilder._make_grid(
             line_values, helix_t_values, line_name, helix_name
         )
-        
-        # Base line: position along x-axis
+
+        # Base line: position along x-axis (centered)
         t_line = ShapeBuilder._normalize(line_grid)
         n_line = len(np.unique(line_values))
         total_length = line_spacing * (n_line - 1) if n_line > 1 else 0
         x_base = line_spacing * t_line * (n_line - 1) - total_length / 2
-        
-        # Helix: spirals around y-axis (vertical), rising along y
+
+        # Helix parameter and angle
         t_helix = ShapeBuilder._normalize(helix_grid)
+
         theta = 2 * np.pi * helix_turns * t_helix
-        
-        # Helix spirals in xz-plane, rises along y-axis
-        x_offset = helix_radius * np.cos(theta)  # Spiral component in x
-        z = helix_radius * np.sin(theta)         # Spiral component in z
-        y = helix_pitch * helix_turns * t_helix  # Rise along y-axis
-        
-        # Combine: base line position + helix spiral offset
-        x = x_base + x_offset
-        
+
+        # Clamp radius so adjacent helices never overlap
+        safe_radius = min(helix_radius, line_spacing / 2 * 0.9) if n_line > 1 else helix_radius
+
+        # Spiral in x-z plane (shares x with line — small oscillation)
+        x = x_base + safe_radius * np.cos(theta)
+        z = safe_radius * np.sin(theta)
+
+        # Advancement along y (perpendicular to line), centered at zero
+        y = helix_pitch * helix_turns * (t_helix - 0.5)
+
         Y = np.column_stack([x, y, z]).astype(np.float64)
         return Y, df
 
