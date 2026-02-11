@@ -195,12 +195,11 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
 
 class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     _STAGE_1_OPTIONS = {"computed", "user_provided"}
-    _MANIFOLD_ALIASES = {"curcular": "circular"}
 
     def __init__(
         self,
         stage_1: str = "computed",
-        manifold: str = "curcular",
+        manifold: str = "circular",
         alpha: float = 0.1,
         orthonormal: bool = False,
         radius: float = 6371,
@@ -239,7 +238,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         if not isinstance(manifold, str):
             raise TypeError(f"manifold must be a string, got {type(manifold).__name__}")
         manifold_name = manifold.strip().lower()
-        return SupervisedMDS._MANIFOLD_ALIASES.get(manifold_name, manifold_name)
+        return manifold_name
 
     def _build_manifold(self, manifold_name: str) -> tuple[Callable[[np.ndarray], np.ndarray], int]:
         manifold_factories: dict[str, tuple[Callable[[], Callable[[np.ndarray], np.ndarray]], int]] = {
