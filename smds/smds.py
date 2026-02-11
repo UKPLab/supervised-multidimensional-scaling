@@ -3,9 +3,10 @@ import pickle
 import warnings
 from abc import ABC, abstractmethod
 from math import exp
-from typing import Callable
+from typing import Any, Callable, cast
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.linalg import eigh  # type: ignore[import-untyped]
 from scipy.optimize import minimize  # type: ignore[import-untyped]
 from sklearn.base import BaseEstimator, TransformerMixin, clone  # type: ignore[import-untyped]
@@ -36,10 +37,10 @@ from smds.stress import (
 
 
 # smds stage 1 - for the manifold Y_
-class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
+class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore[misc]
     @property
     @abstractmethod
-    def n_components(self) -> int:
+    def n_components(self) -> int | None:
         """
         Subclasses must implement this.
         Number of components of the projected manifold.
@@ -47,7 +48,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def fit(self, X, y=None):
+    def fit(self, X: NDArray[Any], y: NDArray[Any] | None = None) -> "SMDSParametrization":
         """
         Subclasses must implement this.
         It is required for TransformerMixin.fit_transform to work.
@@ -55,7 +56,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def transform(self, X):
+    def transform(self, X: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
         Subclasses must implement this.
         It is required for TransformerMixin.fit_transform to work.
@@ -63,7 +64,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def compute_ideal_distances(self, y: np.typing.NDArray):
+    def compute_ideal_distances(self, y: NDArray[Any]) -> NDArray[np.float64]:
         """
         Subclasses must implement this.
         Return the pairwise distance matrix for the given labels or coordinates.
@@ -72,7 +73,7 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):
 
 
 class ComputedSMDSParametrization(SMDSParametrization):
-    def __init__(self, manifold: Callable[[np.ndarray], np.ndarray], n_components: int):
+    def __init__(self, manifold: Callable[[NDArray[Any]], NDArray[np.float64]], n_components: int):
         # fixme: set manifold to be BaseShape
         self.manifold = manifold
         self._n_components = n_components
@@ -84,7 +85,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
         """
         return self._n_components
 
-    def compute_ideal_distances(self, y: np.typing.NDArray, threshold: int = 2) -> np.ndarray:
+    def compute_ideal_distances(self, y: NDArray[Any], threshold: int = 2) -> NDArray[np.float64]:
         """
         Compute ideal pairwise distance matrix D based on labels y and specified self.manifold.
         """
@@ -118,7 +119,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
         Y: np.ndarray = eigvecs * np.sqrt(np.maximum(eigvals, 0))
         return Y
 
-    def fit(self, X, y=None) -> "ComputedSMDSParametrization":
+    def fit(self, X: NDArray[Any], y: NDArray[Any] | None = None) -> "ComputedSMDSParametrization":
         """
         Compute the ideal distance matrix and its MDS embedding from input labels.
         """
@@ -126,7 +127,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
         self.Y_ = self._classical_mds(self.D_)
         return self
 
-    def transform(self, X=None) -> np.typing.NDArray:
+    def transform(self, X: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
         Return the stage-1 embedding computed during fit.
         """
@@ -134,7 +135,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
 
 class UserProvidedSMDSParametrization(SMDSParametrization):
-    def __init__(self, y: np.typing.NDArray | None = None, n_components: int | None = None):
+    def __init__(self, y: NDArray[Any] | None = None, n_components: int | None = None):
         self._n_components = n_components
         self.y = y
         if y is not None:
@@ -154,13 +155,18 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         """
         return self._n_components
 
-    def compute_ideal_distances(self, y: np.typing.NDArray):
+    def compute_ideal_distances(self, y: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
         Compute pairwise distances between the stored embedding points.
         """
-        return np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
+        distances = np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
+        return cast(NDArray[np.float64], distances)
 
-    def fit(self, X=None, y=None) -> "UserProvidedSMDSParametrization":
+    def fit(
+        self,
+        X: NDArray[Any] | None = None,
+        y: NDArray[Any] | None = None,
+    ) -> "UserProvidedSMDSParametrization":
         """
         Store provided coordinates and compute their distance matrix.
         """
@@ -183,10 +189,10 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
             )
 
         self.Y_ = y_array
-        self.D_ = self.compute_ideal_distances(None)
+        self.D_ = self.compute_ideal_distances(self.Y_)
         return self
 
-    def transform(self, X):
+    def transform(self, X: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
         Return the provided embedding coordinates.
         """
@@ -240,8 +246,8 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         manifold_name = manifold.strip().lower()
         return manifold_name
 
-    def _build_manifold(self, manifold_name: str) -> tuple[Callable[[np.ndarray], np.ndarray], int]:
-        manifold_factories: dict[str, tuple[Callable[[], Callable[[np.ndarray], np.ndarray]], int]] = {
+    def _build_manifold(self, manifold_name: str) -> tuple[Callable[[NDArray[Any]], NDArray[np.float64]], int]:
+        manifold_factories: dict[str, tuple[Callable[[], Callable[[NDArray[Any]], NDArray[np.float64]]], int]] = {
             "chain": (lambda: ChainShape(), 2),
             "cluster": (lambda: ClusterShape(), 2),
             "discrete_circular": (lambda: DiscreteCircularShape(), 2),
@@ -292,7 +298,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Compute the loss only on the defined distances (where mask is True).
         """
-        W = W_flat.reshape((self.stage_1_fitted_.n_components, X.shape[1]))
+        n_components = self.stage_1_fitted_.n_components
+        if n_components is None:
+            raise ValueError("stage_1_fitted_.n_components is not set.")
+        W = W_flat.reshape((n_components, X.shape[1]))
         X_proj = (W @ X.T).T
         D_pred = np.linalg.norm(X_proj[:, None, :] - X_proj[None, :, :], axis=-1)
         loss = (D_pred - D)[mask]

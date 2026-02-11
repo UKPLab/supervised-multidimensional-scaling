@@ -92,7 +92,7 @@ convention = "numpy"
 [tool.mypy]
 strict = true
 implicit_reexport = true
-extend = ["notebooks/"]
+exclude = ["^notebooks/"]
 
 [build-system]
 requires = ["hatchling"]
@@ -106,4 +106,3 @@ exclude = [
     "/.github",
     "/tests",
 ]
-

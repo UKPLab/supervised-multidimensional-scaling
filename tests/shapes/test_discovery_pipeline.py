@@ -24,7 +24,7 @@ def test_pipeline_returns_dataframe(
     shapes = [ClusterShape(), CircularShape()]
 
     results, _ = discover_manifolds(
-        X, y, shapes=shapes, n_folds=2, n_jobs=None, experiment_name="Smoke_Test", save_results=False, clear_cache=True
+        X, y, shapes=shapes, n_folds=2, n_jobs=1, experiment_name="Smoke_Test", save_results=False, clear_cache=True
     )
 
     assert isinstance(results, pd.DataFrame)
@@ -61,7 +61,7 @@ def test_cluster_wins_on_cluster_data(
         y,
         shapes=shapes,
         n_folds=5,
-        n_jobs=None,
+        n_jobs=1,
         experiment_name="Cluster_Test",
         save_results=False,
         clear_cache=True,
@@ -83,7 +83,7 @@ def test_circular_wins_on_circular_data(
 
     # Using default shapes list (shapes=None)
     results, _ = discover_manifolds(
-        X, y, n_folds=5, n_jobs=None, experiment_name="Circular_Test", save_results=False, clear_cache=True
+        X, y, n_folds=5, n_jobs=1, experiment_name="Circular_Test", save_results=False, clear_cache=True
     )
 
     results = results.sort_values("mean_scale_normalized_stress", ascending=False)
