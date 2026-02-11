@@ -112,6 +112,12 @@ Run the test suite using pytest:
 make test
 ```
 
+## Contributors
+
+<a href="https://github.com/UKPLab/supervised-multidimensional-scaling/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=UKPLab/supervised-multidimensional-scaling" />
+</a>
+
 ## Cite
 
 Please use the following citation:
