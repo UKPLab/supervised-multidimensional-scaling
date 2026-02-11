@@ -30,7 +30,7 @@ pip install smds
 
 ## Usage
 
-The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS, it requires a target `manifold` shape (e.g., `ClusterShape`, `CircularShape`) to define the ideal geometry.
+The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS, it requires selecting a stage-1 strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
 
 ### Fit & Transform
 
@@ -39,21 +39,23 @@ You can instantiate the model, fit it to data `(X, y)`, and transform your input
 ```python
 import numpy as np
 from smds import SupervisedMDS
-from smds.shapes import ClusterShape
 
 # Example data
 X = np.random.randn(100, 20)   # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-# manifold can be any class inheriting from BaseShape
-smds = SupervisedMDS(n_components=2, manifold=ClusterShape(), alpha=0.1)
+# stage_1: "computed" (default) or "user_provided"
+# manifold: one of the built-in shape names, e.g. "cluster", "circular", "log_linear"
+smds = SupervisedMDS(stage_1="computed", manifold="cluster", alpha=0.1)
 smds.fit(X, y)
 
 # Transform to low-dimensional space
 X_proj = smds.transform(X)
 print(X_proj.shape)  # (100, 2)
 ```
+
+If you set `stage_1="user_provided"`, `manifold` is ignored and a warning is raised.
 
 ### Manifold Discovery
 
