@@ -407,7 +407,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             if self.orthonormal:
                 # Orthogonal Procrustes
                 M = Y_centered.T @ X_centered
-                U, _, Vt = np.linalg.svd(M)
+                U, _, Vt = np.linalg.svd(M, full_matrices=False)
                 self.W_ = U @ Vt
             else:
                 if self.alpha == 0:
