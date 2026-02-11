@@ -5,17 +5,17 @@ feature manifold discovery in LLMs.
 
 Install with uv:
 ```shell
-uv add supervised-multidimensional-scaling
+uv add smds
 ```
 
 Install with uv using the `pip` interface:
 ```shell
-uv pip install supervised-multidimensional-scaling
+uv pip install smds
 ```
 
 Install with pip:
 ```shell
-pip install supervised-multidimensional-scaling
+pip install smds
 ```
 
 
