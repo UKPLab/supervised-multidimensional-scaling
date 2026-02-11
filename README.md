@@ -3,29 +3,34 @@
 </p>
 
 # Supervised Multi-Dimensional Scaling
-
 [![Arxiv](https://img.shields.io/badge/Arxiv-2510.01025-red?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.01025)
 [![License](https://img.shields.io/github/license/UKPLab/supervised-multidimensional-scaling)](https://opensource.org/licenses/Apache-2.0)
 [![Python Versions](https://img.shields.io/badge/Python-3.12-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![CI](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml/badge.svg)](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml)
 
-This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens:
-Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the
-familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds
-of various shape.
+This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens: Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds of various forms.
 
-Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de)
+Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de) 
 
 [UKP Lab](https://www.ukp.tu-darmstadt.de/) | [TU Darmstadt](https://www.tu-darmstadt.de/)
 
-Don't hesitate to send us an e-mail or report an issue or if you have further questions.
+Don't hesitate to report an issue if you have further questions or spot a bug.
 
-## Getting Started (TODO)
+## Getting started
+
+With uv (recommended):
+```shell
+uv add smds
+```
+
+With pip:
+```bash
+pip install smds
+```
 
 ## Usage
 
-The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use, along with utilities
-such as an inverse function and saving/loading a trained model.
+The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS, it requires a target `manifold` shape (e.g., `ClusterShape`, `CircularShape`) to define the ideal geometry.
 
 ### Fit & Transform
 
@@ -33,15 +38,16 @@ You can instantiate the model, fit it to data `(X, y)`, and transform your input
 
 ```python
 import numpy as np
-from smds import SupervisedMDS, ComputedSMDSParametrization
-from smds.shapes.discrete_shapes import ClusterShape
+from smds import SupervisedMDS
+from smds.shapes import ClusterShape
 
 # Example data
-X = np.random.randn(100, 20)  # 100 samples, 20 features
+X = np.random.randn(100, 20)   # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-smds = SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=2, manifold=ClusterShape()), alpha=0.1)
+# manifold can be any class inheriting from BaseShape
+smds = SupervisedMDS(n_components=2, manifold=ClusterShape(), alpha=0.1)
 smds.fit(X, y)
 
 # Transform to low-dimensional space
@@ -49,40 +55,62 @@ X_proj = smds.transform(X)
 print(X_proj.shape)  # (100, 2)
 ```
 
-### Extra functionalities
+### Manifold Discovery
 
-Once fitted, you can use the learned transformation for inverse projections and to assess how well the embedding matches
-the target geometry:
-
-```python
-# Inverse transform: approximate reconstruction of original features
-X_reconstructed = smds.inverse_transform(X_proj)
-print(X_reconstructed.shape)  # (100, 20)
-
-# Scoring: measure alignment between transformed distances and ideal distances
-score = smds.score(X, y)
-print(f"Model score: {score:.3f}")
-```
-
-### Saving & loading
-
-Models can be persisted to disk, including the learned transformation, and reloaded later for reuse:
+The library provided a high level pipeline to automatically discover the intrinsic manifold of your data. The `discover_manifolds` utility evaluates a set of hypothesis shapes (for example: clusters, circles, hierarchies) and ranks them based on how well they explain the data structure using cross validation.
 
 ```python
-# Save to file
-smds.save("smds_model.pkl")
+from smds.pipeline.discovery_pipeline import discover_manifolds
+from smds.pipeline import open_dashboard
 
-# Load from file
-loaded_smds = SupervisedMDS.load("smds_model.pkl")
+# Run discovery pipeline
+# Evaluates default shapes (Cluster, Circular, Hierarchical, etc.)
+# Returns a DataFrame sorted by best fit (lowest stress / highest score)
+df_results, save_path = discover_manifolds(
+    X, 
+    y, 
+    smds_components=2,           # Target dimensionality
+    n_folds=5,                   # Cross-validation folds
+    experiment_name="My_Exp",    # Name for saved results
+    n_jobs=-1                    # Use all available cores
+)
+
+print(f"Best matching shape: {df_results.iloc[0]['shape']}")
+print(df_results.head())
+
+# Launch the interactive Streamlit dashboard to explore results and plots
+open_dashboard.main(save_path)
 ```
 
-## Coming Soon...
+The discovery pipeline handles:
+- **Hypothesis Testing**: Iterates through a default or custom list of manifold shapes.
+- **Cross-Validation**: Uses k-fold CV to ensure robust scoring.
+- **Caching**: Caches intermediate results to resume interrupted experiments.
+- **Visualization**: Generates interactive plots for the dashboard.
 
-- [Feature]: A comprehensive test suite
-- [Feature]: Advanced support for hypothesis manifolds
-- [Feature]: A manifold discovery utility
-- [Docs]: Setup instructions.
-- [Docs]: A documentation website with class descriptions and examples.
+## Development
+
+This seciton is especially usefull if you consider contributing to the library!
+
+### Documentation
+
+To build and serve the documentation locally:
+
+```bash
+mkdocs serve
+```
+
+> [!NOTE]
+> The `dev` dependency group includes heavy libraries such as `torch` and `transformers`.
+
+
+### Testing
+
+Run the test suite using pytest:
+
+```bash
+make test
+```
 
 ## Cite
 

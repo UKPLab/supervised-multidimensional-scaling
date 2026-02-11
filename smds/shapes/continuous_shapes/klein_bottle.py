@@ -1,29 +1,32 @@
 import numpy as np
 from numpy.typing import NDArray
-from sklearn.decomposition import PCA  # type: ignore[import-untyped]
 
 from smds.shapes.base_shape import BaseShape
 
 
 class KleinBottleShape(BaseShape):
-    r"""
+    """
     Manifold hypothesis representing a Klein Bottle topology.
 
     This shape assumes the data lies on a 2D surface that is non-orientable.
-    It treats the feature space as a "Flat Klein Bottle," which is formed by
-    identifying the edges of a unit square:
-    1.  **Cylinder:** Top and Bottom edges match $(u, 0) \sim (u, 1)$.
-    2.  **Möbius:** Left and Right edges match with a twist $(0, v) \sim (1, 1-v)$.
+    Requires exactly 2 dimensions as (u, v) parameters. If < 2 dimensions,
+    zeros are padded. If > 2 dimensions, raises an error. Maps these 2
+    dimensions to the unit square [0, 1] x [0, 1]. Computes pairwise distances
+    respecting the Klein bottle identifications:
+    - Top/Bottom edges match (Cylinder): (u, 0) ~ (u, 1)
+    - Left/Right edges match with a Twist (Möbius): (0, v) ~ (1, 1-v)
+
+    Reference: Wolfram MathWorld: https://mathworld.wolfram.com/KleinBottle.html
 
     Parameters
     ----------
     normalize_labels : bool, optional
-        Whether to normalize labels to the unit square [0, 1]. Default is True.
+        Whether to normalize labels to the range [0, 1]. Default is True.
 
     Attributes
     ----------
     y_ndim : int
-        Dimensionality of the manifold surface (2).
+        Dimensionality of input labels (2). Expects (u, v) parameters.
     """
 
     def __init__(self, normalize_labels: bool = True):
@@ -31,7 +34,7 @@ class KleinBottleShape(BaseShape):
 
     @property
     def y_ndim(self) -> int:
-        """int: The expected dimensionality of the reduced feature space (2)."""
+        """int: Dimensionality of input labels (2). Expects (u, v) parameters."""
         return 2
 
     @property
@@ -41,21 +44,7 @@ class KleinBottleShape(BaseShape):
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Validate input and project it to the required 2D surface.
-
-        If the input has more than 2 dimensions, PCA is used to project it down
-        to the 2 most significant components (capturing maximum variance).
-        If it has fewer than 2 dimensions, it is padded with zeros.
-
-        Parameters
-        ----------
-        y : NDArray[np.float64]
-            Input data of arbitrary dimensionality.
-
-        Returns
-        -------
-        NDArray[np.float64]
-            A (n_samples, 2) array ready for Klein bottle distance computation.
+        Validates input and ensures exactly 2 dimensions for (u, v) parameters.
         """
         y_proc = np.asarray(y, dtype=np.float64)
 
@@ -68,15 +57,10 @@ class KleinBottleShape(BaseShape):
         n_samples, n_features = y_proc.shape
 
         if n_features > 2:
-            n_components = 2
-            if n_samples < n_components:
-                # Fallback if samples < components (PCA requires n_samples >= n_components)
-                y_new = np.zeros((n_samples, 2))
-                y_new[:, : min(n_features, 2)] = y_proc[:, : min(n_features, 2)]
-                y_proc = y_new
-            else:
-                pca = PCA(n_components=2)
-                y_proc = pca.fit_transform(y_proc)
+            raise ValueError(
+                f"Klein Bottle requires exactly 2 dimensions (u, v), but got {n_features} dimensions. "
+                "Please provide y with shape (n_samples, 2)."
+            )
 
         elif n_features < 2:
             zeros = np.zeros((n_samples, 2 - n_features))
@@ -86,25 +70,8 @@ class KleinBottleShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Compute geodesic distances on a Flat Klein Bottle.
-
-        Calculates the minimum distance between points considering the four possible
-        paths on the fundamental polygon:
-        1.  **Direct:** Standard Euclidean distance.
-        2.  **Cylinder Wrap:** Crossing top/bottom boundaries (wrapping $v$).
-        3.  **Twist (Möbius):** Crossing left/right boundaries (wrapping $u$),
-            which flips the $v$ coordinate ($v \to 1-v$).
-        4.  **Twist + Wrap:** Crossing both boundaries.
-
-        Parameters
-        ----------
-        y : NDArray[np.float64]
-            The projected and normalized 2D coordinates in [0, 1].
-
-        Returns
-        -------
-        NDArray[np.float64]
-            Pairwise geodesic distance matrix.
+        Computes geodesic distances on a Flat Klein Bottle.
+        Assumes y is normalized to [0, 1].
         """
         u = y[:, 0]  # Twist axis
         v = y[:, 1]  # Cylinder axis
@@ -117,15 +84,15 @@ class KleinBottleShape(BaseShape):
         diff_u = np.abs(u1 - u2)
         diff_v = np.abs(v1 - v2)
 
-        # 1. Direct path
+        # 1. Direct
         dist_sq_direct = diff_u**2 + diff_v**2
 
-        # 2. Cylinder Wrap (Wrap V: |v1 - v2| becomes 1 - |v1 - v2|)
+        # 2. Cylinder Wrap (Wrap V)
         dist_sq_cylinder = diff_u**2 + (1.0 - diff_v) ** 2
 
         # 3. Möbius Twist (Wrap U -> Flip V)
         dist_u_twist = 1.0 - diff_u
-        dist_v_twist = np.abs(v1 + v2 - 1.0)  # |v1 - (1 - v2)| = |v1 + v2 - 1|
+        dist_v_twist = np.abs(v1 + v2 - 1.0)
 
         dist_sq_twist = dist_u_twist**2 + dist_v_twist**2
 
