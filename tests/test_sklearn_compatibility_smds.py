@@ -4,7 +4,7 @@ from numpy.typing import NDArray
 from scipy.spatial.distance import pdist, squareform  # type: ignore[import-untyped]
 from sklearn.utils.estimator_checks import check_estimator  # type: ignore[import-untyped]
 
-from smds.smds import ComputedSMDSParametrization, SupervisedMDS
+from smds.smds import SupervisedMDS
 
 # todo: add same for Stage1SMDSTransformer
 
@@ -25,8 +25,7 @@ def test_sklearn_compatibility() -> None:
     Tests SupervisedMDS with sklearn's check_estimator.
     This ensures that SupervisedMDS meets all sklearn compatibility requirements.
     """
-    # fixme: dummy_manifold_func has to be an instance of BaseShape
-    estimator = SupervisedMDS(ComputedSMDSParametrization(manifold=dummy_manifold_func, n_components=2))
+    estimator = SupervisedMDS(stage_1="computed", manifold="circular")
 
     try:
         check_estimator(estimator)

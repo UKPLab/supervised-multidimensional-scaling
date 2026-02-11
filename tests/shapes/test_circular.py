@@ -1,13 +1,12 @@
 import numpy as np
 import pytest
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
-from smds.shapes.continuous_shapes import CircularShape
+from smds import SupervisedMDS
 
 
 @pytest.fixture
 def engine() -> SupervisedMDS:
-    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=CircularShape(radious=1.0)), alpha=0.1)
+    return SupervisedMDS(stage_1="computed", manifold="circular", alpha=0.1)
 
 
 @pytest.fixture

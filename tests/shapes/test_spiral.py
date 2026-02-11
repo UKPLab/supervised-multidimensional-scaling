@@ -4,13 +4,13 @@ from numpy.testing import assert_array_almost_equal
 from numpy.typing import NDArray
 from scipy.stats import spearmanr  # type: ignore[import-untyped]
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
+from smds import SupervisedMDS
 from smds.shapes.continuous_shapes import SpiralShape
 
 
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
-    return SupervisedMDS(stage_1=ComputedSMDSParametrization(n_components=2, manifold=SpiralShape()))
+    return SupervisedMDS(stage_1="computed", manifold="spiral")
 
 
 @pytest.fixture
@@ -94,7 +94,7 @@ def test_spiral_smoke_test(
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
     n_samples = X.shape[0]
-    n_components = smds_engine.stage_1.n_components
+    n_components = smds_engine.stage_1_fitted_.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
         f"Output shape is incorrect. "

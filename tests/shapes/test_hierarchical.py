@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
+from smds import SupervisedMDS
 from smds.shapes.discrete_shapes import HierarchicalShape
 
 
@@ -17,11 +17,7 @@ def random_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
 
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
-    return SupervisedMDS(
-        ComputedSMDSParametrization(
-            n_components=2, manifold=HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0]))
-        )
-    )
+    return SupervisedMDS(stage_1="computed", manifold="hierarchical")
 
 
 @pytest.mark.smoke
@@ -40,7 +36,7 @@ def test_hierarchical_smoke_test(
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
     n_samples = X.shape[0]
-    n_components = smds_engine.stage_1.n_components
+    n_components = smds_engine.stage_1_fitted_.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
         f"Output shape is incorrect. "
@@ -81,7 +77,7 @@ def test_hierarchical_preserves_structure_in_2d(
 
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
-    assert X_proj.shape == (X.shape[0], smds_engine.stage_1.n_components), (
+    assert X_proj.shape == (X.shape[0], smds_engine.stage_1_fitted_.n_components), (
         f"Output shape should be (n_samples, n_components), but got {X_proj.shape}."
     )
 
@@ -175,7 +171,7 @@ def test_hierarchical_recovers_structure_from_high_dim(
 
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
-    assert X_proj.shape == (X.shape[0], smds_engine.stage_1.n_components), (
+    assert X_proj.shape == (X.shape[0], smds_engine.stage_1_fitted_.n_components), (
         f"Output shape should be (n_samples, n_components), but got {X_proj.shape}."
     )
 

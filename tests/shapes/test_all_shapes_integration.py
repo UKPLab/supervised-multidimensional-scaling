@@ -91,14 +91,15 @@ def test_shape_smoke_execution(
     data_tuple = request.getfixturevalue(data_name)
 
     # The data fixture returns 3 values, we only need X and y for a smoke test
-    X_high, y, _ = data_tuple
+    X_high, y, x_original = data_tuple
+    y_for_fit = x_original if "UserProvidedStage1" in shape_name else y
 
     # Execution
-    X_proj = smds_engine.fit_transform(X_high, y)
+    X_proj = smds_engine.fit_transform(X_high, y_for_fit)
 
     # Assertion
     n_samples = X_high.shape[0]
-    n_components = smds_engine.stage_1.n_components
+    n_components = smds_engine.stage_1_fitted_.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
         f"[{shape_name}] Output shape is incorrect. Expected {(n_samples, n_components)}, but got {X_proj.shape}."
@@ -130,9 +131,10 @@ def test_shape_recovers_structure_from_high_dim(
     data_tuple = request.getfixturevalue(data_name)
 
     X_high, y, X_original = data_tuple
+    y_for_fit = X_original if "UserProvidedStage1" in shape_name else y
 
     # Execution
-    X_proj = smds_engine.fit_transform(X_high, y)
+    X_proj = smds_engine.fit_transform(X_high, y_for_fit)
 
     # Assertion: Procrustes
     mtx1, mtx2, disparity = procrustes(X_original, X_proj)
@@ -143,6 +145,6 @@ def test_shape_recovers_structure_from_high_dim(
     )
 
     # Assertion: Score
-    score = smds_engine.score(X_high, y)
+    score = smds_engine.score(X_high, y_for_fit)
     assert score > score_min, f"[{shape_name}] SMDS score is too low. Expected > {score_min}, but got {score:.4f}."
     print(f"\n{shape_name}Shape: Integration Test passed with \n - Score {score:.2f} \n - Disparity {disparity:.2f}\n")
