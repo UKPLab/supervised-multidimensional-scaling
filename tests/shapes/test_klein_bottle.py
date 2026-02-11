@@ -2,12 +2,11 @@ import numpy as np
 import pytest
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes import KleinBottleShape
 
 
 @pytest.fixture
 def engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=KleinBottleShape(), alpha=0.1)
+    return SupervisedMDS(stage_1="computed", manifold="klein_bottle", alpha=0.1)
 
 
 @pytest.fixture
@@ -25,7 +24,7 @@ def test_klein_bottle_smoke(
 ) -> None:
     engine.fit(X, y)
     X_proj = engine.transform(X)
-    assert X_proj.shape == (100, 2)
+    assert X_proj.shape == (100, 4)
 
 
 def test_klein_bottle_rejects_high_dimensions(engine: SupervisedMDS, X: np.typing.NDArray[np.float64]) -> None:
