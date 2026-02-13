@@ -137,8 +137,8 @@ class ComputedSMDSParametrization(SMDSParametrization):
 class UserProvidedSMDSParametrization(SMDSParametrization):
     def __init__(
         self,
-        n_components: int | None = None,
         y: NDArray[Any] | None = None,
+        n_components: int | None = None,
         fixed_template: NDArray[np.float64] | None = None,
         mapper: Callable[[NDArray[np.float64], NDArray[np.float64]], NDArray[np.float64]] | None = None,
         name: str | None = None,
@@ -192,7 +192,11 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         else:
             return self._calc_dist(y)
 
-    def fit(self, X: NDArray[Any], y: NDArray[Any] | None = None) -> "UserProvidedSMDSParametrization":
+    def fit(
+        self,
+        X: NDArray[Any] | None = None,
+        y: NDArray[Any] | None = None,
+    ) -> "UserProvidedSMDSParametrization":
         """
         Store provided coordinates and compute their distance matrix.
         """
@@ -204,7 +208,7 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         target_data = y if y is not None else X
 
         if target_data is None:
-            raise ValueError("y is required for fit (unless y was provided in __init__).")
+            raise ValueError("UserProvidedSMDSParametrization requires y in fit(X, y) or constructor.")
 
         target_data = np.asarray(target_data)
 
@@ -217,12 +221,14 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         else:
             if target_data.ndim == 1:
                 target_data = target_data.reshape(-1, 1)
+            elif target_data.ndim != 2:
+                raise ValueError(f"y must be 1D or 2D. Got shape {target_data.shape}.")
 
             if self._n_components is None:
-                self._n_components = target_data.shape[-1]
-            elif target_data.shape[-1] != self._n_components:
+                self._n_components = target_data.shape[1]
+            elif target_data.shape[1] != self._n_components:
                 raise ValueError(
-                    f"y shape mismatch. Expected last dim {self._n_components}, got {target_data.shape[-1]}"
+                    f"y must have shape compatible with n_components ({self._n_components}), got {target_data.shape}"
                 )
             self.Y_ = target_data
 
@@ -425,7 +431,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             y_arr = np.asarray(y)
             n_comp = y_arr.shape[1] if y_arr.ndim > 1 else 1
             if stage_1_model.n_components != n_comp:
-                stage_1_model = UserProvidedSMDSParametrization(n_components=n_comp)
+                stage_1_model = UserProvidedSMDSParametrization(y=None, n_components=n_comp)
 
         self.stage_1_fitted_: SMDSParametrization = clone(stage_1_model)
         self.stage_1_fitted_.fit(y)
