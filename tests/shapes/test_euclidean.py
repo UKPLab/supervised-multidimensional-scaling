@@ -2,12 +2,11 @@ import numpy as np
 import pytest
 
 from smds import SupervisedMDS
-from smds.shapes.continuous_shapes import EuclideanShape
 
 
 @pytest.fixture
 def engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=1, manifold=EuclideanShape(), alpha=0.1)
+    return SupervisedMDS(stage_1="computed", manifold="euclidean", alpha=0.1)
 
 
 @pytest.fixture

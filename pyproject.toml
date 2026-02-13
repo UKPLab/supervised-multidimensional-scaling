@@ -1,29 +1,29 @@
 [project]
-name = "supervised-multidimensional-scaling"
-version = "0.8.0"
+name = "smds"
+version = "1.3.2"
 description = "A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling (SMDS) for automatic feature manifold discovery in LLMs."
 authors = [
-    {name = "Vinayak Joshi"},
-    {name="Jan Karas"},
-    {name = "Anton Kantsemal"},
-    {name = "Simon Kistner"},
-    {name = "Arwin Sanee Ghomi"}
+    { name = "Federico Tiblias" },
+    { name = "Vinayak Joshi" },
+    { name = "Jan Karas" },
+    { name = "Anton Kantsemal" },
+    { name = "Simon Kistner" },
+    { name = "Arwin Sanee Ghomi" }
 ]
 requires-python = ">=3.12"
 dependencies = [
     "matplotlib>=3.10.7",
-    "mkdocs-material>=9.7.0",
-    "mkdocstrings>=0.30.1",
-    "mkdocstrings-python>=1.19.0",
     "notebook>=7.4.7",
     "numpy>=2.3.4",
     "pandas>=2.3.3",
     "plotly>=6.5.0",
     "scikit-learn>=1.7.2",
+    "scikit-posthocs>=0.11.4",
     "scipy>=1.16.3",
     "streamlit>=1.52.2",
     "zadu>=0.3.1",
 ]
+readme = "README.md"
 
 [project.optional-dependencies]
 fast = [
@@ -38,10 +38,6 @@ dev = [
     "gitchangelog>=3.0.4",
     "isort>=7.0.0",
     "matplotlib>=3.10.7",
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.6.23",
-    "mkdocstrings>=0.30.1",
-    "mkdocstrings-python>=1.18.2",
     "mypy>=1.18.2",
     "pandas>=2.3.3",
     "plotly>=6.4.0",
@@ -52,6 +48,13 @@ dev = [
     "seaborn>=0.13.2",
     "torch>=2.9.0",
     "transformers>=4.57.1",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-jupyter>=0.25.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings>=1.0.2",
+    "mkdocstrings-python>=2.0.1",
 ]
 pipeline = [
     "scipy-stubs>=1.16.3.0",
@@ -64,6 +67,7 @@ testpaths = ["."]
 line-length = 120
 target-version = "py312"
 output-format = "grouped"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "D"]
@@ -94,6 +98,7 @@ convention = "numpy"
 [tool.mypy]
 strict = true
 implicit_reexport = true
+exclude = ["^notebooks/"]
 
 [build-system]
 requires = ["hatchling"]
@@ -107,4 +112,3 @@ exclude = [
     "/.github",
     "/tests",
 ]
-
