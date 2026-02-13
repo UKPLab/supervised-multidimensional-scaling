@@ -10,7 +10,7 @@
 
 This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens: Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds of various forms.
 
-Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de) 
+Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de)
 
 [UKP Lab](https://www.ukp.tu-darmstadt.de/) | [TU Darmstadt](https://www.tu-darmstadt.de/)
 
@@ -41,7 +41,7 @@ import numpy as np
 from smds import SupervisedMDS
 
 # Example data
-X = np.random.randn(100, 20)   # 100 samples, 20 features
+X = np.random.randn(100, 20)  # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit

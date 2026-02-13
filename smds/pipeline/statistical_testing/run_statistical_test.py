@@ -4,10 +4,11 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
+from numpy.typing import NDArray
 
 from smds.pipeline.discovery_pipeline import discover_manifolds
 from smds.pipeline.statistical_testing.analysis import perform_st_analysis
@@ -18,15 +19,19 @@ ST_RESULTS_DIR = os.path.join(BASE_DIR, "statistical_testing", "st_results")
 
 
 def run_statistical_validation(
-        X: np.ndarray,
-        y: np.ndarray,
-        n_repeats: int = 10,
-        n_folds: int = 5,
-        experiment_name: str = "st_experiment"
-)-> Tuple[Dict[str, pd.DataFrame], Path]:
+    X: NDArray[np.float64],
+    y: NDArray[np.float64],
+    n_repeats: int = 10,
+    n_folds: int = 5,
+    experiment_name: str = "st_experiment",
+    shapes: Optional[List[Any]] = None,
+) -> Tuple[Dict[str, pd.DataFrame], Path]:
     """
     Runs the discovery pipeline `n_repeats` times with different random seeds.
     Aggregates results and performs statistical analysis.
+
+    shapes: If None, uses the pipeline default shapes (built-in only).
+            Pass a list including UserProvidedSMDSParametrization to include user-provided shapes.
     """
     # Generate Unique ST ID
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -48,13 +53,15 @@ def run_statistical_validation(
         print(f"--- Run {i + 1}/{n_repeats} (Seed: {seed}) ---")
 
         _, csv_path = discover_manifolds(
-            X, y,
+            X,
+            y,
+            shapes=shapes,
             n_folds=n_folds,
             save_results=True,
             experiment_name=f"{experiment_name}_rep{i + 1}",
             random_state=seed,
             st_run_id=st_run_id,
-            clear_cache=True
+            clear_cache=True,
         )
 
         if csv_path:
@@ -86,7 +93,7 @@ def run_statistical_validation(
 
         for run_idx, df in loaded_dfs:
             for _, row in df.iterrows():
-                shape_name = row['shape']
+                shape_name = row["shape"]
 
                 if col_fold not in row:
                     continue
@@ -100,12 +107,7 @@ def run_statistical_validation(
                     continue
 
                 for fold_idx, score in enumerate(fold_scores):
-                    data_records.append({
-                        "run_id": run_idx,
-                        "fold_id": fold_idx,
-                        "shape": shape_name,
-                        "score": score
-                    })
+                    data_records.append({"run_id": run_idx, "fold_id": fold_idx, "shape": shape_name, "score": score})
 
         if not data_records:
             print(f"No valid data found for metric {target_metric}")

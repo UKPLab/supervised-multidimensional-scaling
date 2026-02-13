@@ -3,14 +3,15 @@ import os
 import shutil
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
+from sklearn.base import clone  # type: ignore[import-untyped]
 from sklearn.model_selection import KFold, cross_validate  # type: ignore[import-untyped]
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
 from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes import (
     CircularShape,
@@ -32,6 +33,31 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "saved_results")
 CACHE_DIR = os.path.join(SAVE_DIR, ".cache")
 
+
+def _params_for_csv(params: Any) -> str:
+    if params is None or isinstance(params, (int, float, str, bool)):
+        return str(params)
+    if isinstance(params, dict):
+        safe: Dict[str, Any] = {}
+        for k, v in params.items():
+            if callable(v):
+                safe[k] = "<callable>"
+            elif hasattr(v, "shape"):
+                safe[k] = f"<array shape={getattr(v, 'shape', ())}>"
+            elif isinstance(v, (int, float, str, bool, type(None))):
+                safe[k] = v
+            elif (
+                isinstance(v, (list, tuple))
+                and len(v) < 50
+                and all(isinstance(x, (int, float, str, bool, type(None))) for x in v)
+            ):
+                safe[k] = v
+            else:
+                safe[k] = f"<{type(v).__name__}>"
+        return str(safe)
+    return str(params).replace("\n", " ").replace("\r", " ")
+
+
 DEFAULT_SHAPES = [
     ChainShape(),
     ClusterShape(),
@@ -51,7 +77,7 @@ DEFAULT_SHAPES = [
 def discover_manifolds(
     X: NDArray[np.float64],
     y: NDArray[np.float64],
-    shapes: Optional[List[BaseShape]] = None,
+    shapes: Optional[List[Union[BaseShape, UserProvidedSMDSParametrization]]] = None,
     smds_components: int = 2,
     n_folds: int = 5,
     n_jobs: int = -1,
@@ -76,7 +102,7 @@ def discover_manifolds(
         smds_components: Tells SMDS on how many dimensions to map
         shapes: List of Shape objects to test. Defaults to a standard set if None.
         n_folds: Number of Cross-Validation folds. If 0, Cross-Validation is skipped and
-                 the model is fit and scored directly on all data.
+                the model is fit and scored directly on all data.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
         save_results: Whether to persist results to a CSV file.
         experiment_name: Label to include in the generated filename.
@@ -142,8 +168,13 @@ def discover_manifolds(
         meta_path = os.path.join(experiment_dir, "metadata.json")
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump({"st_run_id": st_run_id}, f, indent=4)
+        # Save Metadata to JSON
+        # used to let the dashboard know which experiments belong to which st_run
+        meta_path = os.path.join(experiment_dir, "metadata.json")
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump({"st_run_id": st_run_id}, f, indent=4)
 
-        with open(save_path, 'w', encoding='utf-8') as f:
+        with open(save_path, "w", encoding="utf-8") as f:
             pd.DataFrame(columns=csv_headers).to_csv(save_path, index=False)
 
         print("Saving to:", save_path)
@@ -176,21 +207,41 @@ def discover_manifolds(
     # Filter shapes based on input dimension compatibility
     user_y_ndim = np.asarray(y).ndim
 
-    valid_shapes = [s for s in shapes if s.y_ndim == user_y_ndim]
-
-    skipped = len(shapes) - len(valid_shapes)
-    if skipped > 0:
-        print(
-            f"Filtering: Kept {len(valid_shapes)} shapes, "
-            f"skipped {skipped} due to dimension mismatch (Expected {user_y_ndim}D)."
-        )
-
     if X.shape[0] < 100:
         print("[WARNING] Less than 100 datapoints in X might lead to noisy results")
 
-    for shape in valid_shapes:
-        shape_name = shape.__class__.__name__
-        params = shape.__dict__
+    for shape in shapes:
+        parametrization = None
+        shape_name = ""
+        params = {}
+
+        if isinstance(shape, BaseShape):
+            if shape.y_ndim != user_y_ndim:
+                continue
+
+            shape_name = shape.__class__.__name__
+            params = shape.__dict__
+            parametrization = ComputedSMDSParametrization(n_components=smds_components, manifold=shape)
+
+        elif isinstance(shape, UserProvidedSMDSParametrization):
+            parametrization = shape
+            shape_name = getattr(shape, "name", None) or shape.__class__.__name__
+
+            n_comp = getattr(shape, "n_components", smds_components)
+            params = shape.__dict__ if hasattr(shape, "__dict__") else {"n_components": n_comp}
+
+            has_mapper = (
+                getattr(shape, "fixed_template", None) is not None and getattr(shape, "mapper", None) is not None
+            )
+
+            if not has_mapper:
+                current_y_dim = 1 if y.ndim == 1 else y.shape[-1]
+                if current_y_dim != n_comp:
+                    print(f"Skipping {shape_name}: y dimension {current_y_dim} != expected components {n_comp}")
+                    continue
+        else:
+            print(f"Skipping unknown hypothesis type: {type(shape)}")
+            continue
 
         shape_hash = compute_shape_hash(shape_name, params, data_hash, n_folds)
         cache_file = os.path.join(CACHE_DIR, f"{shape_hash}.pkl")
@@ -202,7 +253,7 @@ def discover_manifolds(
             results_list.append(row)
             continue
 
-        estimator = SupervisedMDS(ComputedSMDSParametrization(n_components=smds_components, manifold=shape))
+        estimator = SupervisedMDS(parametrization)
 
         try:
             cv_results = cross_validate(
@@ -233,28 +284,37 @@ def discover_manifolds(
                     row[f"mean_{metric_key}"] = np.nan
 
             row["error"] = None
+            row["plot_path"] = None
 
-            # Generate Interactive Plot
             if save_results and plots_dir is not None:
                 try:
-                    full_estimator = SupervisedMDS(
-                        ComputedSMDSParametrization(n_components=smds_components, manifold=shape)
-                    )
-                    X_embedded = full_estimator.fit_transform(X, y)
+                    stage_1 = clone(parametrization)
+                    stage_1.fit(y)
+                    Y_ideal = stage_1.Y_
 
-                    plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name
+                    if n_folds >= 2:
+                        kf = KFold(n_splits=n_folds, shuffle=False)
+                        X_embedded = np.full((X.shape[0], stage_1.n_components), np.nan, dtype=np.float64)
+                        for train_idx, test_idx in kf.split(X):
+                            X_embedded[test_idx] = (
+                                SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])
+                            )
+                    else:
+                        smds = SupervisedMDS(parametrization)
+                        X_embedded = smds.fit_transform(X, y)
 
                     plot_filename = generate_interactive_plot(
-                        X_embedded=X_embedded, y=y, shape_name=plot_name_prefix, save_dir=plots_dir
+                        X_embedded=X_embedded,
+                        y=y,
+                        shape_name=f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name,
+                        save_dir=plots_dir,
+                        Y_ideal=Y_ideal,
                     )
-
                     row["plot_path"] = os.path.join("plots", plot_filename)
 
                 except Exception as plot_e:
                     print(f"Warning: Failed to generate interactive plot for {shape_name}: {plot_e}")
                     row["plot_path"] = None
-            else:
-                row["plot_path"] = None
 
             save_shape_result(cache_file, row)
             print(f"Computed and cached {shape_name}")
@@ -279,7 +339,8 @@ def discover_manifolds(
         results_list.append(row)
 
         if save_results and save_path is not None:
-            pd.DataFrame([row], columns=csv_headers).to_csv(
+            row_for_csv = {**row, "params": _params_for_csv(row["params"])}
+            pd.DataFrame([row_for_csv], columns=csv_headers).to_csv(
                 save_path,
                 mode="a",
                 header=False,
@@ -295,7 +356,22 @@ def discover_manifolds(
         df = df.sort_values(primary_metric, ascending=False).reset_index(drop=True)
 
     if save_results and save_path is not None and create_png_visualization:
-        create_plots(X, y, df, valid_shapes, save_path, experiment_name)
+        valid_shapes = [
+            h
+            for h in shapes
+            if (isinstance(h, BaseShape) and h.y_ndim == user_y_ndim) or isinstance(h, UserProvidedSMDSParametrization)
+        ]
+        if valid_shapes:
+            create_plots(
+                X,
+                y,
+                df,
+                valid_shapes,
+                save_path,
+                experiment_name,
+                n_folds=n_folds,
+                smds_components=smds_components,
+            )
 
     if clear_cache:
         if os.path.exists(CACHE_DIR):

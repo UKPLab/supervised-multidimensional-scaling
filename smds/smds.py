@@ -3,7 +3,7 @@ import pickle
 import warnings
 from abc import ABC, abstractmethod
 from math import exp
-from typing import Any, Callable, cast
+from typing import Any, Callable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -96,7 +96,7 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
         return D
 
-    def _classical_mds(self, D: np.ndarray) -> np.ndarray:
+    def _classical_mds(self, D: NDArray[Any]) -> NDArray[Any]:
         """
         Perform Classical MDS on the distance matrix D to obtain a low-dimensional embedding.
         This is the template manifold for the supervised MDS.
@@ -135,17 +135,30 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
 
 class UserProvidedSMDSParametrization(SMDSParametrization):
-    def __init__(self, y: NDArray[Any] | None = None, n_components: int | None = None):
+    def __init__(
+        self,
+        y: NDArray[Any] | None = None,
+        n_components: int | None = None,
+        fixed_template: NDArray[np.float64] | None = None,
+        mapper: Callable[[NDArray[np.float64], NDArray[np.float64]], NDArray[np.float64]] | None = None,
+        name: str | None = None,
+    ):
         self._n_components = n_components
+        self.fixed_template = fixed_template
+        self.mapper = mapper
+        self.name = name
         self.y = y
-        if y is not None:
-            y_arr = np.asarray(y)
-            inferred_n_components = 1 if y_arr.ndim == 1 else y_arr.shape[-1]
-            if n_components is None:
-                self._n_components = inferred_n_components
-            elif inferred_n_components != n_components:
+
+        if self.y is not None:
+            self.y = np.asarray(self.y)
+            if self.y.ndim == 1:
+                self.y = self.y.reshape(-1, 1)
+            inferred = self.y.shape[-1]
+            if self._n_components is None:
+                self._n_components = inferred
+            elif self._n_components != inferred:
                 raise ValueError(
-                    f"y must have shape compatible with n_components ({n_components}), got {y_arr.shape}"
+                    f"y must have shape compatible with n_components ({self._n_components}), got {self.y.shape}"
                 )
 
     @property
@@ -155,12 +168,29 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         """
         return self._n_components
 
+    def _calc_dist(self, coords: NDArray[np.float64]) -> NDArray[np.float64]:
+        if coords.ndim == 1:
+            coords = coords.reshape(-1, 1)
+        dist: NDArray[np.float64] = np.linalg.norm(coords[:, np.newaxis, :] - coords[np.newaxis, :, :], axis=-1)
+        return dist
+
     def compute_ideal_distances(self, y: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
         Compute pairwise distances between the stored embedding points.
         """
-        distances = np.linalg.norm(self.Y_[:, np.newaxis, :] - self.Y_[np.newaxis, :, :], axis=-1)
-        return cast(NDArray[np.float64], distances)
+        if self.y is not None:
+            return self._calc_dist(self.Y_)
+
+        if y is None:
+            return self._calc_dist(self.Y_)
+
+        y = np.asarray(y)
+
+        if self.fixed_template is not None and self.mapper is not None:
+            coords = self.mapper(y.squeeze(), self.fixed_template)
+            return self._calc_dist(coords)
+        else:
+            return self._calc_dist(y)
 
     def fit(
         self,
@@ -170,26 +200,39 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         """
         Store provided coordinates and compute their distance matrix.
         """
-        y_values = y if y is not None else X if X is not None else self.y
-        if y_values is None:
+        if self.y is not None:
+            self.Y_ = self.y
+            self.D_ = self.compute_ideal_distances(None)
+            return self
+
+        target_data = y if y is not None else X
+
+        if target_data is None:
             raise ValueError("UserProvidedSMDSParametrization requires y in fit(X, y) or constructor.")
 
-        y_array = np.asarray(y_values)
-        if y_array.ndim == 1:
-            y_array = y_array.reshape(-1, 1)
-        elif y_array.ndim != 2:
-            raise ValueError(f"y must be 1D or 2D. Got shape {y_array.shape}.")
+        target_data = np.asarray(target_data)
 
-        inferred_n_components = y_array.shape[1]
-        if self._n_components is None:
-            self._n_components = inferred_n_components
-        elif self._n_components != inferred_n_components:
-            raise ValueError(
-                f"y must have shape compatible with n_components ({self._n_components}), got {y_array.shape}"
-            )
+        if self.fixed_template is not None and self.mapper is not None:
+            mapped_coords = self.mapper(target_data.squeeze(), self.fixed_template)
+            mapped_coords = np.asarray(mapped_coords)
+            if mapped_coords.ndim == 1:
+                mapped_coords = mapped_coords.reshape(-1, 1)
+            self.Y_ = mapped_coords
+        else:
+            if target_data.ndim == 1:
+                target_data = target_data.reshape(-1, 1)
+            elif target_data.ndim != 2:
+                raise ValueError(f"y must be 1D or 2D. Got shape {target_data.shape}.")
 
-        self.Y_ = y_array
-        self.D_ = self.compute_ideal_distances(self.Y_)
+            if self._n_components is None:
+                self._n_components = target_data.shape[1]
+            elif target_data.shape[1] != self._n_components:
+                raise ValueError(
+                    f"y must have shape compatible with n_components ({self._n_components}), got {target_data.shape}"
+                )
+            self.Y_ = target_data
+
+        self.D_ = self.compute_ideal_distances(None)
         return self
 
     def transform(self, X: NDArray[Any] | None = None) -> NDArray[np.float64]:
@@ -378,7 +421,17 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             print("Warning: orthonormal=True and alpha!=0. alpha will be ignored.")
 
         X = np.asarray(X)
-        y = np.asarray(y).squeeze()  # Ensure y is 1D
+        y = np.asarray(y).squeeze()
+
+        if (
+            isinstance(stage_1_model, UserProvidedSMDSParametrization)
+            and stage_1_model.y is None
+            and stage_1_model.fixed_template is None
+        ):
+            y_arr = np.asarray(y)
+            n_comp = y_arr.shape[1] if y_arr.ndim > 1 else 1
+            if stage_1_model.n_components != n_comp:
+                stage_1_model = UserProvidedSMDSParametrization(y=None, n_components=n_comp)
 
         self.stage_1_fitted_: SMDSParametrization = clone(stage_1_model)
         self.stage_1_fitted_.fit(y)

@@ -9,9 +9,13 @@ import pandas as pd  # type: ignore[import-untyped]
 import pytest
 from numpy.typing import NDArray
 
+from smds import UserProvidedSMDSParametrization
 from smds.pipeline import discover_manifolds
+from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes import CircularShape, SpiralShape
 from smds.shapes.discrete_shapes import ClusterShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape
+from smds.smds import SMDSParametrization
 from smds.stress import StressMetrics
 
 
@@ -90,3 +94,39 @@ def test_circular_wins_on_circular_data(
 
     winner = results.iloc[0]["shape"]
     assert winner == "CircularShape"
+
+
+def test_discover_manifolds_bypass(
+    cluster_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> None:
+    """Execution test: pipeline runs with bypass-style options (minimal CV, no save, no viz)."""
+    X, _, y_latent = cluster_data_10d
+
+    bypass_param = UserProvidedSMDSParametrization(n_components=2)
+    shapes: list[BaseShape | SMDSParametrization] = [
+        CylindricalShape(),
+        GeodesicShape(),
+        bypass_param,
+    ]
+
+    results, save_path = discover_manifolds(
+        X,
+        y_latent,
+        shapes=shapes,
+        n_folds=2,
+        n_jobs=-1,
+        save_results=False,
+        create_png_visualization=False,
+        clear_cache=True,
+        experiment_name="Bypass_Test",
+    )
+
+    assert isinstance(results, pd.DataFrame)
+    assert len(results) == 3
+    assert "UserProvidedSMDSParametrization" in results["shape"].values
+
+    assert save_path is None
+    for col in ["shape", "params", "error"]:
+        assert col in results.columns
+    for m in StressMetrics:
+        assert f"mean_{m.value}" in results.columns

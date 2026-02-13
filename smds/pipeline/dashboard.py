@@ -15,7 +15,14 @@ import plotly.graph_objects as go  # type: ignore[import-untyped]
 import streamlit as st
 import streamlit.components.v1 as components
 
-from smds.pipeline.helpers.styling import COL_CONTINUOUS, COL_DEFAULT, COL_DISCRETE, COL_SPATIAL, SHAPE_COLORS
+from smds.pipeline.helpers.styling import (
+    COL_CONTINUOUS,
+    COL_DEFAULT,
+    COL_DISCRETE,
+    COL_SPATIAL,
+    COL_USER_PROVIDED,
+    get_shape_color,
+)
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(CURRENT_DIR, "saved_results")
@@ -32,7 +39,7 @@ def load_data_with_metadata(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any
 
     if os.path.exists(meta_path):
         try:
-            with open(meta_path, 'r', encoding='utf-8') as f:
+            with open(meta_path, "r", encoding="utf-8") as f:
                 metadata = json.load(f)
         except Exception as e:
             print(f"Error reading metadata.json: {e}")
@@ -76,20 +83,21 @@ def create_p_value_heatmap(df: pd.DataFrame, theme: str) -> go.Figure:
     # Apply logic element-wise using indices
     z_values = pd.DataFrame(
         [[get_bucket(df.iloc[r, c], r, c) for c in range(df.shape[1])] for r in range(df.shape[0])],
-        index=df.index, columns=df.columns
+        index=df.index,
+        columns=df.columns,
     )
 
     # 3. Define Color Themes
     # Format: [NS, <0.05, <0.01, <0.001]
     themes = {
-        "Reference Green": ['#fde0dd', '#a1d99b', '#31a354', '#006d2c'],
-        "Scientific Blue": ['#f7fbff', '#bdd7e7', '#6baed6', '#2171b5'],
-        "Royal Purple": ['#fcfbfd', '#dadaeb', '#9e9ac8', '#54278f'],  # New elegant option
+        "Reference Green": ["#fde0dd", "#a1d99b", "#31a354", "#006d2c"],
+        "Scientific Blue": ["#f7fbff", "#bdd7e7", "#6baed6", "#2171b5"],
+        "Royal Purple": ["#fcfbfd", "#dadaeb", "#9e9ac8", "#54278f"],  # New elegant option
     }
 
     # Get theme colors
     c = themes.get(theme, themes["Scientific Blue"])
-    diagonal_color = 'white'
+    diagonal_color = "white"
 
     # 4. Construct Discrete Colorscale
     # We have 5 integers: -1, 0, 1, 2, 3.
@@ -102,11 +110,16 @@ def create_p_value_heatmap(df: pd.DataFrame, theme: str) -> go.Figure:
     # 0.8 - 1.0: <0.001
 
     colorscale = [
-        [0.0, diagonal_color], [0.2, diagonal_color],  # -1
-        [0.2, c[0]], [0.4, c[0]],  # 0
-        [0.4, c[1]], [0.6, c[1]],  # 1
-        [0.6, c[2]], [0.8, c[2]],  # 2
-        [0.8, c[3]], [1.0, c[3]],  # 3
+        [0.0, diagonal_color],
+        [0.2, diagonal_color],  # -1
+        [0.2, c[0]],
+        [0.4, c[0]],  # 0
+        [0.4, c[1]],
+        [0.6, c[1]],  # 1
+        [0.6, c[2]],
+        [0.8, c[2]],  # 2
+        [0.8, c[3]],
+        [1.0, c[3]],  # 3
     ]
 
     # Create text for hover (Original P-Values)
@@ -116,34 +129,36 @@ def create_p_value_heatmap(df: pd.DataFrame, theme: str) -> go.Figure:
         text_values.iloc[i, i] = ""
 
     # 5. Construct Plot
-    fig = go.Figure(data=go.Heatmap(
-        z=z_values,
-        x=df.columns,
-        y=df.index,
-        text=text_values,
-        texttemplate="%{text}",
-        textfont={"size": 10},
-        hoverinfo='x+y+text',
-        colorscale=colorscale,
-        zmin=-1,
-        zmax=3,
-        showscale=True,
-        colorbar=dict(
-            tickmode="array",
-            # Center ticks in the 5 blocks:
-            # -1 block is at -0.6ish... actually for zmin=-1 zmax=3 range is 4.
-            # let's manually place ticks relative to values -1, 0, 1, 2, 3
-            tickvals=[0, 1, 2, 3],
-            ticktext=["NS", "p < 0.05", "p < 0.01", "p < 0.001"],
-            title="Significance"
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z_values,
+            x=df.columns,
+            y=df.index,
+            text=text_values,
+            texttemplate="%{text}",
+            textfont={"size": 10},
+            hoverinfo="x+y+text",
+            colorscale=colorscale,
+            zmin=-1,
+            zmax=3,
+            showscale=True,
+            colorbar=dict(
+                tickmode="array",
+                # Center ticks in the 5 blocks:
+                # -1 block is at -0.6ish... actually for zmin=-1 zmax=3 range is 4.
+                # let's manually place ticks relative to values -1, 0, 1, 2, 3
+                tickvals=[0, 1, 2, 3],
+                ticktext=["NS", "p < 0.05", "p < 0.01", "p < 0.001"],
+                title="Significance",
+            ),
         )
-    ))
+    )
 
     fig.update_layout(
         title="Pairwise Nemenyi Test P-Values",
         xaxis_showgrid=False,
         yaxis_showgrid=False,
-        yaxis_autorange='reversed',
+        yaxis_autorange="reversed",
         height=500,
         margin=dict(l=0, r=0, t=40, b=0),
     )
@@ -194,6 +209,20 @@ def main() -> None:
         "Select Experiment",
         experiments,
         index=default_index,  # Auto-select the specific experiment folder
+    )
+
+    st.sidebar.markdown("---")
+    st.sidebar.caption("Shape categories (bar colors)")
+    st.sidebar.markdown(
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_USER_PROVIDED};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> User-provided<br>'
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_CONTINUOUS};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> Continuous<br>'
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_DISCRETE};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> Discrete<br>'
+        f'<span style="display:inline-block;width:12px;height:12px;background:{COL_SPATIAL};'
+        'border-radius:2px;vertical-align:middle;margin-right:6px;"></span> Spatial',
+        unsafe_allow_html=True,
     )
 
     if selected_exp_dir:
@@ -276,7 +305,15 @@ def main() -> None:
             c1.metric("Winner", best_shape)
             c2.metric("Best Score", f"{best_score:.4f}")
 
-        df_sorted["display_name"] = df_sorted["shape"].apply(lambda x: x.replace("Shape", ""))
+        def to_display_name(shape: str) -> str:
+            if shape == "UserProvidedSMDSParametrization":
+                return "User-provided"
+            return shape.replace("Shape", "")
+
+        base_name = df_sorted["shape"].apply(to_display_name)
+        dup_count = base_name.groupby(base_name).cumcount()
+        suffix = np.where(dup_count > 0, " (" + (dup_count + 1).astype(str) + ")", "")
+        df_sorted["display_name"] = base_name + suffix
 
         std_col = selected_metric.replace("mean_", "std_")
 
@@ -285,11 +322,12 @@ def main() -> None:
             COL_CONTINUOUS: "Continuous",
             COL_DISCRETE: "Discrete",
             COL_SPATIAL: "Spatial",
+            COL_USER_PROVIDED: "User-provided",
             COL_DEFAULT: "Other",
         }
 
         def get_category(shape_name: str) -> str:
-            hex_color = SHAPE_COLORS.get(shape_name, COL_DEFAULT)
+            hex_color = get_shape_color(shape_name)
             return category_map.get(hex_color, "Other")
 
         df_sorted["category"] = df_sorted["shape"].apply(get_category)
@@ -319,11 +357,11 @@ def main() -> None:
                 insidetextanchor="middle",
                 marker=dict(color=colors),
                 hovertemplate=(
-                        "<b>%{y}</b><br>" +
-                        "Score: %{x:.4f}<br>" +
-                        "Category: %{customdata}<br>" +
-                        "<i style='color:yellow'>Click to visualize</i>" +
-                        "<extra></extra>"
+                    "<b>%{y}</b><br>"
+                    + "Score: %{x:.4f}<br>"
+                    + "Category: %{customdata}<br>"
+                    + "<i style='color:yellow'>Click to visualize</i>"
+                    + "<extra></extra>"
                 ),
                 customdata=df_sorted["category"],
             )
@@ -381,8 +419,9 @@ def main() -> None:
             with col_head:
                 st.header("📊 Statistical Validation")
             with col_theme:
-                heatmap_theme = st.selectbox("Heatmap Theme",
-                                             ["Reference Green", "Scientific Blue", "Royal Purple"], index=0)
+                heatmap_theme = st.selectbox(
+                    "Heatmap Theme", ["Reference Green", "Scientific Blue", "Royal Purple"], index=0
+                )
 
             st_path = os.path.join(ST_RESULTS_BASE, st_run_id)
 
@@ -394,7 +433,7 @@ def main() -> None:
                 # Load Summary
                 summary_path = os.path.join(st_path, "st_summary.json")
                 if os.path.exists(summary_path):
-                    with open(summary_path, 'r') as f:
+                    with open(summary_path, "r") as f:
                         full_summary = json.load(f)
                     metric_stats = full_summary.get(clean_metric_name)
 
@@ -402,10 +441,14 @@ def main() -> None:
                         # Compact Stats Row
                         c1, c2, c3, c4 = st.columns([1, 1, 1, 3])
                         c1.metric("Friedman Stat", f"{metric_stats.get('statistic', 0):.2f}")
-                        p_val = metric_stats.get('p_value', 1.0)
-                        is_sig = metric_stats.get('significant', False)
-                        c2.metric("P-Value", f"{p_val:.2e}", delta="Significant" if is_sig else "Not Sig",
-                                  delta_color="normal" if is_sig else "off")
+                        p_val = metric_stats.get("p_value", 1.0)
+                        is_sig = metric_stats.get("significant", False)
+                        c2.metric(
+                            "P-Value",
+                            f"{p_val:.2e}",
+                            delta="Significant" if is_sig else "Not Sig",
+                            delta_color="normal" if is_sig else "off",
+                        )
 
                         if not is_sig:
                             st.info("Results not statistically significant.")
@@ -432,7 +475,8 @@ def main() -> None:
                                     st.image(cd_file, width="stretch")
                                     st.caption(
                                         "Lower rank (left) is better. Shapes connected by a thick bar "
-                                        "are **statistically tied** (performed equally well).")
+                                        "are **statistically tied** (performed equally well)."
+                                    )
                                 else:
                                     st.warning("CD Diagram missing.")
                     else:
@@ -459,6 +503,7 @@ def main() -> None:
         st.markdown("---")
         st.subheader("Detailed Results")
         st.dataframe(df_sorted.style.highlight_max(axis=0, subset=[selected_metric]), width=1500)
+
 
 if __name__ == "__main__":
     main()
