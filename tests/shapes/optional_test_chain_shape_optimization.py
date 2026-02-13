@@ -20,7 +20,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from smds import SupervisedMDS
-from smds.shapes.discrete_shapes import ChainShape
 
 
 def generate_large_synthetic_data(n_samples: int, n_features: int = 768, seed: int = 42) -> tuple[NDArray[np.float64],
@@ -64,6 +63,7 @@ def run_gpu_acceleration_chain(n_samples: int, compare_to_cpu: bool) -> None:
         n_samples (int): The number of samples to generate. Higher values (e.g., 5000)
                          effectively demonstrate the scaling benefits of the GPU solver
                          compared to the CPU baseline.
+        compare_to_cpu (bool): If true a comparison between CPU and GPU is made.
 
     Note:
         The CPU comparison (SciPy solver) is currently commented out to allow for
@@ -109,7 +109,8 @@ GPU Solver (Torch):  2.6383 seconds
 
 --- CPU Solver ---
 Info: Distance matrix is incomplete.
-Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time. Consider setting gpu_accel=True
+Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time. 
+Consider setting gpu_accel=True
 Standard CPU Solver: 30.6457 seconds
 Speedup Factor: 11.6x
 
