@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
+from smds import SupervisedMDS
 from smds.shapes.discrete_shapes import HierarchicalShape
 
 

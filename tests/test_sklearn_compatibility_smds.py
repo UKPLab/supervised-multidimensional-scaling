@@ -4,7 +4,7 @@ from numpy.typing import NDArray
 from scipy.spatial.distance import pdist, squareform  # type: ignore[import-untyped]
 from sklearn.utils.estimator_checks import check_estimator  # type: ignore[import-untyped]
 
-from smds.smds import ComputedSMDSParametrization, SupervisedMDS
+from smds.smds import SupervisedMDS
 
 # todo: add same for Stage1SMDSTransformer
 

@@ -358,8 +358,14 @@ def discover_manifolds(
         ]
         if valid_shapes:
             create_plots(
-                X, y, df, valid_shapes, save_path, experiment_name,
-                n_folds=n_folds, smds_components=smds_components,
+                X,
+                y,
+                df,
+                valid_shapes,
+                save_path,
+                experiment_name,
+                n_folds=n_folds,
+                smds_components=smds_components,
             )
 
     if clear_cache:

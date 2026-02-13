@@ -2,7 +2,6 @@ import os
 from typing import List, Union
 
 import matplotlib
-from sklearn.model_selection import KFold  # type: ignore[import-untyped]
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
@@ -10,6 +9,7 @@ import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import seaborn as sns  # type: ignore[import-untyped]
 from matplotlib import gridspec
+from sklearn.model_selection import KFold  # type: ignore[import-untyped]
 
 from smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
 from smds.pipeline.helpers.styling import (
@@ -125,9 +125,7 @@ def create_plots(
                     X_embedded = np.full((X.shape[0], n_comp), np.nan, dtype=np.float64)
                     for train_idx, test_idx in kf.split(X):
                         X_embedded[test_idx] = (
-                            SupervisedMDS(parametrization)
-                            .fit(X[train_idx], y[train_idx])
-                            .transform(X[test_idx])
+                            SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])
                         )
                 else:
                     X_embedded = SupervisedMDS(parametrization).fit_transform(X, y)

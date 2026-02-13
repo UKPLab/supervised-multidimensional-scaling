@@ -414,7 +414,11 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         X = np.asarray(X)
         y = np.asarray(y).squeeze()
 
-        if isinstance(stage_1_model, UserProvidedSMDSParametrization) and stage_1_model.y is None and stage_1_model.fixed_template is None:
+        if (
+            isinstance(stage_1_model, UserProvidedSMDSParametrization)
+            and stage_1_model.y is None
+            and stage_1_model.fixed_template is None
+        ):
             y_arr = np.asarray(y)
             n_comp = y_arr.shape[1] if y_arr.ndim > 1 else 1
             if stage_1_model.n_components != n_comp:
