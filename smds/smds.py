@@ -3,7 +3,7 @@ import pickle
 import warnings
 from abc import ABC, abstractmethod
 from math import exp
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -618,7 +618,12 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         return W_t.detach().cpu().numpy()
 
-    def _fit_scipy(self, X: np.ndarray, D: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    def _fit_scipy(
+            self,
+            X: NDArray[np.float64],
+            D: NDArray[np.float64],
+            mask: NDArray[np.bool_],
+    ) -> NDArray[np.float64]:
         """
         Solver using SciPy (L-BFGS-B) for CPU-based optimization.
         Used when distances are incomplete (negative) and GPU accel is off/unavailable.
@@ -630,7 +635,8 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         W0 = rng.normal(scale=0.01, size=(n_components, X.shape[1]))
         result = minimize(self._masked_loss, W0.ravel(), args=(X, D, mask), method="L-BFGS-B")
-        return result.x.reshape((n_components, X.shape[1]))
+        x = cast(np.ndarray, result.x)
+        return x.reshape((n_components, X.shape[1]))
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SupervisedMDS":
         """
