@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
+from numpy.typing import NDArray
 
 from smds.pipeline.discovery_pipeline import discover_manifolds
 from smds.pipeline.statistical_testing.analysis import perform_st_analysis
@@ -18,8 +19,8 @@ ST_RESULTS_DIR = os.path.join(BASE_DIR, "statistical_testing", "st_results")
 
 
 def run_statistical_validation(
-    X: np.ndarray,
-    y: np.ndarray,
+    X: NDArray[np.float64],
+    y: NDArray[np.float64],
     n_repeats: int = 10,
     n_folds: int = 5,
     experiment_name: str = "st_experiment",

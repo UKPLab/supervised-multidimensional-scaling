@@ -8,8 +8,6 @@ from smds.smds import SupervisedMDS
 
 # todo: add same for Stage1SMDSTransformer
 
-# todo: add same for Stage1SMDSTransformer
-
 
 def dummy_manifold_func(y: NDArray[np.float64]) -> NDArray[np.float64]:
     """
