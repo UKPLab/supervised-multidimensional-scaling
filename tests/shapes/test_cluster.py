@@ -4,7 +4,7 @@ from numpy.testing import assert_array_equal
 from numpy.typing import NDArray
 from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
+from smds import SupervisedMDS
 from smds.shapes.discrete_shapes import ClusterShape
 
 

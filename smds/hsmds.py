@@ -66,7 +66,7 @@ class HybridSMDS(SupervisedMDS):
             radius=radius,
         )
         self.n_components = n_components
-        self.manifold = manifold
+        self.manifold = manifold  # type: ignore[assignment]
         self.reducer = reducer
         self.bypass_mds = bypass_mds
 
@@ -98,6 +98,21 @@ class HybridSMDS(SupervisedMDS):
             return super()._validate_data(X, y, reset=reset, stage_1_model=stage_1_model)
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> "HybridSMDS":
+        """
+        Fit by computing MDS embedding and fitting the reducer.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+            Input data.
+        y : ndarray of shape (n_samples,) or (n_samples, n_dims)
+            Labels or target coordinates (if bypass_mds=True).
+
+        Returns
+        -------
+        self : HybridSMDS
+            Fitted estimator.
+        """
         if self.reducer is None:
             raise ValueError("HybridSMDS requires a reducer object (e.g. PCA, PLSRegression, etc.)")
 
@@ -120,7 +135,7 @@ class HybridSMDS(SupervisedMDS):
                     distances = stage_1_fitted.compute_ideal_distances(y)
                 except (ValueError, TypeError) as e:
                     if "dtype" in str(e).lower() or "type" in str(e).lower():
-                        from sklearn.utils.multiclass import type_of_target
+                        from sklearn.utils.multiclass import type_of_target  # type: ignore[import-untyped]
 
                         try:
                             type_of_target(y, raise_unknown=True)
@@ -150,6 +165,19 @@ class HybridSMDS(SupervisedMDS):
         return self
 
     def transform(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Project X using the fitted reducer.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        X_proj : ndarray of shape (n_samples, n_components)
+            Transformed data.
+        """
         check_is_fitted(self, ["reducer_", "Y_"])
         X = validate_data(self, X, reset=False)
 
@@ -160,6 +188,19 @@ class HybridSMDS(SupervisedMDS):
         return X_proj
 
     def inverse_transform(self, X_proj: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Reconstruct X from low-dimensional projection (if reducer supports it).
+
+        Parameters
+        ----------
+        X_proj : ndarray of shape (n_samples, n_components)
+            Low-dimensional data.
+
+        Returns
+        -------
+        X_reconstructed : ndarray of shape (n_samples, n_features)
+            Reconstructed data.
+        """
         check_is_fitted(self, ["reducer_"])
 
         if not hasattr(self.reducer_, "inverse_transform"):
