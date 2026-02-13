@@ -157,8 +157,8 @@ Then enable it in your model:
 ```python
 smds = SupervisedMDS(
     ...,
-    manifold=ChainShape(...),
-    use_gpu=True,
+    manifold="chain",
+    gpu_accel=True,
 )
 ```
 If a compatible GPU is available, PyTorch will use it automatically.
