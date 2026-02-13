@@ -77,7 +77,7 @@ def run_gpu_acceleration_chain(n_samples: int, compare_to_cpu: bool) -> None:
     # GPU accelerated Solver (Torch)
     print("--- GPU Solver ---")
     start_time = time.time()
-    mds_gpu = SupervisedMDS(n_components=2, manifold=ChainShape(threshold=n_samples * 0.1), gpu_accel=True)
+    mds_gpu = SupervisedMDS(manifold="chain", gpu_accel=True)
     mds_gpu.fit(X, y)
     gpu_duration = time.time() - start_time
     print(f"GPU Solver (Torch):  {gpu_duration:.4f} seconds\n")
@@ -86,7 +86,7 @@ def run_gpu_acceleration_chain(n_samples: int, compare_to_cpu: bool) -> None:
     if compare_to_cpu:
         print("--- CPU Solver ---")
         start_time = time.time()
-        mds_cpu = SupervisedMDS(n_components=2, manifold=ChainShape(threshold=n_samples * 0.1), gpu_accel=False)
+        mds_cpu = SupervisedMDS(manifold="chain", gpu_accel=False)
         mds_cpu.fit(X, y)
         cpu_duration = time.time() - start_time
         print(f"Standard CPU Solver: {cpu_duration:.4f} seconds")
@@ -98,3 +98,25 @@ def run_gpu_acceleration_chain(n_samples: int, compare_to_cpu: bool) -> None:
 if __name__ == "__main__":
     run_gpu_acceleration_chain(500, compare_to_cpu=True)
     run_gpu_acceleration_chain(5000, compare_to_cpu=False)
+
+"""
+BENCHMARK: N=500, D=768
+--- GPU Solver ---
+Info: Distance matrix is incomplete.
+Info: Using PyTorch solver for sparse manifold.
+Info: PyTorch solver active. Using GPU
+GPU Solver (Torch):  2.6383 seconds
+
+--- CPU Solver ---
+Info: Distance matrix is incomplete.
+Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time. Consider setting gpu_accel=True
+Standard CPU Solver: 30.6457 seconds
+Speedup Factor: 11.6x
+
+BENCHMARK: N=5000, D=768
+--- GPU Solver ---
+Info: Distance matrix is incomplete.
+Info: Using PyTorch solver for sparse manifold.
+Info: PyTorch solver active. Using GPU
+GPU Solver (Torch):  8.5520 seconds
+"""
