@@ -136,6 +136,39 @@ Open the dashboard to view the **Friedman Statistic**, **P-Value Heatmap**, and 
 python smds/pipeline/open_dashboard.py
 ```
 
+## Optimization & GPU Support
+
+For manifolds with undefined distances (e.g. `ChainShape`), SMDS falls back to a generic SciPy solver.  
+For large datasets, this can be slow.
+
+SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can transparently leverage GPUs when available.
+
+---
+
+### Enabling the Accelerator
+
+Install SMDS with the optional `fast` extra:
+
+```bash
+  pip install smds[fast]
+```
+
+Then enable it in your model:
+```python
+smds = SupervisedMDS(
+    ...,
+    manifold="chain",
+    gpu_accel=True,
+)
+```
+If a compatible GPU is available, PyTorch will use it automatically.
+Otherwise, the accelerated solver will run on CPU.
+
+>💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
+See the official PyTorch documentation for platform-specific setup.
+
+
+
 ## Coming Soon...
 
 ### Testing

@@ -3516,7 +3516,7 @@ wheels = [
 
 [[package]]
 name = "smds"
-version = "1.3.2"
+version = "1.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
@@ -3529,6 +3529,11 @@ dependencies = [
     { name = "scipy" },
     { name = "streamlit" },
     { name = "zadu" },
+]
+
+[package.optional-dependencies]
+fast = [
+    { name = "torch" },
 ]
 
 [package.dev-dependencies]
@@ -3572,8 +3577,10 @@ requires-dist = [
     { name = "scikit-posthocs", specifier = ">=0.11.4" },
     { name = "scipy", specifier = ">=1.16.3" },
     { name = "streamlit", specifier = ">=1.52.2" },
+    { name = "torch", marker = "extra == 'fast'", specifier = ">=2.9.0" },
     { name = "zadu", specifier = ">=0.3.1" },
 ]
+provides-extras = ["fast"]
 
 [package.metadata.requires-dev]
 dev = [
