@@ -153,12 +153,13 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
             self.y = np.asarray(self.y)
             if self.y.ndim == 1:
                 self.y = self.y.reshape(-1, 1)
-
-            if self.y.shape[-1] != self._n_components:
-                if self._n_components == 2 and self.y.shape[-1] != 2:
-                    raise ValueError(
-                        f"y must have last shape == n_components ({self._n_components}), got {self.y.shape[-1]}"
-                    )
+            inferred = self.y.shape[-1]
+            if self._n_components is None:
+                self._n_components = inferred
+            elif self._n_components != inferred:
+                raise ValueError(
+                    f"y must have shape compatible with n_components ({self._n_components}), got {self.y.shape}"
+                )
 
     @property
     def n_components(self) -> int | None:
@@ -217,9 +218,11 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
             if target_data.ndim == 1:
                 target_data = target_data.reshape(-1, 1)
 
-            if target_data.shape[-1] != self.n_components:
+            if self._n_components is None:
+                self._n_components = target_data.shape[-1]
+            elif target_data.shape[-1] != self._n_components:
                 raise ValueError(
-                    f"y shape mismatch. Expected last dim {self.n_components}, got {target_data.shape[-1]}"
+                    f"y shape mismatch. Expected last dim {self._n_components}, got {target_data.shape[-1]}"
                 )
             self.Y_ = target_data
 
