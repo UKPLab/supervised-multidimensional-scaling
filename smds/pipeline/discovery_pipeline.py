@@ -80,7 +80,7 @@ def discover_manifolds(
     shapes: Optional[List[Union[BaseShape, UserProvidedSMDSParametrization]]] = None,
     smds_components: int = 2,
     n_folds: int = 5,
-    n_jobs: int = -1,
+    n_jobs: Optional[int] = -1,
     save_results: bool = True,
     experiment_name: str = "results",
     create_png_visualization: bool = True,
