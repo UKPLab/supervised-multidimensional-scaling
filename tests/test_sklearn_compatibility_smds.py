@@ -8,6 +8,8 @@ from smds.smds import ComputedSMDSParametrization, SupervisedMDS
 
 # todo: add same for Stage1SMDSTransformer
 
+# todo: add same for Stage1SMDSTransformer
+
 
 def dummy_manifold_func(y: NDArray[np.float64]) -> NDArray[np.float64]:
     """
@@ -25,8 +27,7 @@ def test_sklearn_compatibility() -> None:
     Tests SupervisedMDS with sklearn's check_estimator.
     This ensures that SupervisedMDS meets all sklearn compatibility requirements.
     """
-    # fixme: dummy_manifold_func has to be an instance of BaseShape
-    estimator = SupervisedMDS(ComputedSMDSParametrization(manifold=dummy_manifold_func, n_components=2))
+    estimator = SupervisedMDS(stage_1="computed", manifold="circular")
 
     try:
         check_estimator(estimator)

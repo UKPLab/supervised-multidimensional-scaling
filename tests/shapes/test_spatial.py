@@ -1,23 +1,22 @@
 import numpy as np
 import pytest
 
-from smds import ComputedSMDSParametrization, SupervisedMDS
-from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
+from smds import SupervisedMDS
 
 
 @pytest.fixture
 def engine_cylindrical() -> SupervisedMDS:
-    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=CylindricalShape(radius=1.0)), alpha=0.1)
+    return SupervisedMDS(stage_1="computed", manifold="cylindrical", alpha=0.1)
 
 
 @pytest.fixture
 def engine_geodesic() -> SupervisedMDS:
-    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=GeodesicShape(radius=1.0)), alpha=0.1)
+    return SupervisedMDS(stage_1="computed", manifold="geodesic", alpha=0.1)
 
 
 @pytest.fixture
 def engine_spherical() -> SupervisedMDS:
-    return SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=SphericalShape(radius=1.0)), alpha=0.1)
+    return SupervisedMDS(stage_1="computed", manifold="spherical", alpha=0.1)
 
 
 @pytest.fixture
@@ -51,7 +50,7 @@ def test_cylindrical(
 ) -> None:
     engine_cylindrical.fit(X, city_coordinates)
     X_proj = engine_cylindrical.transform(X)
-    assert X_proj.shape == (10, 2)
+    assert X_proj.shape == (10, 3)
 
 
 def test_geodesic(
@@ -59,7 +58,7 @@ def test_geodesic(
 ) -> None:
     engine_geodesic.fit(X, city_coordinates)
     X_proj = engine_geodesic.transform(X)
-    assert X_proj.shape == (10, 2)
+    assert X_proj.shape == (10, 3)
 
 
 def test_spherical(
@@ -67,4 +66,4 @@ def test_spherical(
 ) -> None:
     engine_spherical.fit(X, city_coordinates)
     X_proj = engine_spherical.transform(X)
-    assert X_proj.shape == (10, 2)
+    assert X_proj.shape == (10, 3)
