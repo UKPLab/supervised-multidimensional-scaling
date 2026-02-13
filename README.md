@@ -3,12 +3,16 @@
 </p>
 
 # Supervised Multi-Dimensional Scaling
+
 [![Arxiv](https://img.shields.io/badge/Arxiv-2510.01025-red?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.01025)
 [![License](https://img.shields.io/github/license/UKPLab/supervised-multidimensional-scaling)](https://opensource.org/licenses/Apache-2.0)
 [![Python Versions](https://img.shields.io/badge/Python-3.12-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![CI](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml/badge.svg)](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml)
 
-This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens: Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds of various forms.
+This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens:
+Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the
+familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds
+of various shape.
 
 Contact person: [Federico Tiblias](mailto:federico.tiblias@tu-darmstadt.de)
 
@@ -59,7 +63,8 @@ If you set `stage_1="user_provided"`, `manifold` is ignored and a warning is rai
 
 ### Manifold Discovery
 
-The library provided a high level pipeline to automatically discover the intrinsic manifold of your data. The `discover_manifolds` utility evaluates a set of hypothesis shapes (for example: clusters, circles, hierarchies) and ranks them based on how well they explain the data structure using cross validation.
+Once fitted, you can use the learned transformation for inverse projections and to assess how well the embedding matches
+the target geometry:
 
 ```python
 from smds.pipeline.discovery_pipeline import discover_manifolds

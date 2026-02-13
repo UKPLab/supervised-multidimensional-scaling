@@ -44,6 +44,11 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
         """
         Subclasses must implement this.
         Number of components of the projected manifold.
+
+        Returns
+        -------
+        n_components : int
+            Number of components of the projected manifold.
         """
         pass
 
@@ -52,6 +57,18 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
         """
         Subclasses must implement this.
         It is required for TransformerMixin.fit_transform to work.
+
+        Parameters
+        ----------
+        X : ndarray
+            Input labels or coordinates.
+        y : ndarray, optional
+            Ignored, present for API consistency.
+
+        Returns
+        -------
+        self : SMDSParametrization
+            Fitted transformer.
         """
         pass
 
@@ -60,6 +77,16 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
         """
         Subclasses must implement this.
         It is required for TransformerMixin.fit_transform to work.
+
+        Parameters
+        ----------
+        X : ndarray, optional
+            Ignored, present for API consistency.
+
+        Returns
+        -------
+        Y : ndarray
+            The embedding coordinates.
         """
         pass
 
@@ -68,11 +95,32 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
         """
         Subclasses must implement this.
         Return the pairwise distance matrix for the given labels or coordinates.
+
+        Parameters
+        ----------
+        y : ndarray
+            Input labels or coordinates.
+
+        Returns
+        -------
+        D : ndarray
+            Pairwise distance matrix.
         """
         pass
 
 
 class ComputedSMDSParametrization(SMDSParametrization):
+    """
+    Stage-1 parametrization that computes ideal distances using a manifold function.
+
+    Parameters
+    ----------
+    manifold : Callable
+        Function that takes labels and returns a distance matrix.
+    n_components : int
+        Number of embedding dimensions.
+    """
+
     def __init__(self, manifold: Callable[[NDArray[Any]], NDArray[np.float64]], n_components: int):
         # fixme: set manifold to be BaseShape
         self.manifold = manifold
@@ -87,7 +135,19 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
     def compute_ideal_distances(self, y: NDArray[Any], threshold: int = 2) -> NDArray[np.float64]:
         """
-        Compute ideal pairwise distance matrix D based on labels y and specified self.manifold.
+        Compute ideal pairwise distance matrix from labels.
+
+        Parameters
+        ----------
+        y : ndarray
+            Input labels or coordinates.
+        threshold : int, default=2
+            Distance threshold parameter.
+
+        Returns
+        -------
+        D : ndarray
+            Pairwise distance matrix.
         """
         if callable(self.manifold):
             D: np.ndarray = self.manifold(y)
@@ -98,8 +158,17 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
     def _classical_mds(self, D: NDArray[Any]) -> NDArray[Any]:
         """
-        Perform Classical MDS on the distance matrix D to obtain a low-dimensional embedding.
-        This is the template manifold for the supervised MDS.
+        Perform classical MDS on distance matrix.
+
+        Parameters
+        ----------
+        D : ndarray
+            Pairwise distance matrix.
+
+        Returns
+        -------
+        Y : ndarray
+            Low-dimensional embedding coordinates.
         """
         # Square distances
         D2 = D**2
@@ -121,7 +190,19 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
     def fit(self, X: NDArray[Any], y: NDArray[Any] | None = None) -> "ComputedSMDSParametrization":
         """
-        Compute the ideal distance matrix and its MDS embedding from input labels.
+        Fit by computing ideal distances and MDS embedding.
+
+        Parameters
+        ----------
+        X : ndarray
+            Input labels or coordinates.
+        y : ndarray, optional
+            Ignored, present for API consistency.
+
+        Returns
+        -------
+        self : ComputedSMDSParametrization
+            Fitted transformer.
         """
         self.D_ = self.compute_ideal_distances(X)
         self.Y_ = self._classical_mds(self.D_)
@@ -129,12 +210,39 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
     def transform(self, X: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
-        Return the stage-1 embedding computed during fit.
+        Return the computed embedding.
+
+        Parameters
+        ----------
+        X : ndarray, optional
+            Ignored, present for API consistency.
+
+        Returns
+        -------
+        Y : ndarray
+            The embedding coordinates.
         """
         return self.Y_
 
 
 class UserProvidedSMDSParametrization(SMDSParametrization):
+    """
+    Stage-1 parametrization using user-provided coordinates or template mapping.
+
+    Parameters
+    ----------
+    y : ndarray, optional
+        Pre-computed embedding coordinates.
+    n_components : int, optional
+        Number of embedding dimensions (inferred from y if not provided).
+    fixed_template : ndarray, optional
+        Fixed template coordinates for mapping.
+    mapper : Callable, optional
+        Function to map labels to template coordinates.
+    name : str, optional
+        Name for this parametrization.
+    """
+
     def __init__(
         self,
         y: NDArray[Any] | None = None,
@@ -176,7 +284,17 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
 
     def compute_ideal_distances(self, y: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
-        Compute pairwise distances between the stored embedding points.
+        Compute pairwise distances from stored or provided coordinates.
+
+        Parameters
+        ----------
+        y : ndarray, optional
+            Coordinates to compute distances from. If None, uses stored Y_.
+
+        Returns
+        -------
+        D : ndarray
+            Pairwise distance matrix.
         """
         if self.y is not None:
             return self._calc_dist(self.Y_)
@@ -198,7 +316,19 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
         y: NDArray[Any] | None = None,
     ) -> "UserProvidedSMDSParametrization":
         """
-        Store provided coordinates and compute their distance matrix.
+        Store coordinates and compute distance matrix.
+
+        Parameters
+        ----------
+        X : ndarray, optional
+            Coordinates (used if y is None).
+        y : ndarray, optional
+            Coordinates (preferred over X).
+
+        Returns
+        -------
+        self : UserProvidedSMDSParametrization
+            Fitted transformer.
         """
         if self.y is not None:
             self.Y_ = self.y
@@ -237,7 +367,17 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
 
     def transform(self, X: NDArray[Any] | None = None) -> NDArray[np.float64]:
         """
-        Return the provided embedding coordinates.
+        Return the stored embedding.
+
+        Parameters
+        ----------
+        X : ndarray, optional
+            Ignored, present for API consistency.
+
+        Returns
+        -------
+        Y : ndarray
+            The embedding coordinates.
         """
         return self.Y_
 
@@ -380,13 +520,13 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             if y.ndim == 0:
                 y = y.reshape(1)
         else:
-            X = check_array(X)
-            y = np.asarray(y)
             if y.ndim != expected_y_ndim:
                 raise ValueError(
                     f"Input 'y' must be {expected_y_ndim}-dimensional, "
                     f"but got shape {y.shape} with {y.ndim} dimensions."
                 )
+            if hasattr(self.stage_1, "validate_y"):
+                self.stage_1.validate_y(y)
             if X.shape[0] != y.shape[0]:
                 raise ValueError(
                     f"X and y must have the same number of samples. "
