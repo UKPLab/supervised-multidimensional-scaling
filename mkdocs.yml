@@ -5,6 +5,7 @@ nav:
   - Examples:
       - Family Tree Experiment: notebooks/family_tree.ipynb
       - Find Manifold Location: notebooks/find_manifold_location.ipynb
+      - Find Hour-of-Day Manifold: notebooks/find_hour_of_day_manifold.ipynb
 
 theme:
   name: material
