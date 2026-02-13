@@ -102,9 +102,36 @@ To build and serve the documentation locally:
 mkdocs serve
 ```
 
-> [!NOTE]
-> The `dev` dependency group includes heavy libraries such as `torch` and `transformers`.
+### Statistical Validation
 
+Standard cross-validation provides a mean score, but it does not tell you if one manifold is *statistically* better than another. SMDS includes a robust **Statistical Testing (ST)** wrapper that runs repeated experiments to perform a **Friedman Rank Sum Test** and **Nemenyi Post-Hoc Analysis**.
+
+#### Running a Statistical Test
+
+Instead of `smds/pipeline/run_pipeline`, use the `smds/pipeline/run_statistical_test.py` wrapper:
+
+```python
+from smds.pipeline.statistical_testing.run_statistical_test import run_statistical_validation
+
+# Runs the pipeline 10 times (10 repeats), each with 5-Fold CV
+pivot_dfs, output_path = run_statistical_validation(
+    X=my_data, 
+    y=my_labels, 
+    n_repeats=10,
+    n_folds=5,
+    experiment_name="my_robust_experiment"
+)
+```
+
+#### Viewing Results
+
+Open the dashboard to view the **Friedman Statistic**, **P-Value Heatmap**, and **Critical Difference (CD) Diagram**:
+
+```bash
+python smds/pipeline/open_dashboard.py
+```
+
+## Coming Soon...
 
 ### Testing
 

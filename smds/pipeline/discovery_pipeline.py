@@ -1,4 +1,5 @@
 import json
+import json
 import os
 import shutil
 import uuid
@@ -163,6 +164,11 @@ def discover_manifolds(
         filename = f"{unique_suffix}.csv"
         save_path = os.path.join(experiment_dir, filename)
 
+        # Save Metadata to JSON
+        # used to let the dashboard know which experiments belong to which st_run
+        meta_path = os.path.join(experiment_dir, "metadata.json")
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump({"st_run_id": st_run_id}, f, indent=4)
         # Save Metadata to JSON
         # used to let the dashboard know which experiments belong to which st_run
         meta_path = os.path.join(experiment_dir, "metadata.json")
