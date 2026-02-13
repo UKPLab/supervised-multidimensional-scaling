@@ -12,9 +12,6 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "matplotlib>=3.10.7",
-    "mkdocs-material>=9.7.0",
-    "mkdocstrings>=0.30.1",
-    "mkdocstrings-python>=1.19.0",
     "notebook>=7.4.7",
     "numpy>=2.3.4",
     "pandas>=2.3.3",
@@ -34,10 +31,6 @@ dev = [
     "gitchangelog>=3.0.4",
     "isort>=7.0.0",
     "matplotlib>=3.10.7",
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.6.23",
-    "mkdocstrings>=0.30.1",
-    "mkdocstrings-python>=1.18.2",
     "mypy>=1.18.2",
     "pandas>=2.3.3",
     "plotly>=6.4.0",
@@ -48,6 +41,13 @@ dev = [
     "seaborn>=0.13.2",
     "torch>=2.9.0",
     "transformers>=4.57.1",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-jupyter>=0.25.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings>=1.0.2",
+    "mkdocstrings-python>=2.0.1",
 ]
 pipeline = [
     "scipy-stubs>=1.16.3.0",
@@ -60,6 +60,7 @@ testpaths = ["."]
 line-length = 120
 target-version = "py312"
 output-format = "grouped"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "D"]
@@ -90,6 +91,7 @@ convention = "numpy"
 [tool.mypy]
 strict = true
 implicit_reexport = true
+exclude = ["^notebooks/"]
 
 [build-system]
 requires = ["hatchling"]
@@ -103,4 +105,3 @@ exclude = [
     "/.github",
     "/tests",
 ]
-

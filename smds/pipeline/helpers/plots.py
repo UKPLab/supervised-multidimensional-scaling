@@ -10,7 +10,7 @@ import pandas as pd  # type: ignore[import-untyped]
 import seaborn as sns  # type: ignore[import-untyped]
 from matplotlib import gridspec
 
-from smds import SupervisedMDS
+from smds import ComputedSMDSParametrization, SupervisedMDS
 from smds.pipeline.helpers.styling import COL_CONTINUOUS, COL_DEFAULT, COL_DISCRETE, COL_SPATIAL, get_shape_color
 from smds.shapes.base_shape import BaseShape
 from smds.stress.stress_metrics import StressMetrics
@@ -101,7 +101,7 @@ def create_plots(
         best_shape_obj = shape_dict.get(best_shape_name)
 
         if best_shape_obj:
-            estimator = SupervisedMDS(n_components=2, manifold=best_shape_obj)
+            estimator = SupervisedMDS(ComputedSMDSParametrization(n_components=2, manifold=best_shape_obj))
             try:
                 X_embedded = estimator.fit_transform(X, y)
 
