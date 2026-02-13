@@ -109,7 +109,7 @@ GPU Solver (Torch):  2.6383 seconds
 
 --- CPU Solver ---
 Info: Distance matrix is incomplete.
-Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time. 
+Warning: Using the SciPy CPU solver for incomplete distance matricies may take a long time.
 Consider setting gpu_accel=True
 Standard CPU Solver: 30.6457 seconds
 Speedup Factor: 11.6x
