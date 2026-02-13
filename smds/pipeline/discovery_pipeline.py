@@ -279,41 +279,37 @@ def discover_manifolds(
                     row[f"mean_{metric_key}"] = np.nan
 
             row["error"] = None
+            row["plot_path"] = None
 
-            # Generate Interactive Plot (out-of-sample when n_folds >= 2; same splits as cross_validate)
             if save_results and plots_dir is not None:
                 try:
-                    n_comp = getattr(parametrization, "n_components", smds_components)
+                    stage_1 = clone(parametrization)
+                    stage_1.fit(y)
+                    Y_ideal = stage_1.Y_
+
                     if n_folds >= 2:
                         kf = KFold(n_splits=n_folds, shuffle=False)
-                        X_embedded = np.full((X.shape[0], n_comp), np.nan, dtype=np.float64)
+                        X_embedded = np.full((X.shape[0], stage_1.n_components), np.nan, dtype=np.float64)
                         for train_idx, test_idx in kf.split(X):
                             X_embedded[test_idx] = (
                                 SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])
                             )
                     else:
-                        X_embedded = SupervisedMDS(parametrization).fit_transform(X, y)
-
-                    plot_name_prefix = f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name
-                    stage_1_for_ideal = clone(parametrization)
-                    stage_1_for_ideal.fit(y)
-                    Y_ideal = getattr(stage_1_for_ideal, "Y_", None)
+                        smds = SupervisedMDS(parametrization)
+                        X_embedded = smds.fit_transform(X, y)
 
                     plot_filename = generate_interactive_plot(
                         X_embedded=X_embedded,
                         y=y,
-                        shape_name=plot_name_prefix,
+                        shape_name=f"{shape_name}_{unique_suffix}" if unique_suffix else shape_name,
                         save_dir=plots_dir,
                         Y_ideal=Y_ideal,
                     )
-
                     row["plot_path"] = os.path.join("plots", plot_filename)
 
                 except Exception as plot_e:
                     print(f"Warning: Failed to generate interactive plot for {shape_name}: {plot_e}")
                     row["plot_path"] = None
-            else:
-                row["plot_path"] = None
 
             save_shape_result(cache_file, row)
             print(f"Computed and cached {shape_name}")
