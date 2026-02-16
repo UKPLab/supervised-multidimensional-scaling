@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Union
 
 import matplotlib
 import matplotlib.patches as mpatches
@@ -9,9 +9,17 @@ import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import seaborn as sns  # type: ignore[import-untyped]
 from matplotlib import gridspec
+from sklearn.model_selection import KFold  # type: ignore[import-untyped]
 
-from smds import SupervisedMDS
-from smds.pipeline.helpers.styling import COL_CONTINUOUS, COL_DEFAULT, COL_DISCRETE, COL_SPATIAL, get_shape_color
+from smds import ComputedSMDSParametrization, SupervisedMDS, UserProvidedSMDSParametrization
+from smds.pipeline.helpers.styling import (
+    COL_CONTINUOUS,
+    COL_DEFAULT,
+    COL_DISCRETE,
+    COL_SPATIAL,
+    COL_USER_PROVIDED,
+    get_shape_color,
+)
 from smds.shapes.base_shape import BaseShape
 from smds.stress.stress_metrics import StressMetrics
 
@@ -22,13 +30,15 @@ def create_plots(
     X: np.ndarray,
     y: np.ndarray,
     results_df: pd.DataFrame,
-    shapes: List[BaseShape],
+    shapes: List[Union[BaseShape, UserProvidedSMDSParametrization]],
     csv_path: str,
     experiment_name: str,
+    n_folds: int = 5,
+    smds_components: int = 2,
 ) -> None:
     """
     Creates a combined visualization:
-    1. Scatter plot of the best manifold projection (left).
+    1. Scatter plot of the best manifold projection (left; out-of-sample when n_folds >= 2).
     2. Grid of bar charts showing rankings for ALL computed metrics (right).
     """
     sns.set_theme(style="whitegrid")
@@ -78,7 +88,12 @@ def create_plots(
 
     gs = gridspec.GridSpec(n_rows, 4, width_ratios=[1, 1.5, 1, 1.5], wspace=0.4, hspace=0.6)
 
-    shape_dict = {s.__class__.__name__: s for s in shapes}
+    shape_dict: dict[str, Union[BaseShape, UserProvidedSMDSParametrization]] = {}
+    for s in shapes:
+        shape_dict[s.__class__.__name__] = s
+        name = getattr(s, "name", None)
+        if name:
+            shape_dict[name] = s
 
     # Metric Grid
     for idx, col_name in enumerate(metric_cols):
@@ -95,47 +110,113 @@ def create_plots(
         row = idx // 2
         col_offset = (idx % 2) * 2
 
-        # Plot Best Manifold Scatter
-        ax_scatter = fig.add_subplot(gs[row, col_offset])
-
+        cell = gs[row, col_offset]
         best_shape_obj = shape_dict.get(best_shape_name)
 
         if best_shape_obj:
-            estimator = SupervisedMDS(n_components=2, manifold=best_shape_obj)
+            if isinstance(best_shape_obj, BaseShape):
+                parametrization = ComputedSMDSParametrization(n_components=smds_components, manifold=best_shape_obj)
+            else:
+                parametrization = best_shape_obj
             try:
-                X_embedded = estimator.fit_transform(X, y)
-
-                unique_labels = np.unique(y)
-                is_discrete = len(unique_labels) < 20
+                n_comp = getattr(parametrization, "n_components", smds_components)
+                if n_folds >= 2:
+                    kf = KFold(n_splits=n_folds, shuffle=False)
+                    X_embedded = np.full((X.shape[0], n_comp), np.nan, dtype=np.float64)
+                    for train_idx, test_idx in kf.split(X):
+                        X_embedded[test_idx] = (
+                            SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])
+                        )
+                else:
+                    X_embedded = SupervisedMDS(parametrization).fit_transform(X, y)
+                hue_vals = y[:, 0] if y.ndim > 1 else y
+                is_discrete = len(np.unique(hue_vals)) < 20
                 palette = "tab10" if is_discrete else "viridis"
+                title_str = f"{display_title}\nBest: {best_shape_name} ({best_score_val:.4f})"
+                if n_comp > 2:
+                    title_str += f" [{n_comp}D]"
 
-                sns.scatterplot(
-                    x=X_embedded[:, 0],
-                    y=X_embedded[:, 1],
-                    hue=y,
-                    palette=palette,
-                    alpha=0.8,
-                    s=80,
-                    edgecolor="w",
-                    linewidth=0.5,
-                    ax=ax_scatter,
-                    legend="full" if is_discrete else False,
-                )
-
-                # Enforce 1:1 Aspect Ratio for x and y (no distortion)
-                ax_scatter.set_aspect("equal", adjustable="datalim")
-
-                title_str = f"{display_title}\n"
-                title_str += f"Best: {best_shape_name} ({best_score_val:.4f})"
-                ax_scatter.set_title(title_str, fontsize=14, fontweight="bold")
-                ax_scatter.set_xlabel("Dimension 1")
-                ax_scatter.set_ylabel("Dimension 2")
-                sns.despine(ax=ax_scatter)
+                if n_comp == 1:
+                    ax_scatter = fig.add_subplot(cell)
+                    sns.scatterplot(
+                        x=X_embedded[:, 0],
+                        y=np.zeros(X_embedded.shape[0]),
+                        hue=hue_vals,
+                        palette=palette,
+                        alpha=0.8,
+                        s=80,
+                        ax=ax_scatter,
+                        legend="full" if is_discrete else False,
+                    )
+                    ax_scatter.set_xlabel("Dim 1")
+                    ax_scatter.set_ylabel("")
+                    ax_scatter.set_title(title_str, fontsize=14, fontweight="bold")
+                    sns.despine(ax=ax_scatter)
+                elif n_comp == 2:
+                    ax_scatter = fig.add_subplot(cell)
+                    sns.scatterplot(
+                        x=X_embedded[:, 0],
+                        y=X_embedded[:, 1],
+                        hue=hue_vals,
+                        palette=palette,
+                        alpha=0.8,
+                        s=80,
+                        edgecolor="w",
+                        linewidth=0.5,
+                        ax=ax_scatter,
+                        legend="full" if is_discrete else False,
+                    )
+                    ax_scatter.set_aspect("equal", adjustable="datalim")
+                    ax_scatter.set_xlabel("Dim 1")
+                    ax_scatter.set_ylabel("Dim 2")
+                    ax_scatter.set_title(title_str, fontsize=14, fontweight="bold")
+                    sns.despine(ax=ax_scatter)
+                elif n_comp == 3:
+                    ax_3d = fig.add_subplot(cell, projection="3d")
+                    cmap_name = "tab10" if is_discrete else "viridis"
+                    sc = ax_3d.scatter(
+                        X_embedded[:, 0],
+                        X_embedded[:, 1],
+                        X_embedded[:, 2],
+                        c=hue_vals,
+                        cmap=cmap_name,
+                        alpha=0.8,
+                        s=50,
+                    )
+                    if is_discrete:
+                        ax_3d.legend(*sc.legend_elements(), loc="upper right", fontsize=6)
+                    ax_3d.set_xlabel("Dim 1")
+                    ax_3d.set_ylabel("Dim 2")
+                    ax_3d.set_zlabel("Dim 3")
+                    ax_3d.set_title(title_str, fontsize=14, fontweight="bold")
+                else:
+                    sub_gs = cell.subgridspec(2, 2, hspace=0.35, wspace=0.35)
+                    pairs = [(0, 1), (0, 2), (1, 2), (2, 3)]
+                    for k, (i, j) in enumerate(pairs[:4]):
+                        ax_sub = fig.add_subplot(sub_gs[k // 2, k % 2])
+                        sns.scatterplot(
+                            x=X_embedded[:, i],
+                            y=X_embedded[:, j],
+                            hue=hue_vals,
+                            palette=palette,
+                            alpha=0.8,
+                            s=40,
+                            ax=ax_sub,
+                            legend=False,
+                        )
+                        ax_sub.set_xlabel(f"Dim {i + 1}")
+                        ax_sub.set_ylabel(f"Dim {j + 1}")
+                        ax_sub.set_aspect("equal", adjustable="datalim")
+                        sns.despine(ax=ax_sub)
+                        if k == 0:
+                            ax_sub.set_title(title_str, fontsize=14, fontweight="bold")
 
             except Exception as e:
-                ax_scatter.text(0.5, 0.5, f"Error plotting: {e}", ha="center", va="center")
+                ax_fail = fig.add_subplot(cell)
+                ax_fail.text(0.5, 0.5, f"Error plotting: {e}", ha="center", va="center")
         else:
-            ax_scatter.text(0.5, 0.5, "Best shape object missing", ha="center", va="center")
+            ax_fail = fig.add_subplot(cell)
+            ax_fail.text(0.5, 0.5, "Best shape object missing", ha="center", va="center")
 
         ax_bar = fig.add_subplot(gs[row, col_offset + 1])
 
@@ -194,6 +275,7 @@ def create_plots(
         COL_CONTINUOUS: "Continuous Shape",
         COL_DISCRETE: "Discrete Shape",
         COL_SPATIAL: "Spatial Shape",
+        COL_USER_PROVIDED: "User Provided",
         COL_DEFAULT: "Other",
     }
 

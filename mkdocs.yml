@@ -2,14 +2,28 @@ site_name: smds
 site_url: https://ukplab.github.io/smds
 nav:
   - Home: index.md
+  - Examples:
+      - Family Tree Experiment: notebooks/family_tree.ipynb
+      - Find Manifold Location: notebooks/find_manifold_location.ipynb
+      - Find Hour-of-Day Manifold: notebooks/find_hour_of_day_manifold.ipynb
 
 theme:
   name: material
+  features:
+    - navigation.sections # Groups items in sidebar nicely
+    - content.code.copy   # Adds copy button to code blocks
 
 plugins:
   - search
   - mkdocstrings:
       handlers:
         python:
+          paths: [.]
           options:
             docstring_style: numpy
+            show_root_heading: true
+            show_source: true
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
+      show_input: true

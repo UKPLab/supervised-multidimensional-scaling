@@ -24,18 +24,50 @@ from smds import SupervisedMDS
 # Format: (shape_name, engine_fixture_name, data_fixture_name, score_min, procrustes_max)
 
 SHAPE_TEST_CASES = [
-    ("Chain", "chain_engine", "chain_data_10d", 0.90, 0.2),
-    ("Cluster", "cluster_engine", "cluster_data_10d", 0.80, 0.2),
-    ("DiscCircular", "disc_circular_engine", "disc_circular_data_10d", 0.70, 0.2),  # max score 0.87 without noise
-    ("Hierarchical", "hierarchical_engine", "hierarchical_data_10d", 0.90, 0.1),
-    ("Circular", "circular_engine", "circular_data_10d", 0.80, 0.1),
-    ("Cylindrical", "cylindrical_engine", "cylindrical_data_10d", 0.80, 0.1),
-    ("Spherical", "spherical_engine", "spherical_data_10d", 0.70, 0.2),
-    ("Geodesic", "geodesic_engine", "spherical_data_10d", 0.70, 0.2),  # max score 0.90 without noise
-    ("Spiral", "spiral_engine", "spiral_data_10d", 0.90, 0.1),
-    ("LogLinear", "log_linear_engine", "log_linear_data_10d", 0.70, 0.2),
-    ("Euclidean", "euclidean_engine", "euclidean_data_10d", 0.90, 0.1),
-    ("Semicircular", "semicircular_engine", "semicircular_data_10d", 0.70, 0.2),
+    ("Chain_ComputedStage1", "chain_engine_computed_stage1", "chain_data_10d", 0.90, 0.2),
+    ("Chain_UserProvidedStage1", "chain_engine_user_provided_stage1", "chain_data_10d", 0.85, 0.2),
+    ("Cluster_ComputedStage1", "cluster_engine_computed_stage1", "cluster_data_10d", 0.80, 0.2),
+    ("Cluster_UserProvidedStage1", "cluster_engine_user_provided_stage1", "cluster_data_10d", 0.80, 0.2),
+    (
+        "DiscCircular_ComputedStage1",
+        "disc_circular_engine_computed_stage1",
+        "disc_circular_data_10d",
+        0.70,
+        0.2,
+    ),  # max score 0.87 without noise
+    (
+        "DiscCircular_UserProvidedStage1",
+        "disc_circular_engine_user_provided_stage1",
+        "disc_circular_data_10d",
+        0.70,
+        0.2,
+    ),
+    ("Hierarchical_ComputedStage1", "hierarchical_engine_computed_stage1", "hierarchical_data_10d", 0.90, 0.1),
+    ("Hierarchical_UserProvidedStage1", "hierarchical_engine_user_provided_stage1", "hierarchical_data_10d", 0.90, 0.1),
+    ("Circular_ComputedStage1", "circular_engine_computed_stage1", "circular_data_10d", 0.80, 0.1),
+    ("Circular_UserProvidedStage1", "circular_engine_user_provided_stage1", "circular_data_10d", 0.80, 0.1),
+    ("Cylindrical_ComputedStage1", "cylindrical_engine_computed_stage1", "cylindrical_data_10d", 0.80, 0.1),
+    ("Cylindrical_UserProvidedStage1", "cylindrical_engine_user_provided_stage1", "cylindrical_data_10d", 0.80, 0.1),
+    ("Spherical_ComputedStage1", "spherical_engine_computed_stage1", "spherical_data_10d", 0.70, 0.2),
+    ("Spherical_UserProvidedStage1", "spherical_engine_user_provided_stage1", "spherical_data_10d", 0.70, 0.2),
+    (
+        "Geodesic_ComputedStage1",
+        "geodesic_engine_computed_stage1",
+        "spherical_data_10d",
+        0.70,
+        0.2,
+    ),  # max score 0.90 without noise
+    ("Geodesic_UserProvidedStage1", "geodesic_engine_user_provided_stage1", "spherical_data_10d", 0.70, 0.2),
+    ("Spiral_ComputedStage1", "spiral_engine_computed_stage1", "spiral_data_10d", 0.90, 0.1),
+    ("Spiral_UserProvidedStage1", "spiral_engine_user_provided_stage1", "spiral_data_10d", 0.90, 0.1),
+    ("LogLinear_ComputedStage1", "log_linear_engine_computed_stage1", "log_linear_data_10d", 0.70, 0.2),
+    ("LogLinear_UserProvidedStage1", "log_linear_engine_user_provided_stage1", "log_linear_data_10d", 0.70, 0.2),
+    ("Euclidean_ComputedStage1", "euclidean_engine_computed_stage1", "euclidean_data_10d", 0.90, 0.1),
+    ("Euclidean_UserProvidedStage1", "euclidean_engine_user_provided_stage1", "euclidean_data_10d", 0.90, 0.1),
+    ("Semicircular_ComputedStage1", "semicircular_engine_computed_stage1", "semicircular_data_10d", 0.70, 0.2),
+    ("Semicircular_UserProvidedStage1", "semicircular_engine_user_provided_stage1", "semicircular_data_10d", 0.70, 0.2),
+    ("KleinBottle_ComputedStage1", "klein_bottle_engine_computed_stage1", "klein_bottle_data_10d", 0.70, 0.2),
+    ("KleinBottle_UserProvidedStage1", "klein_bottle_engine_user_provided_stage1", "klein_bottle_data_10d", 0.70, 0.2),
     ("Torus", "torus_engine", "torus_data_10d", 0.65, 0.2),
 ]
 
@@ -60,14 +92,15 @@ def test_shape_smoke_execution(
     data_tuple = request.getfixturevalue(data_name)
 
     # The data fixture returns 3 values, we only need X and y for a smoke test
-    X_high, y, _ = data_tuple
+    X_high, y, x_original = data_tuple
+    y_for_fit = x_original if "UserProvidedStage1" in shape_name else y
 
     # Execution
-    X_proj = smds_engine.fit_transform(X_high, y)
+    X_proj = smds_engine.fit_transform(X_high, y_for_fit)
 
     # Assertion
     n_samples = X_high.shape[0]
-    n_components = smds_engine.n_components
+    n_components = smds_engine.stage_1_fitted_.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
         f"[{shape_name}] Output shape is incorrect. Expected {(n_samples, n_components)}, but got {X_proj.shape}."
@@ -99,9 +132,10 @@ def test_shape_recovers_structure_from_high_dim(
     data_tuple = request.getfixturevalue(data_name)
 
     X_high, y, X_original = data_tuple
+    y_for_fit = X_original if "UserProvidedStage1" in shape_name else y
 
     # Execution
-    X_proj = smds_engine.fit_transform(X_high, y)
+    X_proj = smds_engine.fit_transform(X_high, y_for_fit)
 
     # Assertion: Procrustes
     mtx1, mtx2, disparity = procrustes(X_original, X_proj)
@@ -112,6 +146,6 @@ def test_shape_recovers_structure_from_high_dim(
     )
 
     # Assertion: Score
-    score = smds_engine.score(X_high, y)
+    score = smds_engine.score(X_high, y_for_fit)
     assert score > score_min, f"[{shape_name}] SMDS score is too low. Expected > {score_min}, but got {score:.4f}."
     print(f"\n{shape_name}Shape: Integration Test passed with \n - Score {score:.2f} \n - Disparity {disparity:.2f}\n")

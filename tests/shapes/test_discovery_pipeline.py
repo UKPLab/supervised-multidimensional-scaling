@@ -9,9 +9,13 @@ import pandas as pd  # type: ignore[import-untyped]
 import pytest
 from numpy.typing import NDArray
 
+from smds import UserProvidedSMDSParametrization
 from smds.pipeline import discover_manifolds
+from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes import CircularShape, SpiralShape
 from smds.shapes.discrete_shapes import ClusterShape
+from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape
+from smds.smds import SMDSParametrization
 from smds.stress import StressMetrics
 
 
@@ -24,7 +28,7 @@ def test_pipeline_returns_dataframe(
     shapes = [ClusterShape(), CircularShape()]
 
     results, _ = discover_manifolds(
-        X, y, shapes=shapes, n_folds=2, experiment_name="Smoke_Test", save_results=False, clear_cache=True
+        X, y, shapes=shapes, n_folds=2, n_jobs=1, experiment_name="Smoke_Test", save_results=False, clear_cache=True
     )
 
     assert isinstance(results, pd.DataFrame)
@@ -57,7 +61,14 @@ def test_cluster_wins_on_cluster_data(
     ]
 
     results, _ = discover_manifolds(
-        X, y, shapes=shapes, n_folds=5, experiment_name="Cluster_Test", save_results=False, clear_cache=True
+        X,
+        y,
+        shapes=shapes,
+        n_folds=5,
+        n_jobs=1,
+        experiment_name="Cluster_Test",
+        save_results=False,
+        clear_cache=True,
     )
 
     # Sort by score descending
@@ -76,10 +87,46 @@ def test_circular_wins_on_circular_data(
 
     # Using default shapes list (shapes=None)
     results, _ = discover_manifolds(
-        X, y, n_folds=5, experiment_name="Circular_Test", save_results=False, clear_cache=True
+        X, y, n_folds=5, n_jobs=1, experiment_name="Circular_Test", save_results=False, clear_cache=True
     )
 
     results = results.sort_values("mean_scale_normalized_stress", ascending=False)
 
     winner = results.iloc[0]["shape"]
     assert winner == "CircularShape"
+
+
+def test_discover_manifolds_bypass(
+    cluster_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> None:
+    """Execution test: pipeline runs with bypass-style options (minimal CV, no save, no viz)."""
+    X, _, y_latent = cluster_data_10d
+
+    bypass_param = UserProvidedSMDSParametrization(n_components=2)
+    shapes: list[BaseShape | SMDSParametrization] = [
+        CylindricalShape(),
+        GeodesicShape(),
+        bypass_param,
+    ]
+
+    results, save_path = discover_manifolds(
+        X,
+        y_latent,
+        shapes=shapes,
+        n_folds=2,
+        n_jobs=-1,
+        save_results=False,
+        create_png_visualization=False,
+        clear_cache=True,
+        experiment_name="Bypass_Test",
+    )
+
+    assert isinstance(results, pd.DataFrame)
+    assert len(results) == 3
+    assert "UserProvidedSMDSParametrization" in results["shape"].values
+
+    assert save_path is None
+    for col in ["shape", "params", "error"]:
+        assert col in results.columns
+    for m in StressMetrics:
+        assert f"mean_{m.value}" in results.columns
