@@ -4,5 +4,6 @@ from .klein_bottle import KleinBottleShape
 from .log_linear import LogLinearShape
 from .semicircular import SemicircularShape
 from .spiral_shape import SpiralShape
+from .torus import TorusShape
 
-__all__ = ["CircularShape", "EuclideanShape", "LogLinearShape", "SemicircularShape", "SpiralShape", "KleinBottleShape"]
+__all__ = ["CircularShape", "EuclideanShape", "LogLinearShape", "SemicircularShape", "SpiralShape", "TorusShape", "KleinBottleShape"]

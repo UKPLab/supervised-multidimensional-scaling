@@ -68,6 +68,7 @@ SHAPE_TEST_CASES = [
     ("Semicircular_UserProvidedStage1", "semicircular_engine_user_provided_stage1", "semicircular_data_10d", 0.70, 0.2),
     ("KleinBottle_ComputedStage1", "klein_bottle_engine_computed_stage1", "klein_bottle_data_10d", 0.70, 0.2),
     ("KleinBottle_UserProvidedStage1", "klein_bottle_engine_user_provided_stage1", "klein_bottle_data_10d", 0.70, 0.2),
+    ("Torus", "torus_engine", "torus_data_10d", 0.65, 0.2),
 ]
 
 
