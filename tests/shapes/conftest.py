@@ -464,7 +464,7 @@ def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 @pytest.fixture(scope="module")
 def torus_engine() -> SupervisedMDS:
     # Use string identifier "torus" instead of class instance
-    return SupervisedMDS(n_components=3, manifold="torus", alpha=0.1)
+    return SupervisedMDS(manifold="torus", alpha=0.1)
 
 
 @pytest.fixture(scope="module")
