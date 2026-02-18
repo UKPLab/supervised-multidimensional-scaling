@@ -20,6 +20,7 @@ from smds.shapes.continuous_shapes import (
     LogLinearShape,
     SemicircularShape,
     SpiralShape,
+    TorusShape,
 )
 from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
@@ -456,6 +457,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             "euclidean": (lambda: EuclideanShape(), 1),
             "semicircular": (lambda: SemicircularShape(), 2),
             "klein_bottle": (lambda: KleinBottleShape(), 4),
+            "torus": (lambda: KleinBottleShape(), 3),
         }
         if manifold_name not in manifold_factories:
             valid = sorted(manifold_factories)
