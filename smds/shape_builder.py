@@ -176,6 +176,64 @@ class ShapeBuilder:
 
         return Y, df
 
+    @staticmethod
+    def circle_of_circles(
+        outer_angle_values: NDArray,
+        inner_angle_values: NDArray,
+        *,
+        outer_radius: float = 2.5,
+        inner_radius: float = 0.6,
+        outer_name: str = "outer_angle",
+        inner_name: str = "inner_angle",
+    ) -> Tuple[NDArray[np.float64], pd.DataFrame]:
+        """
+        Circular + Circular -> 2D circle of circles.
+
+        Places the center of a small circle at each point on a larger outer circle.
+        The final coordinates are in 2D:
+            center(theta) + inner_circle(phi)
+
+        Parameters
+        ----------
+        outer_angle_values : array-like
+            Values mapped to the outer circle angle (theta).
+        inner_angle_values : array-like
+            Values mapped to each local inner circle angle (phi).
+        outer_radius : float, default=2.5
+            Radius of the outer center circle.
+        inner_radius : float, default=0.6
+            Radius of each local circle.
+        outer_name : str, default="outer_angle"
+            Column name for outer-angle labels.
+        inner_name : str, default="inner_angle"
+            Column name for inner-angle labels.
+
+        Returns
+        -------
+        Y : NDArray of shape (n_points, 2)
+            2D coordinates for each point.
+        labels : DataFrame
+            Labels for each point.
+        """
+        outer_grid, inner_grid, df = ShapeBuilder._make_grid(
+            outer_angle_values, inner_angle_values, outer_name, inner_name
+        )
+
+        theta, _ = ShapeBuilder._map_to_circle(outer_grid)
+        phi, _ = ShapeBuilder._map_to_circle(inner_grid)
+
+        cx = float(outer_radius) * np.cos(theta)
+        cy = float(outer_radius) * np.sin(theta)
+
+        dx = float(inner_radius) * np.cos(phi)
+        dy = float(inner_radius) * np.sin(phi)
+
+        x = cx + dx
+        y = cy + dy
+
+        Y = np.column_stack([x, y]).astype(np.float64)
+        return Y, df
+
 
     @staticmethod
     def clusters_of_lines(
@@ -845,35 +903,51 @@ def plot_shape(
 
     customdata = labels_df.values
 
-    trace = go.Scatter3d(
-        x=x, y=y, z=z,
-        mode="markers",
-        customdata=customdata,
-        hovertemplate=hovertemplate,
-        marker=dict(
-            size=size,
-            opacity=opacity,
-            color=color_numeric,
-            colorscale=colorscale,
-            showscale=True,
-            colorbar=dict(
-                title=colorbar_title,
-                tickvals=tickvals,
-                ticktext=ticktext,
-            ) if is_categorical and tickvals else dict(title=colorbar_title),
-        ),
-        showlegend=False,
+    marker_common = dict(
+        size=size,
+        opacity=opacity,
+        color=color_numeric,
+        colorscale=colorscale,
+        showscale=True,
+        colorbar=dict(
+            title=colorbar_title,
+            tickvals=tickvals,
+            ticktext=ticktext,
+        ) if is_categorical and tickvals else dict(title=colorbar_title),
     )
 
-    fig = go.Figure(data=[trace])
-    fig.update_layout(
-        scene=dict(
-            aspectmode="data",
-            xaxis_title="X",
-            yaxis_title="Y",
-            zaxis_title="Z",
-        ),
-    )
+    if n_dims == 3:
+        trace = go.Scatter3d(
+            x=x, y=y, z=z,
+            mode="markers",
+            customdata=customdata,
+            hovertemplate=hovertemplate,
+            marker=marker_common,
+            showlegend=False,
+        )
+        fig = go.Figure(data=[trace])
+        fig.update_layout(
+            scene=dict(
+                aspectmode="data",
+                xaxis_title="X",
+                yaxis_title="Y",
+                zaxis_title="Z",
+            ),
+        )
+    else:
+        trace = go.Scatter(
+            x=x, y=y,
+            mode="markers",
+            customdata=customdata,
+            hovertemplate=hovertemplate,
+            marker=marker_common,
+            showlegend=False,
+        )
+        fig = go.Figure(data=[trace])
+        fig.update_layout(
+            xaxis=dict(title="X", scaleanchor="y", scaleratio=1),
+            yaxis=dict(title="Y"),
+        )
     
 
     if title is None:
@@ -962,8 +1036,37 @@ def main():
             output_file=filename, size=10
         )
 
-    # 4. Helix + Line (NEW!)
-    print("\n[4/4] Helix + Line (Linear + Helix)")
+    # 4. Circle of Circles (2D)
+    print("\n[4/5] Circle of Circles (Circular + Circular, 2D)")
+    print("-"*80)
+    coc_configs = [
+        (8, 6, "8x6", 2.3, 0.5),
+        (10, 8, "10x8", 2.8, 0.6),
+        (12, 10, "12x10", 3.2, 0.7),
+    ]
+    for n_outer, n_inner, label, outer_r, inner_r in coc_configs:
+        outer_angles = np.arange(n_outer)
+        inner_angles = np.arange(n_inner)
+
+        Y, labels = ShapeBuilder.circle_of_circles(
+            outer_angles,
+            inner_angles,
+            outer_radius=outer_r,
+            inner_radius=inner_r,
+        )
+
+        filename = f"circle_of_circles_{label}.html"
+        plot_shape(
+            Y,
+            labels,
+            color_by='outer_angle',
+            title=f"Circle of Circles: outer={n_outer}, inner={n_inner} (2D)",
+            output_file=filename,
+            size=8,
+        )
+
+    # 5. Helix + Line
+    print("\n[5/5] Helix + Line (Linear + Helix)")
     print("-"*80)
     
     helix_configs = [
@@ -998,12 +1101,13 @@ def main():
         )
 
     print("\n" + "="*80)
-    print(f"✓ Generated {len(test_configs) * 3 + len(helix_configs)} HTML visualizations")
+    print(f"✓ Generated {len(test_configs) * 3 + len(coc_configs) + len(helix_configs)} HTML visualizations")
     print("="*80)
     print("\nFiles created:")
     print("  - clusters_of_clusters_{2,3,4,5,6,8}_clusters.html")
     print("  - clusters_of_lines_{2,3,4,5,6,8}_clusters.html")
     print("  - clusters_of_circles_{2,3,4,5,6,8}_clusters.html")
+    print("  - circle_of_circles_{8x6,10x8,12x10}.html")
     print("  - helix_plus_line_{3,5,7,4_dense,6_tight,8}_helices.html")
 
 if __name__ == "__main__":
