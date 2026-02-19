@@ -5,8 +5,8 @@ nav:
   - Usage Walkthrough: usage.md
   - Available Shapes: shapes.md
   - Examples:
-      - Family Tree Experiment: notebooks/family_tree.ipynb
       - Find Manifold Location: notebooks/find_manifold_location.ipynb
+      - Family Tree Experiment: notebooks/family_tree.ipynb
       - Find Hour-of-Day Manifold: notebooks/hour_experiment.ipynb
       - Adding a custom Shape: examples/custom_shape.md
 
