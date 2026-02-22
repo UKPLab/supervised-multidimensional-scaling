@@ -3,6 +3,7 @@ import pytest
 
 from smds import SupervisedMDS
 
+
 @pytest.fixture
 def engine() -> SupervisedMDS:
     return SupervisedMDS(manifold="torus", alpha=0.1)
@@ -21,5 +22,5 @@ def y() -> np.typing.NDArray[np.float64]:
 def test_torus_smoke(engine: SupervisedMDS, X: np.typing.NDArray[np.float64], y: np.typing.NDArray[np.float64]) -> None:
     engine.fit(X, y)
     X_proj = engine.transform(X)
-    
+
     assert X_proj.shape == (100, 3)

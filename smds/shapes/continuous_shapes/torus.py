@@ -30,10 +30,12 @@ class TorusShape(BaseShape):
 
     @property
     def y_ndim(self) -> int:
+        """Get the expected number of dimensions for the Torus topology."""
         return 2
 
     @property
     def normalize_labels(self) -> bool:
+        """Check whether labels should be normalized to the unit square."""
         return self._normalize_labels_flag
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:

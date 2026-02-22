@@ -457,7 +457,7 @@ def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
     X_latent = np.stack([x1, x2, x3, x4], axis=1)
 
     return _project_and_shuffle(X_latent, y)
-  
+
 # =============================================================================
 # TORUS SETUP
 # =============================================================================
