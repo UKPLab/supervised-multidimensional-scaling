@@ -40,7 +40,7 @@ def non_metric_stress(d_true: NDArray[np.float64], d_pred: NDArray[np.float64]) 
     d_pred = check_array(d_pred, ensure_2d=False, dtype=np.float64)
     check_consistent_length(d_true, d_pred)
 
-    ir = IsotonicRegression(increasing=True)
+    ir = IsotonicRegression(increasing=True, out_of_bounds="clip")
     d_hat = ir.fit_transform(d_true, d_pred)
 
     numerator = np.sum((d_hat - d_pred) ** 2)
