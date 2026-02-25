@@ -456,6 +456,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             "euclidean": (lambda: EuclideanShape(), 1),
             "semicircular": (lambda: SemicircularShape(), 2),
             "klein_bottle": (lambda: KleinBottleShape(), 4),
+            "torus": (lambda: KleinBottleShape(), 3),
         }
         if manifold_name not in manifold_factories:
             valid = sorted(manifold_factories)
