@@ -464,7 +464,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             "semicircular": (lambda: SemicircularShape(), 2),
             "klein_bottle": (lambda: KleinBottleShape(), 4),
             "torus": (lambda: KleinBottleShape(), 3),
-            "graph_geodesic": (lambda: GraphGeodesicShape(), 2),
+            "graph_geodesic": (lambda: GraphGeodesicShape(), 3),
             "polytope": (lambda: PolytopeShape(), 3),
         }
         if manifold_name not in manifold_factories:

@@ -32,7 +32,7 @@ class GraphGeodesicShape(BaseShape):
     @property
     def y_ndim(self) -> int:
         """Dimensionality of the input labels."""
-        return 3
+        return 2
 
     @property
     def normalize_labels(self) -> bool:
@@ -43,6 +43,8 @@ class GraphGeodesicShape(BaseShape):
         y_proc = np.asarray(y, dtype=np.float64)
         if y_proc.ndim == 1:
             y_proc = y_proc.reshape(-1, 1)
+        if y_proc.ndim != 2:
+            raise ValueError(f"GraphGeodesic expects 2D input (n_samples, n_features), got {y_proc.ndim}D")
         return y_proc
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
