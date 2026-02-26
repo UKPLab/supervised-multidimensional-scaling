@@ -141,4 +141,4 @@ supervised_multidimensional_scaling/sketch*
 # Manifold Discovery Results
 .cache/
 saved_results/
-st_results/.DS_Store
+st_results/
