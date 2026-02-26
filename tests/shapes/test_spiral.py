@@ -10,13 +10,14 @@ from smds.shapes.continuous_shapes import SpiralShape
 
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
-    return SupervisedMDS(n_components=2, manifold=SpiralShape())
+    return SupervisedMDS(stage_1="computed", manifold="spiral")
 
 
 @pytest.fixture
 def random_data() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    X: NDArray[np.float64] = np.random.randn(50, 10)
-    y: NDArray[np.float64] = np.random.rand(50)  # Continuous values for spiral
+    rng = np.random.default_rng(42)
+    X: NDArray[np.float64] = rng.standard_normal((50, 10))
+    y: NDArray[np.float64] = rng.standard_normal((50,))  # Continuous values for spiral
     return X, y
 
 
@@ -69,7 +70,7 @@ def test_compute_distances_values(
     init_radius: float, growth: float, turns: float, y_input: NDArray[np.float64], expected_sum: float
 ) -> None:
     """
-    verify degenerate edge cases where the spiral parameters force all input points to map to the exact same physical
+    Verify degenerate edge cases where the spiral parameters force all input points to map to the exact same physical
      location
     """
     shape = SpiralShape(initial_radius=init_radius, growth_rate=growth, num_turns=turns)
@@ -93,7 +94,7 @@ def test_spiral_smoke_test(
     X_proj: NDArray[np.float64] = smds_engine.fit_transform(X, y)
 
     n_samples = X.shape[0]
-    n_components = smds_engine.n_components
+    n_components = smds_engine.stage_1_fitted_.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
         f"Output shape is incorrect. "

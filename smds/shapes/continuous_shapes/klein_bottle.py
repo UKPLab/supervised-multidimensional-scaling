@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.typing import NDArray
-from sklearn.decomposition import PCA  # type: ignore[import-untyped]
 
 from smds.shapes.base_shape import BaseShape
 
@@ -10,16 +9,24 @@ class KleinBottleShape(BaseShape):
     Manifold hypothesis representing a Klein Bottle topology.
 
     This shape assumes the data lies on a 2D surface that is non-orientable.
+    Requires exactly 2 dimensions as (u, v) parameters. If < 2 dimensions,
+    zeros are padded. If > 2 dimensions, raises an error. Maps these 2
+    dimensions to the unit square [0, 1] x [0, 1]. Computes pairwise distances
+    respecting the Klein bottle identifications:
+    - Top/Bottom edges match (Cylinder): (u, 0) ~ (u, 1)
+    - Left/Right edges match with a Twist (Möbius): (0, v) ~ (1, 1-v)
 
-    Logic:
-    1. Dimensionality Reduction: If the input 'y' has > 2 dimensions (e.g., 4),
-       it projects them down to 2 dimensions using PCA to capture the
-       "dimensions with most availability" (variance).
-    2. Parametrization: Maps these 2 dimensions to the unit square [0, 1] x [0, 1].
-    3. Distance Calculation: Computes pairwise distances respecting the Klein
-       bottle identifications:
-       - Top/Bottom edges match (Cylinder): (u, 0) ~ (u, 1)
-       - Left/Right edges match with a Twist (Möbius): (0, v) ~ (1, 1-v)
+    Reference: Wolfram MathWorld: https://mathworld.wolfram.com/KleinBottle.html
+
+    Parameters
+    ----------
+    normalize_labels : bool, optional
+        Whether to normalize labels to the range [0, 1]. Default is True.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (2). Expects (u, v) parameters.
     """
 
     def __init__(self, normalize_labels: bool = True):
@@ -27,15 +34,17 @@ class KleinBottleShape(BaseShape):
 
     @property
     def y_ndim(self) -> int:
+        """int: Dimensionality of input labels (2). Expects (u, v) parameters."""
         return 2
 
     @property
     def normalize_labels(self) -> bool:
+        """bool: Whether input labels are normalized."""
         return self._normalize_labels_flag
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Validates input and reduces dimensions if necessary via PCA.
+        Validates input and ensures exactly 2 dimensions for (u, v) parameters.
         """
         y_proc = np.asarray(y, dtype=np.float64)
 
@@ -48,14 +57,10 @@ class KleinBottleShape(BaseShape):
         n_samples, n_features = y_proc.shape
 
         if n_features > 2:
-            n_components = 2
-            if n_samples < n_components:
-                y_new = np.zeros((n_samples, 2))
-                y_new[:, : min(n_features, 2)] = y_proc[:, : min(n_features, 2)]
-                y_proc = y_new
-            else:
-                pca = PCA(n_components=2)
-                y_proc = pca.fit_transform(y_proc)
+            raise ValueError(
+                f"Klein Bottle requires exactly 2 dimensions (u, v), but got {n_features} dimensions. "
+                "Please provide y with shape (n_samples, 2)."
+            )
 
         elif n_features < 2:
             zeros = np.zeros((n_samples, 2 - n_features))

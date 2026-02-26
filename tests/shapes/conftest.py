@@ -457,3 +457,31 @@ def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
     X_latent = np.stack([x1, x2, x3, x4], axis=1)
 
     return _project_and_shuffle(X_latent, y)
+
+# =============================================================================
+# TORUS SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def torus_engine() -> SupervisedMDS:
+    # Use string identifier "torus" instead of class instance
+    return SupervisedMDS(manifold="torus", alpha=0.1)
+
+
+@pytest.fixture(scope="module")
+def torus_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Generates 10D data with a latent 3D Torus structure."""
+    n_samples = 100
+    rng = np.random.default_rng(42)
+    u_raw = rng.uniform(0, 1, n_samples)
+    v_raw = rng.uniform(0, 1, n_samples)
+    y = np.stack([u_raw, v_raw], axis=1)
+
+    u = u_raw * 2 * np.pi
+    v = v_raw * 2 * np.pi
+    R = 3  # Major radius
+    r = 1  # Minor radius
+    x = (R + r * np.cos(v)) * np.cos(u)
+    y_coord = (R + r * np.cos(v)) * np.sin(u)
+    z = r * np.sin(v)
+    X_latent = np.stack([x, y_coord, z], axis=1)
+    return _project_and_shuffle(X_latent, y)
