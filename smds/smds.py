@@ -21,7 +21,14 @@ from smds.shapes.continuous_shapes import (
     SemicircularShape,
     SpiralShape,
 )
-from smds.shapes.discrete_shapes import ChainShape, ClusterShape, DiscreteCircularShape, HierarchicalShape
+from smds.shapes.discrete_shapes import (
+    ChainShape,
+    ClusterShape,
+    DiscreteCircularShape,
+    GraphGeodesicShape,
+    HierarchicalShape,
+    PolytopeShape,
+)
 from smds.shapes.spatial_shapes import CylindricalShape, GeodesicShape, SphericalShape
 from smds.stress import (
     StressMetrics,
@@ -457,6 +464,8 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             "semicircular": (lambda: SemicircularShape(), 2),
             "klein_bottle": (lambda: KleinBottleShape(), 4),
             "torus": (lambda: KleinBottleShape(), 3),
+            "graph_geodesic": (lambda: GraphGeodesicShape(), 2),
+            "polytope": (lambda: PolytopeShape(), 3),
         }
         if manifold_name not in manifold_factories:
             valid = sorted(manifold_factories)
@@ -607,7 +616,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             loss = torch.mean(torch.square(diff[mask_t]))
 
             # Backward
-            loss.backward() # type: ignore[no-untyped-call]
+            loss.backward()  # type: ignore[no-untyped-call]
             optimizer.step()
 
             # Early Stopping Check (every 50 epochs)
@@ -620,10 +629,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         return W_t.detach().cpu().numpy()
 
     def _fit_scipy(
-            self,
-            X: NDArray[np.float64],
-            D: NDArray[np.float64],
-            mask: NDArray[np.bool_],
+        self,
+        X: NDArray[np.float64],
+        D: NDArray[np.float64],
+        mask: NDArray[np.bool_],
     ) -> NDArray[np.float64]:
         """
         Solver using SciPy (L-BFGS-B) for CPU-based optimization.

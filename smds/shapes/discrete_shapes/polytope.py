@@ -1,59 +1,79 @@
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse.csgraph import shortest_path  # type: ignore[import-untyped]
-from sklearn.neighbors import kneighbors_graph  # type: ignore[import-untyped]
 
 from smds.shapes.base_shape import BaseShape
 
 
 class PolytopeShape(BaseShape):
     """
-    A generic discrete shape hypothesis that approximates the manifold structure
-    using a K-Nearest Neighbors (KNN) Geodesic Graph (Isomap approach).
+    Manifold hypothesis representing a Polytope topology.
 
-    Logic:
-    1. Graph Construction: Connects each point to its 'k' nearest neighbors.
-    2. Geodesic Distance: Defines distance between two points as the shortest
-       path along the graph edges, rather than the straight Euclidean line.
-
-    This allows the model to "unfold" arbitrary curved shapes (like Swiss Rolls
-    or folded paper) without knowing their equation beforehand.
-
-    Hyperparameters:
-        n_neighbors (int): Number of neighbors to connect. Default is 5.
-                           - Too small: Graph might be disconnected.
-                           - Too large: Short-circuits the manifold (shortcuts).
+    This shape logic tries to push the n_clusters passed as an argument
+    as far away as possible from each other on an n-dimensional unit sphere
+    using iterative repulsion.
     """
 
-    def __init__(self, n_neighbors: int = 5, normalize_labels: bool = True):
-        self.n_neighbors = n_neighbors
+    def __init__(
+        self,
+        n_dim: int = 3,
+        n_iter: int = 500,
+        lr: float = 0.1,
+        seed: int | None = None,
+        normalize_labels: bool = False,
+    ):
+        self.n_dim = n_dim
+        self.n_iter = n_iter
+        self.lr = lr
+        self.seed = seed
         self._normalize_labels_flag = normalize_labels
 
     @property
     def y_ndim(self) -> int:
-        return 3
+        """Dimensionality of the input labels."""
+        return 1
 
     @property
     def normalize_labels(self) -> bool:
+        """Whether to normalize the input labels."""
         return self._normalize_labels_flag
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        y_proc = np.asarray(y, dtype=np.float64)
-        if y_proc.ndim == 1:
-            y_proc = y_proc.reshape(-1, 1)
+        y_proc = np.asarray(y, dtype=np.float64).squeeze()
+        if y_proc.size == 0:
+            raise ValueError("Input 'y' cannot be empty.")
+        if y_proc.ndim == 0:
+            y_proc = y_proc.reshape(1)
+        elif y_proc.ndim > 1:
+            raise ValueError("PolytopeShape expects 1D cluster labels.")
         return y_proc
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        y_proc = np.asarray(y, dtype=np.float64)
-        n_samples = y_proc.shape[0]
+        """
+        Generates a distance matrix D between all points in y, where points with
+        different labels are maximally spread out in n_dim dimensions.
+        """
+        rng = np.random.default_rng(self.seed)
+        labels, inverse_indices = np.unique(y, return_inverse=True)
+        C = len(labels)
 
-        effective_k = min(self.n_neighbors, n_samples - 1)
-        if effective_k < 1:
-            effective_k = 1
+        V = rng.normal(size=(self.n_dim, C))
+        V /= np.linalg.norm(V, axis=0, keepdims=True)
 
-        graph = kneighbors_graph(y_proc, n_neighbors=effective_k, mode="distance", include_self=False)
+        for _ in range(self.n_iter):
+            diff = V[:, :, None] - V[:, None, :]
 
-        dist_matrix = shortest_path(csgraph=graph, method="auto", directed=False)
+            dist_sq = np.sum(diff**2, axis=0) + 1e-8
+            inv_dist = 1.0 / dist_sq
 
-        result = np.asarray(dist_matrix, dtype=np.float64)
-        return result
+            np.fill_diagonal(inv_dist, 0)
+
+            forces = np.sum(diff * inv_dist[None, :, :], axis=2)
+            V += self.lr * forces
+            V /= np.linalg.norm(V, axis=0, keepdims=True)
+
+        y_vertices = V[:, inverse_indices].T
+
+        diff_y = y_vertices[:, None, :] - y_vertices[None, :, :]
+        dist_matrix: NDArray[np.float64] = np.linalg.norm(diff_y, axis=-1)
+
+        return dist_matrix

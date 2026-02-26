@@ -458,6 +458,7 @@ def klein_bottle_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], N
 
     return _project_and_shuffle(X_latent, y)
 
+
 # =============================================================================
 # TORUS SETUP
 # =============================================================================
@@ -484,4 +485,61 @@ def torus_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[
     y_coord = (R + r * np.cos(v)) * np.sin(u)
     z = r * np.sin(v)
     X_latent = np.stack([x, y_coord, z], axis=1)
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# GRAPH GEODESIC SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def graph_geodesic_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(stage_1="computed", manifold="graph_geodesic")
+
+
+@pytest.fixture(scope="module")
+def graph_geodesic_engine_user_provided_stage1(
+    graph_geodesic_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    return SupervisedMDS(stage_1="user_provided", manifold="graph_geodesic")
+
+
+@pytest.fixture(scope="module")
+def graph_geodesic_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    n_samples = 100
+    rng = np.random.default_rng(42)
+    # Latent Swiss Roll
+    t = 1.5 * np.pi * (1 + 2 * rng.random(n_samples))
+    h = 21 * rng.random(n_samples)
+    x = t * np.cos(t)
+    y_coord = h
+    z = t * np.sin(t)
+    X_latent = np.stack([x, y_coord, z], axis=1)
+    y = X_latent.copy()  # Graph geodesic expects the coordinates as y
+    return _project_and_shuffle(X_latent, y)
+
+
+# =============================================================================
+# POLYTOPE SETUP
+# =============================================================================
+@pytest.fixture(scope="module")
+def polytope_engine_computed_stage1() -> SupervisedMDS:
+    return SupervisedMDS(stage_1="computed", manifold="polytope")
+
+
+@pytest.fixture(scope="module")
+def polytope_engine_user_provided_stage1(
+    polytope_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
+) -> SupervisedMDS:
+    return SupervisedMDS(stage_1="user_provided", manifold="polytope")
+
+
+@pytest.fixture(scope="module")
+def polytope_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    n_per_cluster = 10
+    # 4 distinct categories (1D array)
+    y = np.repeat([0, 1, 2, 3], n_per_cluster).astype(float)
+
+    # Random 3D latent data (Polytope focuses on label separation, so exact shape varies)
+    rng = np.random.default_rng(42)
+    X_latent = rng.standard_normal((len(y), 3))
     return _project_and_shuffle(X_latent, y)

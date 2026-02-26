@@ -22,8 +22,9 @@ from numpy.typing import NDArray
 from smds import SupervisedMDS
 
 
-def generate_large_synthetic_data(n_samples: int, n_features: int = 768, seed: int = 42) -> tuple[NDArray[np.float64],
-NDArray[np.float64]]:
+def generate_large_synthetic_data(
+    n_samples: int, n_features: int = 768, seed: int = 42
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """
     Generates a large synthetic dataset representing a latent cycle/chain
     projected into high-dimensional space with noise.
