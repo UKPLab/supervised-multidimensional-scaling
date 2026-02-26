@@ -37,4 +37,4 @@ def test_graph_geodesic_smoke(
     engine.fit(X, y_swiss_roll)
     X_proj = engine.transform(X)
 
-    assert X_proj.shape == (100, 2)
+    assert X_proj.shape == (100, 3)
