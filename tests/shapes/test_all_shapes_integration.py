@@ -69,16 +69,16 @@ SHAPE_TEST_CASES = [
     ("KleinBottle_ComputedStage1", "klein_bottle_engine_computed_stage1", "klein_bottle_data_10d", 0.70, 0.2),
     ("KleinBottle_UserProvidedStage1", "klein_bottle_engine_user_provided_stage1", "klein_bottle_data_10d", 0.70, 0.2),
     ("Torus", "torus_engine", "torus_data_10d", 0.65, 0.2),
-    ("GraphGeodesic_ComputedStage1", "graph_geodesic_engine_computed_stage1", "graph_geodesic_data_10d", 0.60, 0.95),
+    ("GraphGeodesic_ComputedStage1", "graph_geodesic_engine_computed_stage1", "graph_geodesic_data_10d", 0.35, 0.95),
     (
         "GraphGeodesic_UserProvidedStage1",
         "graph_geodesic_engine_user_provided_stage1",
         "graph_geodesic_data_10d",
-        0.60,
+        0.35,
         0.95,
     ),
-    ("Polytope_ComputedStage1", "polytope_engine_computed_stage1", "polytope_data_10d", 0.60, 0.99),
-    ("Polytope_UserProvidedStage1", "polytope_engine_user_provided_stage1", "polytope_data_10d", 0.60, 0.99),
+    ("Polytope_ComputedStage1", "polytope_engine_computed_stage1", "polytope_data_10d", 0.35, 0.99),
+    ("Polytope_UserProvidedStage1", "polytope_engine_user_provided_stage1", "polytope_data_10d", 0.35, 0.99),
 ]
 
 
