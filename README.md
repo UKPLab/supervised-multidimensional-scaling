@@ -95,47 +95,6 @@ The discovery pipeline handles:
 - **Caching**: Caches intermediate results to resume interrupted experiments.
 - **Visualization**: Generates interactive plots for the dashboard.
 
-## Optimization & GPU Support
-
-For manifolds with undefined distances (e.g. `ChainShape`), SMDS falls back to a generic SciPy solver.  
-For large datasets, this can be slow.
-
-SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can transparently leverage GPUs when available.
-
-### Enabling the Accelerator
-
-Install SMDS with the optional `fast` extra:
-
-```bash
-  pip install smds[fast]
-```
-
-Then enable it in your model:
-```python
-smds = SupervisedMDS(
-    ...,
-    manifold="chain",
-    gpu_accel=True,
-)
-```
-If a compatible GPU is available, PyTorch will use it automatically.
-Otherwise, the accelerated solver will run on CPU.
-
->💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
-See the official PyTorch documentation for platform-specific setup.
-
-## Development (for contributors)
-
-This seciton is especially usefull if you consider contributing to the library!
-
-### Documentation
-
-To build and serve the documentation locally:
-
-```bash
-mkdocs serve
-```
-
 ### Statistical Validation
 
 Standard cross-validation provides a mean score, but it does not tell you if one manifold is *statistically* better than another. SMDS includes a robust **Statistical Testing (ST)** wrapper that runs repeated experiments to perform a **Friedman Rank Sum Test** and **Nemenyi Post-Hoc Analysis**.
@@ -170,7 +129,46 @@ python smds/pipeline/open_dashboard.py
 Run the test suite using pytest:
 
 ```bash
-make test
+  make test
+```
+
+### Optimization & GPU Support
+
+For manifolds with undefined distances (e.g. `ChainShape`), SMDS falls back to a generic SciPy solver.  
+For large datasets, this can be slow.
+
+SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can transparently leverage GPUs when available.
+
+#### Enabling the Accelerator
+
+Install SMDS with the optional `fast` extra:
+
+```bash
+  pip install smds[fast]
+```
+
+Then enable it in your model:
+```python
+smds = SupervisedMDS(
+    ...,
+    manifold="chain",
+    gpu_accel=True,
+)
+```
+If a compatible GPU is available, PyTorch will use it automatically.
+Otherwise, the accelerated solver will run on CPU.
+
+>💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
+See the official PyTorch documentation for platform-specific setup.
+
+### Documentation
+
+The full online documentation is available at  [SMDS Documentation](https://ukplab.github.io/supervised-multidimensional-scaling/).
+
+To build and serve the documentation locally:
+
+```bash
+mkdocs serve
 ```
 
 ## Contributors (the Shape Wizards team)
@@ -178,6 +176,19 @@ make test
 <a href="https://github.com/UKPLab/supervised-multidimensional-scaling/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=UKPLab/supervised-multidimensional-scaling" />
 </a>
+
+## Contribution Matrix
+
+| Category                                | Anton | Arwin                                             | Jan | Simon                                                             | Vinayak |
+|-----------------------------------------|--------|---------------------------------------------------|-----|-------------------------------------------------------------------|----------|
+| Shape Implementation                    | Geodesic, Cylindrical, Spherical | KleinBottle, HierarchicalShape                    | CircularShape, SpiralShape | ClusterShape, DiscreteCircular, ChainShape                        | LogLinear, Euclidean, SemiCircular, Torus, Polytope, GraphGeodesic |
+| Architectural Extensions                | BaseShape, Precomputed manifolds (Y bypass) | BaseShape, AlternativeReducer                     |  |                                                                   |  |
+| Stress Metrics                          |  | Non-metric stress                                 | Stress base class, Metric framework architecture, Shepard Goodness Score |                                                                   | Normalized stress, KL divergence |
+| Discovery, Visualization & Validation   |  | Discovery Pipeline, png-Visualization             |  | Discovery Pipeline, Dashboard, Statistical Testing                |  |
+| Infrastructure, Tooling, Testing & Performance |  | Unified stress tests, sklearn compatibility tests | Tool selection, CI/CD, Environment config, PyPI, GitHub Actions, Documentation | Shape Integration Test Framework, GPU acceleration for ChainShape |  |
+| Experiments                             | Manifold Activation Patching | Hour of Manifold Experiment                       | Family Tree Experiment | Manifold Location Experiment                                      | Color Manifolds in VLMs |
+
+
 
 ## Cite
 
