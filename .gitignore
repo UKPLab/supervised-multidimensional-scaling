@@ -142,3 +142,5 @@ supervised_multidimensional_scaling/sketch*
 .cache/
 saved_results/
 st_results/
+# Mac system files
+.DS_Store
