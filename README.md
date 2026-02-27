@@ -23,18 +23,21 @@ Don't hesitate to report an issue if you have further questions or spot a bug.
 ## Getting started
 
 With uv (recommended):
+
 ```shell
 uv add smds
 ```
 
 With pip:
+
 ```bash
 pip install smds
 ```
 
 ## Usage
 
-The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS, it requires selecting a stage-1 strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
+The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS,
+it requires selecting a stage-1 strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
 
 ### Fit & Transform
 
@@ -74,12 +77,12 @@ from smds.pipeline import open_dashboard
 # Evaluates default shapes (Cluster, Circular, Hierarchical, etc.)
 # Returns a DataFrame sorted by best fit (lowest stress / highest score)
 df_results, save_path = discover_manifolds(
-    X, 
-    y, 
-    smds_components=2,           # Target dimensionality
-    n_folds=5,                   # Cross-validation folds
-    experiment_name="My_Exp",    # Name for saved results
-    n_jobs=-1                    # Use all available cores
+    X,
+    y,
+    smds_components=2,  # Target dimensionality
+    n_folds=5,  # Cross-validation folds
+    experiment_name="My_Exp",  # Name for saved results
+    n_jobs=-1  # Use all available cores
 )
 
 print(f"Best matching shape: {df_results.iloc[0]['shape']}")
@@ -90,6 +93,7 @@ open_dashboard.main(save_path)
 ```
 
 The discovery pipeline handles:
+
 - **Hypothesis Testing**: Iterates through a default or custom list of manifold shapes.
 - **Cross-Validation**: Uses k-fold CV to ensure robust scoring.
 - **Caching**: Caches intermediate results to resume interrupted experiments.
@@ -97,7 +101,9 @@ The discovery pipeline handles:
 
 ### Statistical Validation
 
-Standard cross-validation provides a mean score, but it does not tell you if one manifold is *statistically* better than another. SMDS includes a robust **Statistical Testing (ST)** wrapper that runs repeated experiments to perform a **Friedman Rank Sum Test** and **Nemenyi Post-Hoc Analysis**.
+Standard cross-validation provides a mean score, but it does not tell you if one manifold is *statistically* better than
+another. SMDS includes a robust **Statistical Testing (ST)** wrapper that runs repeated experiments to perform a *
+*Friedman Rank Sum Test** and **Nemenyi Post-Hoc Analysis**.
 
 #### Running a Statistical Test
 
@@ -108,8 +114,8 @@ from smds.pipeline.statistical_testing.run_statistical_test import run_statistic
 
 # Runs the pipeline 10 times (10 repeats), each with 5-Fold CV
 pivot_dfs, output_path = run_statistical_validation(
-    X=my_data, 
-    y=my_labels, 
+    X=my_data,
+    y=my_labels,
     n_repeats=10,
     n_folds=5,
     experiment_name="my_robust_experiment"
@@ -137,7 +143,8 @@ Run the test suite using pytest:
 For manifolds with undefined distances (e.g. `ChainShape`), SMDS falls back to a generic SciPy solver.  
 For large datasets, this can be slow.
 
-SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can transparently leverage GPUs when available.
+SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can
+transparently leverage GPUs when available.
 
 #### Enabling the Accelerator
 
@@ -148,6 +155,7 @@ Install SMDS with the optional `fast` extra:
 ```
 
 Then enable it in your model:
+
 ```python
 smds = SupervisedMDS(
     ...,
@@ -155,15 +163,17 @@ smds = SupervisedMDS(
     gpu_accel=True,
 )
 ```
+
 If a compatible GPU is available, PyTorch will use it automatically.
 Otherwise, the accelerated solver will run on CPU.
 
->💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
-See the official PyTorch documentation for platform-specific setup.
+> 💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
+> See the official PyTorch documentation for platform-specific setup.
 
 ### Documentation
 
-The full online documentation is available at  [SMDS Documentation](https://ukplab.github.io/supervised-multidimensional-scaling/).
+The full online documentation is available
+at  [SMDS Documentation](https://ukplab.github.io/supervised-multidimensional-scaling/).
 
 To build and serve the documentation locally:
 
@@ -179,16 +189,14 @@ mkdocs serve
 
 ## Contribution Matrix
 
-| Category                                | Anton | Arwin                                             | Jan | Simon                                                             | Vinayak |
-|-----------------------------------------|--------|---------------------------------------------------|-----|-------------------------------------------------------------------|----------|
-| Shape Implementation                    | Geodesic, Cylindrical, Spherical | KleinBottle, HierarchicalShape                    | CircularShape, SpiralShape | ClusterShape, DiscreteCircular, ChainShape                        | LogLinear, Euclidean, SemiCircular, Torus, Polytope, GraphGeodesic |
-| Architectural Extensions                | BaseShape, Precomputed manifolds (Y bypass) | BaseShape, AlternativeReducer                     |  |                                                                   |  |
-| Stress Metrics                          |  | Non-metric stress                                 | Stress base class, Metric framework architecture, Shepard Goodness Score |                                                                   | Normalized stress, KL divergence |
-| Discovery, Visualization & Validation   |  | Discovery Pipeline, png-Visualization             |  | Discovery Pipeline, Dashboard, Statistical Testing                |  |
-| Infrastructure, Tooling, Testing & Performance |  | Unified stress tests, sklearn compatibility tests | Tool selection, CI/CD, Environment config, PyPI, GitHub Actions, Documentation | Shape Integration Test Framework, GPU acceleration for ChainShape |  |
-| Experiments                             | Manifold Activation Patching | Hour of Manifold Experiment                       | Family Tree Experiment | Manifold Location Experiment                                      | Color Manifolds in VLMs |
-
-
+| Category                                       | Anton                                       | Arwin                                             | Jan                                                                                                                                                                                                                                                                                 | Simon                                                             | Vinayak                                                            |
+|------------------------------------------------|---------------------------------------------|---------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------------------------------|
+| Shape Implementation                           | Geodesic, Cylindrical, Spherical            | KleinBottle, HierarchicalShape                    | Shapes:<br>CircularShape<br>SpiralShape                                                                                                                                                                                                                                                             | ClusterShape, DiscreteCircular, ChainShape                        | LogLinear, Euclidean, SemiCircular, Torus, Polytope, GraphGeodesic |
+| Architectural Extensions                       | BaseShape, Precomputed manifolds (Y bypass) | BaseShape, AlternativeReducer                     | Base shape abstraction<br>Design and implementation of stress metrics following sklearn conventions following research papers                                                                                                                                                     |                                                                   |                                                                    |
+| Stress Metrics                                 |                                             | Non-metric stress                                 |                                                                                                                                                                                                                                                                                     |                                                                   | Normalized stress, KL divergence                                   |
+| Discovery, Visualization & Validation          |                                             | Discovery Pipeline, png-Visualization             |                                                                                                                                                                                                                                                                                     | Discovery Pipeline, Dashboard, Statistical Testing                |                                                                    |
+| Infrastructure, Tooling, Testing & Performance |                                             | Unified stress tests, sklearn compatibility tests | Leading engineering efforts: Implementing CI/CD pipelines<br>Implementing environment reproducibility<br>Selection of tools used by our team for coding and organisation<br>Deploying package to PyPi<br>Designing rules for Pull Requests review process<br>Creating documentation | Shape Integration Test Framework, GPU acceleration for ChainShape |                                                                    |
+| Experiments                                    | Manifold Activation Patching                | Hour of Manifold Experiment                       | Experimental notebook                                                                                                                                                                                                                                                               | Manifold Location Experiment                                      | Color Manifolds in VLMs                                            |
 
 ## Cite
 
