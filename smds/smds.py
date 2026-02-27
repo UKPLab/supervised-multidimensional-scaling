@@ -46,11 +46,7 @@ try:
 except ImportError:
     _TORCH_AVAILABLE = False
 
-# TODO: stage 2 - for mapping to the lower space
-#   result: X_proj
 
-
-# smds stage 1 - for the manifold Y_
 class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore[misc]
     @property
     @abstractmethod
@@ -136,7 +132,6 @@ class ComputedSMDSParametrization(SMDSParametrization):
     """
 
     def __init__(self, manifold: Callable[[NDArray[Any]], NDArray[np.float64]], n_components: int):
-        # fixme: set manifold to be BaseShape
         self.manifold = manifold
         self._n_components = n_components
 
@@ -184,21 +179,17 @@ class ComputedSMDSParametrization(SMDSParametrization):
         Y : ndarray
             Low-dimensional embedding coordinates.
         """
-        # Square distances
         D2 = D**2
 
-        # Double centering
         n = D2.shape[0]
         H = np.eye(n) - np.ones((n, n)) / n
         B = -0.5 * H @ D2 @ H
 
-        # Eigen-decomposition
         eigvals, eigvecs = eigh(B)
         idx = np.argsort(eigvals)[::-1]
         eigvals = eigvals[idx][: self.n_components]
         eigvecs = eigvecs[:, idx][:, : self.n_components]
 
-        # Embedding computation
         Y: np.ndarray = eigvecs * np.sqrt(np.maximum(eigvals, 0))
         return Y
 
@@ -408,9 +399,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         radius: float = 6371,
         gpu_accel: bool = False,
     ):
-        # todo: add string for stage_1
-        # todo: add string for manifold
-        # todo: warn if stage_1 is UserProv -> manifold is ignored
         """
         Parameters
         ----------
@@ -562,7 +550,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Specialized solver using PyTorch (AutoDiff + GPU acceleration).
         Much faster for large N than scipy.optimize.minimize.
         """
-        # Device Selection & Debugging
         if torch.cuda.is_available():
             device = torch.device("cuda")
             device_name = torch.cuda.get_device_name(0)
@@ -577,13 +564,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             print("         See README for CUDA installation instructions.")
             print("         Falling back to PyTorch CPU implementation.")
 
-        # Data Transfer
-        # Convert inputs to float32 for speed
         X_t = torch.tensor(X, dtype=torch.float32, device=device)
         D_t = torch.tensor(D, dtype=torch.float32, device=device)
         mask_t = torch.tensor(mask, dtype=torch.bool, device=device)
 
-        # Parameter Initialization
         n_features = X.shape[1]
         n_components = self.stage_1_fitted_.n_components
         if n_components is None:
@@ -591,10 +575,8 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         W_t = torch.nn.Parameter(torch.randn(n_components, n_features, device=device, dtype=torch.float32) * 0.01)
 
-        # Optimization Setup
         optimizer = torch.optim.Adam([W_t], lr=0.01)
 
-        # Convergence settings
         max_epochs = 2000
         tol = 1e-4
         prev_loss = float("inf")

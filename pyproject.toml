@@ -1,6 +1,6 @@
 [project]
 name = "smds"
-version = "1.6.4"
+version = "1.6.5"
 description = "A plug-and-play, scikit-learn compatible implementation of Supervised Multi-Dimensional Scaling (SMDS) for automatic feature manifold discovery in LLMs."
 authors = [
     { name = "Federico Tiblias" },
