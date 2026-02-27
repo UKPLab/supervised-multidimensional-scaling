@@ -10,6 +10,7 @@ nav:
       - Find Hour-of-Day Manifold: notebooks/hour_experiment.ipynb
       - Manifold Activation Patching: notebooks/manifold_activation_patching.ipynb
       - Adding a custom Shape: examples/custom_shape.md
+      - Finding manifold of color in VLMs: notebooks/emergence_of_color_manifold_in_VLM.ipynb
 
 theme:
   name: material
