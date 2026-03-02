@@ -126,8 +126,11 @@ pivot_dfs, output_path = run_statistical_validation(
 
 Open the dashboard to view the **Friedman Statistic**, **P-Value Heatmap**, and **Critical Difference (CD) Diagram**:
 
-```bash
-python smds/pipeline/open_dashboard.py
+```python
+from smds.pipeline import open_dashboard
+
+# Launch the interactive Streamlit dashboard to explore results and plots
+open_dashboard.main()
 ```
 
 ### Testing
