@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 from numpy.typing import NDArray
-from sklearn.model_selection import cross_validate  # type: ignore[import-untyped]
+from sklearn.model_selection import cross_validate, ShuffleSplit  # type: ignore[import-untyped]
 
 from smds import SupervisedMDS
 from smds.shapes.base_shape import BaseShape
@@ -52,7 +52,9 @@ def discover_manifolds(
     y: NDArray[np.float64],
     shapes: Optional[List[BaseShape]] = None,
     smds_components: int = 2,
-    n_folds: int = 5,
+    n_folds: int = 10,
+    test_size: float = 0.2,
+    random_state: int = 42,
     n_jobs: int = -1,
     save_results: bool = True,
     save_path: Optional[str] = None,
@@ -73,8 +75,9 @@ def discover_manifolds(
         y: Labels (n_samples,).
         smds_components: Tells SMDS on how many dimensions to map
         shapes: List of Shape objects to test. Defaults to a standard set if None.
-        n_folds: Number of Cross-Validation folds. If 0, Cross-Validation is skipped and
-                 the model is fit and scored directly on all data.
+        n_folds: Number of Cross-Validation folds (using ShuffleSplit). Default is 10.
+        test_size: Fraction of data to use as test set in each fold. Default is 0.2 (80/20 split).
+        random_state: Random seed for reproducible CV splits. Default is 42.
         n_jobs: Number of parallel jobs for cross_validate (-1 = all CPUs).
         save_results: Whether to persist results to a CSV file.
         save_path: Specific path to save results. If None, generates one based on timestamp.
@@ -187,11 +190,12 @@ def discover_manifolds(
         estimator = SupervisedMDS(n_components=smds_components, manifold=shape)
 
         try:
+            cv = ShuffleSplit(n_splits=n_folds, test_size=test_size, random_state=random_state)
             cv_results = cross_validate(
                 estimator,
                 X,
                 y,
-                cv=n_folds,
+                cv=cv,
                 n_jobs=n_jobs,
                 scoring=scoring_map,
                 return_train_score=False,
