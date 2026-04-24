@@ -32,7 +32,7 @@ class HybridSMDS(SupervisedMDS):
         self,
         manifold: Union[str, Callable[[NDArray[Any]], NDArray[np.float64]]] = "circular",
         n_components: int = 2,
-        alpha: float = 0.1,
+        alpha: float = 1.0,
         orthonormal: bool = False,
         radius: float = 6371,
         reducer: BaseEstimator | None = None,

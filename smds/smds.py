@@ -403,7 +403,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         self,
         parametrization: str = "computed",
         manifold: str = "circular",
-        alpha: float = 0.1,
+        alpha: float = 1.0,
         orthonormal: bool = False,
         radius: float = 6371,
         gpu_accel: bool = False,
