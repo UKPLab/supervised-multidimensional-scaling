@@ -25,7 +25,7 @@ class HybridSMDS(SupervisedMDS):
         sklearn-compatible reducer with fit(X, Y) and transform(X).
     bypass_mds : bool, default=False
         If True, treat y as target coordinates directly.
-    alpha, orthonormal, radius : inherited from SupervisedMDS
+    alpha, orthonormal : inherited from SupervisedMDS
     """
 
     def __init__(

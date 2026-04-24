@@ -50,8 +50,23 @@ except ImportError:
 #   result: X_proj
 
 
-# smds stage 1 - for the manifold Y_
 class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore[misc]
+    """
+    Abstract base class defining the interface for SMDS parametrization strategies.
+
+    A parametrization maps labels or coordinates to an ideal pairwise distance
+    matrix and a low-dimensional embedding. Subclasses implement the specific
+    strategy for computing these (e.g., via a geometric manifold or user-provided
+    coordinates).
+
+    Attributes
+    ----------
+    D_ : ndarray of shape (n_samples, n_samples)
+        Ideal pairwise distance matrix, set after fitting.
+    Y_ : ndarray of shape (n_samples, n_components)
+        Low-dimensional embedding of the ideal distances, set after fitting.
+    """
+
     @property
     @abstractmethod
     def n_components(self) -> int | None:
@@ -125,14 +140,25 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
 
 class ComputedSMDSParametrization(SMDSParametrization):
     """
-    Stage-1 parametrization that computes ideal distances using a manifold function.
+    Parametrization that computes ideal distances using a geometric manifold.
+
+    Fits a classical MDS embedding from distances derived by applying a manifold
+    function to the input labels.
 
     Parameters
     ----------
     manifold : Callable
-        Function that takes labels and returns a distance matrix.
+        A callable that accepts labels of shape (n_samples,) or (n_samples, k)
+        and returns a pairwise distance matrix of shape (n_samples, n_samples).
     n_components : int
-        Number of embedding dimensions.
+        Number of dimensions in the low-dimensional embedding.
+
+    Attributes
+    ----------
+    D_ : ndarray of shape (n_samples, n_samples)
+        Ideal pairwise distance matrix computed from the manifold.
+    Y_ : ndarray of shape (n_samples, n_components)
+        Classical MDS embedding of the ideal distances.
     """
 
     def __init__(self, manifold: Callable[[NDArray[Any]], NDArray[np.float64]], n_components: int):
@@ -241,20 +267,33 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
 class UserProvidedSMDSParametrization(SMDSParametrization):
     """
-    Stage-1 parametrization using user-provided coordinates or template mapping.
+    Parametrization using user-provided coordinates or a template mapping.
+
+    Instead of deriving distances from a built-in manifold, this class accepts
+    pre-computed embedding coordinates directly, or maps labels onto a fixed
+    template via a user-supplied function.
 
     Parameters
     ----------
-    y : ndarray, optional
-        Pre-computed embedding coordinates.
+    y : ndarray of shape (n_samples, n_components), optional
+        Pre-computed embedding coordinates. If provided, these are used directly
+        without any fitting computation.
     n_components : int, optional
-        Number of embedding dimensions (inferred from y if not provided).
+        Number of embedding dimensions. Inferred from ``y`` if not provided.
     fixed_template : ndarray, optional
-        Fixed template coordinates for mapping.
+        Fixed reference coordinates used together with ``mapper``.
     mapper : Callable, optional
-        Function to map labels to template coordinates.
+        Function with signature ``(labels, template) -> coordinates`` that maps
+        input labels onto the fixed template.
     name : str, optional
-        Name for this parametrization.
+        Optional name for this parametrization instance.
+
+    Attributes
+    ----------
+    D_ : ndarray of shape (n_samples, n_samples)
+        Pairwise distance matrix computed from the stored coordinates.
+    Y_ : ndarray of shape (n_samples, n_components)
+        The stored or mapped embedding coordinates.
     """
 
     def __init__(
@@ -397,6 +436,50 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
 
 
 class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
+    """
+    Learn a linear map W that projects high-dimensional data onto a hypothesis manifold.
+
+    The manifold is defined by labels ``y`` via a parametrization strategy.
+    The projection matrix W is fitted in closed form (ridge regression or Procrustes)
+    when all ideal distances are fully defined, or via iterative optimization for
+    incomplete distance matrices.
+
+    Parameters
+    ----------
+    parametrization : str or SMDSParametrization, default="computed"
+        Strategy for computing the ideal manifold embedding.
+
+        - ``"computed"``: derive distances from a built-in geometric manifold
+          selected by the ``manifold`` argument.
+        - ``"user_provided"``: accept coordinates or a template mapping directly.
+        - An ``SMDSParametrization`` instance: use a custom parametrization object.
+    manifold : str, default="circular"
+        Name of the built-in manifold to use when ``parametrization="computed"``.
+        Ignored when an ``SMDSParametrization`` instance is passed.
+        Valid options: ``chain``, ``circular``, ``cluster``, ``cylindrical``,
+        ``discrete_circular``, ``euclidean``, ``geodesic``, ``graph_geodesic``,
+        ``hierarchical``, ``klein_bottle``, ``log_linear``, ``polytope``,
+        ``semicircular``, ``spherical``, ``spiral``, ``torus``.
+    alpha : float, default=1.0
+        Ridge regularization strength for the closed-form solver.
+        Set to ``0`` for unregularized least squares.
+    orthonormal : bool, default=False
+        If True, solve for an orthonormal projection via Procrustes.
+        ``alpha`` is ignored when this is True.
+    gpu_accel : bool, default=False
+        If True, use a PyTorch-based solver for incomplete distance matrices.
+        Requires PyTorch to be installed.
+
+    Attributes
+    ----------
+    W_ : ndarray of shape (n_components, n_features)
+        Learned linear projection matrix.
+    Y_ : ndarray of shape (n_samples, n_components)
+        Ideal manifold embedding used during fitting.
+    parametrization_fitted_ : SMDSParametrization
+        Fitted parametrization object holding ``D_`` and ``Y_``.
+    """
+
     _PARAMETRIZATION_OPTIONS = {"computed", "user_provided"}
 
     def __init__(
@@ -407,22 +490,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         orthonormal: bool = False,
         gpu_accel: bool = False,
     ):
-        # todo: add string for parametrization
-        # todo: add string for manifold
-        # todo: warn if parametrization is UserProv -> manifold is ignored
-        """
-        Parameters
-        ----------
-            parametrization:
-                Stage 1 strategy. One of {"computed", "user_provided"}.
-            manifold:
-                Manifold type used by computed parametrization.
-            metric:
-                The metric to use for scoring the embedding.
-            gpu_accel:
-                If True, attempts to use PyTorch (and CUDA/MPS if available)
-                to solve sparse/incomplete manifold optimization.
-        """
         self.parametrization = parametrization
         self.manifold = manifold
         self.alpha = alpha
