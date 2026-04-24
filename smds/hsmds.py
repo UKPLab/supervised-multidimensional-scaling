@@ -34,7 +34,6 @@ class HybridSMDS(SupervisedMDS):
         n_components: int = 2,
         alpha: float = 1.0,
         orthonormal: bool = False,
-        radius: float = 6371,
         reducer: BaseEstimator | None = None,
         bypass_mds: bool = False,
     ):
@@ -63,7 +62,6 @@ class HybridSMDS(SupervisedMDS):
             manifold=manifold_for_super,
             alpha=alpha,
             orthonormal=orthonormal,
-            radius=radius,
         )
         self.n_components = n_components
         self.manifold = manifold  # type: ignore[assignment]

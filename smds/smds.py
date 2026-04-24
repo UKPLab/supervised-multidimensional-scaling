@@ -405,7 +405,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         manifold: str = "circular",
         alpha: float = 1.0,
         orthonormal: bool = False,
-        radius: float = 6371,
         gpu_accel: bool = False,
     ):
         # todo: add string for parametrization
@@ -428,7 +427,6 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         self.manifold = manifold
         self.alpha = alpha
         self.orthonormal = orthonormal
-        self.radius = radius
         self.gpu_accel = gpu_accel
 
     @staticmethod
@@ -455,9 +453,9 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             "discrete_circular": (lambda: DiscreteCircularShape(), 2),
             "hierarchical": (lambda: HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0])), 2),
             "circular": (lambda: CircularShape(), 2),
-            "cylindrical": (lambda: CylindricalShape(radius=self.radius), 3),
-            "spherical": (lambda: SphericalShape(radius=self.radius), 3),
-            "geodesic": (lambda: GeodesicShape(radius=self.radius), 3),
+            "cylindrical": (lambda: CylindricalShape(), 3),
+            "spherical": (lambda: SphericalShape(), 3),
+            "geodesic": (lambda: GeodesicShape(), 3),
             "spiral": (lambda: SpiralShape(), 2),
             "log_linear": (lambda: LogLinearShape(), 1),
             "euclidean": (lambda: EuclideanShape(), 1),

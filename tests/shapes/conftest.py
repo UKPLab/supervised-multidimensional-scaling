@@ -205,7 +205,7 @@ def circular_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDArr
 @pytest.fixture(scope="module")
 def cylindrical_engine_computed_stage1() -> SupervisedMDS:
     # Cylinder is a 3D object
-    return SupervisedMDS(parametrization="computed", manifold="cylindrical", radius=1.0)
+    return SupervisedMDS(parametrization="computed", manifold="cylindrical")
 
 
 @pytest.fixture(scope="module")
@@ -213,7 +213,7 @@ def cylindrical_engine_user_provided_stage1(
     cylindrical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
 ) -> SupervisedMDS:
     # Cylinder is a 3D object
-    return SupervisedMDS(parametrization="user_provided", manifold="cylindrical", radius=1.0)
+    return SupervisedMDS(parametrization="user_provided", manifold="cylindrical")
 
 
 @pytest.fixture(scope="module")
@@ -237,7 +237,7 @@ def cylindrical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], ND
 @pytest.fixture(scope="module")
 def spherical_engine_computed_stage1() -> SupervisedMDS:
     # Sphere is a 3D object
-    return SupervisedMDS(parametrization="computed", manifold="spherical", radius=1.0)
+    return SupervisedMDS(parametrization="computed", manifold="spherical")
 
 
 @pytest.fixture(scope="module")
@@ -245,7 +245,7 @@ def spherical_engine_user_provided_stage1(
     spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
 ) -> SupervisedMDS:
     # Sphere is a 3D object
-    return SupervisedMDS(parametrization="user_provided", manifold="spherical", radius=1.0)
+    return SupervisedMDS(parametrization="user_provided", manifold="spherical")
 
 
 @pytest.fixture(scope="module")
@@ -284,14 +284,14 @@ def spherical_data_10d() -> tuple[NDArray[np.float64], NDArray[np.float64], NDAr
 # =============================================================================
 @pytest.fixture(scope="module")
 def geodesic_engine_computed_stage1() -> SupervisedMDS:
-    return SupervisedMDS(parametrization="computed", manifold="geodesic", radius=1.0)
+    return SupervisedMDS(parametrization="computed", manifold="geodesic")
 
 
 @pytest.fixture(scope="module")
 def geodesic_engine_user_provided_stage1(
     spherical_data_10d: tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]],
 ) -> SupervisedMDS:
-    return SupervisedMDS(parametrization="user_provided", manifold="geodesic", radius=1.0)
+    return SupervisedMDS(parametrization="user_provided", manifold="geodesic")
 
 
 # =============================================================================
