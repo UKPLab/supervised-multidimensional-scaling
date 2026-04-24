@@ -24,61 +24,61 @@ from smds import SupervisedMDS
 # Format: (shape_name, engine_fixture_name, data_fixture_name, score_min, procrustes_max)
 
 SHAPE_TEST_CASES = [
-    ("Chain_ComputedStage1", "chain_engine_computed_stage1", "chain_data_10d", 0.90, 0.2),
-    ("Chain_UserProvidedStage1", "chain_engine_user_provided_stage1", "chain_data_10d", 0.85, 0.2),
-    ("Cluster_ComputedStage1", "cluster_engine_computed_stage1", "cluster_data_10d", 0.80, 0.2),
-    ("Cluster_UserProvidedStage1", "cluster_engine_user_provided_stage1", "cluster_data_10d", 0.80, 0.2),
+    ("Chain_Computed", "chain_engine_computed", "chain_data_10d", 0.90, 0.2),
+    ("Chain_UserProvided", "chain_engine_user_provided", "chain_data_10d", 0.85, 0.2),
+    ("Cluster_Computed", "cluster_engine_computed", "cluster_data_10d", 0.80, 0.2),
+    ("Cluster_UserProvided", "cluster_engine_user_provided", "cluster_data_10d", 0.80, 0.2),
     (
-        "DiscCircular_ComputedStage1",
-        "disc_circular_engine_computed_stage1",
+        "DiscCircular_Computed",
+        "disc_circular_engine_computed",
         "disc_circular_data_10d",
         0.70,
         0.2,
     ),  # max score 0.87 without noise
     (
-        "DiscCircular_UserProvidedStage1",
-        "disc_circular_engine_user_provided_stage1",
+        "DiscCircular_UserProvided",
+        "disc_circular_engine_user_provided",
         "disc_circular_data_10d",
         0.70,
         0.2,
     ),
-    ("Hierarchical_ComputedStage1", "hierarchical_engine_computed_stage1", "hierarchical_data_10d", 0.90, 0.1),
-    ("Hierarchical_UserProvidedStage1", "hierarchical_engine_user_provided_stage1", "hierarchical_data_10d", 0.90, 0.1),
-    ("Circular_ComputedStage1", "circular_engine_computed_stage1", "circular_data_10d", 0.80, 0.1),
-    ("Circular_UserProvidedStage1", "circular_engine_user_provided_stage1", "circular_data_10d", 0.80, 0.1),
-    ("Cylindrical_ComputedStage1", "cylindrical_engine_computed_stage1", "cylindrical_data_10d", 0.80, 0.1),
-    ("Cylindrical_UserProvidedStage1", "cylindrical_engine_user_provided_stage1", "cylindrical_data_10d", 0.80, 0.1),
-    ("Spherical_ComputedStage1", "spherical_engine_computed_stage1", "spherical_data_10d", 0.70, 0.2),
-    ("Spherical_UserProvidedStage1", "spherical_engine_user_provided_stage1", "spherical_data_10d", 0.70, 0.2),
+    ("Hierarchical_Computed", "hierarchical_engine_computed", "hierarchical_data_10d", 0.90, 0.1),
+    ("Hierarchical_UserProvided", "hierarchical_engine_user_provided", "hierarchical_data_10d", 0.90, 0.1),
+    ("Circular_Computed", "circular_engine_computed", "circular_data_10d", 0.80, 0.1),
+    ("Circular_UserProvided", "circular_engine_user_provided", "circular_data_10d", 0.80, 0.1),
+    ("Cylindrical_Computed", "cylindrical_engine_computed", "cylindrical_data_10d", 0.80, 0.1),
+    ("Cylindrical_UserProvided", "cylindrical_engine_user_provided", "cylindrical_data_10d", 0.80, 0.1),
+    ("Spherical_Computed", "spherical_engine_computed", "spherical_data_10d", 0.70, 0.2),
+    ("Spherical_UserProvided", "spherical_engine_user_provided", "spherical_data_10d", 0.70, 0.2),
     (
-        "Geodesic_ComputedStage1",
-        "geodesic_engine_computed_stage1",
+        "Geodesic_Computed",
+        "geodesic_engine_computed",
         "spherical_data_10d",
         0.70,
         0.2,
     ),  # max score 0.90 without noise
-    ("Geodesic_UserProvidedStage1", "geodesic_engine_user_provided_stage1", "spherical_data_10d", 0.70, 0.2),
-    ("Spiral_ComputedStage1", "spiral_engine_computed_stage1", "spiral_data_10d", 0.90, 0.1),
-    ("Spiral_UserProvidedStage1", "spiral_engine_user_provided_stage1", "spiral_data_10d", 0.90, 0.1),
-    ("LogLinear_ComputedStage1", "log_linear_engine_computed_stage1", "log_linear_data_10d", 0.70, 0.2),
-    ("LogLinear_UserProvidedStage1", "log_linear_engine_user_provided_stage1", "log_linear_data_10d", 0.70, 0.2),
-    ("Euclidean_ComputedStage1", "euclidean_engine_computed_stage1", "euclidean_data_10d", 0.90, 0.1),
-    ("Euclidean_UserProvidedStage1", "euclidean_engine_user_provided_stage1", "euclidean_data_10d", 0.90, 0.1),
-    ("Semicircular_ComputedStage1", "semicircular_engine_computed_stage1", "semicircular_data_10d", 0.70, 0.2),
-    ("Semicircular_UserProvidedStage1", "semicircular_engine_user_provided_stage1", "semicircular_data_10d", 0.70, 0.2),
-    ("KleinBottle_ComputedStage1", "klein_bottle_engine_computed_stage1", "klein_bottle_data_10d", 0.70, 0.2),
-    ("KleinBottle_UserProvidedStage1", "klein_bottle_engine_user_provided_stage1", "klein_bottle_data_10d", 0.70, 0.2),
+    ("Geodesic_UserProvided", "geodesic_engine_user_provided", "spherical_data_10d", 0.70, 0.2),
+    ("Spiral_Computed", "spiral_engine_computed", "spiral_data_10d", 0.90, 0.1),
+    ("Spiral_UserProvided", "spiral_engine_user_provided", "spiral_data_10d", 0.90, 0.1),
+    ("LogLinear_Computed", "log_linear_engine_computed", "log_linear_data_10d", 0.70, 0.2),
+    ("LogLinear_UserProvided", "log_linear_engine_user_provided", "log_linear_data_10d", 0.70, 0.2),
+    ("Euclidean_Computed", "euclidean_engine_computed", "euclidean_data_10d", 0.90, 0.1),
+    ("Euclidean_UserProvided", "euclidean_engine_user_provided", "euclidean_data_10d", 0.90, 0.1),
+    ("Semicircular_Computed", "semicircular_engine_computed", "semicircular_data_10d", 0.70, 0.2),
+    ("Semicircular_UserProvided", "semicircular_engine_user_provided", "semicircular_data_10d", 0.70, 0.2),
+    ("KleinBottle_Computed", "klein_bottle_engine_computed", "klein_bottle_data_10d", 0.70, 0.2),
+    ("KleinBottle_UserProvided", "klein_bottle_engine_user_provided", "klein_bottle_data_10d", 0.70, 0.2),
     ("Torus", "torus_engine", "torus_data_10d", 0.65, 0.2),
-    ("GraphGeodesic_ComputedStage1", "graph_geodesic_engine_computed_stage1", "graph_geodesic_data_10d", 0.35, 0.95),
+    ("GraphGeodesic_Computed", "graph_geodesic_engine_computed", "graph_geodesic_data_10d", 0.35, 0.95),
     (
-        "GraphGeodesic_UserProvidedStage1",
-        "graph_geodesic_engine_user_provided_stage1",
+        "GraphGeodesic_UserProvided",
+        "graph_geodesic_engine_user_provided",
         "graph_geodesic_data_10d",
         0.35,
         0.95,
     ),
-    ("Polytope_ComputedStage1", "polytope_engine_computed_stage1", "polytope_data_10d", 0.35, 0.99),
-    ("Polytope_UserProvidedStage1", "polytope_engine_user_provided_stage1", "polytope_data_10d", 0.35, 0.99),
+    ("Polytope_Computed", "polytope_engine_computed", "polytope_data_10d", 0.35, 0.99),
+    ("Polytope_UserProvided", "polytope_engine_user_provided", "polytope_data_10d", 0.35, 0.99),
 ]
 
 
@@ -103,7 +103,7 @@ def test_shape_smoke_execution(
 
     # The data fixture returns 3 values, we only need X and y for a smoke test
     X_high, y, x_original = data_tuple
-    y_for_fit = x_original if "UserProvidedStage1" in shape_name else y
+    y_for_fit = x_original if "UserProvided" in shape_name else y
 
     # Execution
     X_proj = smds_engine.fit_transform(X_high, y_for_fit)
@@ -142,7 +142,7 @@ def test_shape_recovers_structure_from_high_dim(
     data_tuple = request.getfixturevalue(data_name)
 
     X_high, y, X_original = data_tuple
-    y_for_fit = X_original if "UserProvidedStage1" in shape_name else y
+    y_for_fit = X_original if "UserProvided" in shape_name else y
 
     # Execution
     X_proj = smds_engine.fit_transform(X_high, y_for_fit)

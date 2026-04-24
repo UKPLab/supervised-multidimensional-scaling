@@ -652,7 +652,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         n_features = X.shape[1]
         n_components = self.parametrization_fitted_.n_components
         if n_components is None:
-            raise ValueError("Stage 1 n_components is not set")
+            raise ValueError("parametrization_fitted_.n_components is not set")
 
         W_t = torch.nn.Parameter(torch.randn(n_components, n_features, device=device, dtype=torch.float32) * 0.01)
 
@@ -706,7 +706,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         rng = np.random.default_rng(42)
         n_components = self.parametrization_fitted_.n_components
         if n_components is None:
-            raise ValueError("Stage 1 n_components is not set")
+            raise ValueError("parametrization_fitted_.n_components is not set")
 
         W0 = rng.normal(scale=0.01, size=(n_components, X.shape[1]))
         result = minimize(self._masked_loss, W0.ravel(), args=(X, D, mask), method="L-BFGS-B")

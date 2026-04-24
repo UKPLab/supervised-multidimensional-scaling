@@ -6,7 +6,7 @@ from sklearn.utils.estimator_checks import check_estimator  # type: ignore[impor
 
 from smds.smds import SupervisedMDS
 
-# todo: add same for Stage1SMDSTransformer
+# todo: add same for SMDSParametrization
 
 
 def dummy_manifold_func(y: NDArray[np.float64]) -> NDArray[np.float64]:

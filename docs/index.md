@@ -30,7 +30,7 @@ pip install smds
 
 ## Usage
 
-The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS, it requires selecting a stage-1 strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
+The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS, it requires selecting a parametrization strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
 
 ### Fit & Transform
 
