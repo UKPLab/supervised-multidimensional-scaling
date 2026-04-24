@@ -397,34 +397,34 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
 
 
 class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
-    _STAGE_1_OPTIONS = {"computed", "user_provided"}
+    _PARAMETRIZATION_OPTIONS = {"computed", "user_provided"}
 
     def __init__(
         self,
-        stage_1: str = "computed",
+        parametrization: str = "computed",
         manifold: str = "circular",
         alpha: float = 0.1,
         orthonormal: bool = False,
         radius: float = 6371,
         gpu_accel: bool = False,
     ):
-        # todo: add string for stage_1
+        # todo: add string for parametrization
         # todo: add string for manifold
-        # todo: warn if stage_1 is UserProv -> manifold is ignored
+        # todo: warn if parametrization is UserProv -> manifold is ignored
         """
         Parameters
         ----------
-            stage_1:
+            parametrization:
                 Stage 1 strategy. One of {"computed", "user_provided"}.
             manifold:
-                Manifold type used by computed stage_1.
+                Manifold type used by computed parametrization.
             metric:
                 The metric to use for scoring the embedding.
             gpu_accel:
                 If True, attempts to use PyTorch (and CUDA/MPS if available)
                 to solve sparse/incomplete manifold optimization.
         """
-        self.stage_1 = stage_1
+        self.parametrization = parametrization
         self.manifold = manifold
         self.alpha = alpha
         self.orthonormal = orthonormal
@@ -432,14 +432,14 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         self.gpu_accel = gpu_accel
 
     @staticmethod
-    def _normalize_stage_1_name(stage_1: str) -> str:
-        if not isinstance(stage_1, str):
-            raise TypeError(f"stage_1 must be a string or SMDSParametrization instance, got {type(stage_1).__name__}")
-        stage_1_name = stage_1.strip().lower()
-        if stage_1_name not in SupervisedMDS._STAGE_1_OPTIONS:
-            valid = sorted(SupervisedMDS._STAGE_1_OPTIONS)
-            raise ValueError(f"Unknown stage_1: {stage_1!r}. Valid options are: {valid}")
-        return stage_1_name
+    def _normalize_parametrization_name(parametrization: str) -> str:
+        if not isinstance(parametrization, str):
+            raise TypeError(f"parametrization must be a string or SMDSParametrization instance, got {type(parametrization).__name__}")
+        parametrization_name = parametrization.strip().lower()
+        if parametrization_name not in SupervisedMDS._PARAMETRIZATION_OPTIONS:
+            valid = sorted(SupervisedMDS._PARAMETRIZATION_OPTIONS)
+            raise ValueError(f"Unknown parametrization: {parametrization!r}. Valid options are: {valid}")
+        return parametrization_name
 
     @staticmethod
     def _normalize_manifold_name(manifold: str) -> str:
@@ -473,20 +473,20 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         factory, n_components = manifold_factories[manifold_name]
         return factory(), n_components
 
-    def _build_stage_1(self, stage_1_name: str, manifold_name: str) -> SMDSParametrization:
-        if stage_1_name == "computed":
+    def _build_parametrization(self, parametrization_name: str, manifold_name: str) -> SMDSParametrization:
+        if parametrization_name == "computed":
             manifold_obj, n_components = self._build_manifold(manifold_name)
             return ComputedSMDSParametrization(manifold=manifold_obj, n_components=n_components)
 
-        warnings.warn("stage_1='user_provided': manifold value is ignored.", UserWarning, stacklevel=2)
+        warnings.warn("parametrization='user_provided': manifold value is ignored.", UserWarning, stacklevel=2)
         return UserProvidedSMDSParametrization()
 
-    def _resolve_stage_1(self) -> SMDSParametrization:
-        if isinstance(self.stage_1, SMDSParametrization):
-            return self.stage_1
-        normalized_stage_1 = self._normalize_stage_1_name(self.stage_1)
+    def _resolve_parametrization(self) -> SMDSParametrization:
+        if isinstance(self.parametrization, SMDSParametrization):
+            return self.parametrization
+        normalized_parametrization = self._normalize_parametrization_name(self.parametrization)
         normalized_manifold = self._normalize_manifold_name(self.manifold)
-        return self._build_stage_1(normalized_stage_1, normalized_manifold)
+        return self._build_parametrization(normalized_parametrization, normalized_manifold)
 
     def _validate_and_convert_metric(self, metric: str | StressMetrics) -> StressMetrics:
         """
@@ -503,9 +503,9 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Compute the loss only on the defined distances (where mask is True).
         """
-        n_components = self.stage_1_fitted_.n_components
+        n_components = self.parametrization_fitted_.n_components
         if n_components is None:
-            raise ValueError("stage_1_fitted_.n_components is not set.")
+            raise ValueError("parametrization_fitted_.n_components is not set.")
         W = W_flat.reshape((n_components, X.shape[1]))
         X_proj = (W @ X.T).T
         D_pred = np.linalg.norm(X_proj[:, None, :] - X_proj[None, :, :], axis=-1)
@@ -514,12 +514,12 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         return result
 
     def _validate_data(
-        self, X: np.ndarray, y: np.ndarray, reset: bool = True, stage_1_model: SMDSParametrization | None = None
+        self, X: np.ndarray, y: np.ndarray, reset: bool = True, parametrization_model: SMDSParametrization | None = None
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Validate and process X and y based on the manifold's expected y dimensionality.
         """
-        model = self.stage_1_fitted_ if hasattr(self, "stage_1_fitted_") else stage_1_model or self._resolve_stage_1()
+        model = self.parametrization_fitted_ if hasattr(self, "parametrization_fitted_") else parametrization_model or self._resolve_parametrization()
 
         if isinstance(model, UserProvidedSMDSParametrization):
             X = check_array(X)
@@ -547,8 +547,8 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
                     f"Input 'y' must be {expected_y_ndim}-dimensional, "
                     f"but got shape {y.shape} with {y.ndim} dimensions."
                 )
-            if hasattr(self.stage_1, "validate_y"):
-                self.stage_1.validate_y(y)
+            if hasattr(self.parametrization, "validate_y"):
+                self.parametrization.validate_y(y)
             if X.shape[0] != y.shape[0]:
                 raise ValueError(
                     f"X and y must have the same number of samples. "
@@ -585,7 +585,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         # Parameter Initialization
         n_features = X.shape[1]
-        n_components = self.stage_1_fitted_.n_components
+        n_components = self.parametrization_fitted_.n_components
         if n_components is None:
             raise ValueError("Stage 1 n_components is not set")
 
@@ -639,7 +639,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Used when distances are incomplete (negative) and GPU accel is off/unavailable.
         """
         rng = np.random.default_rng(42)
-        n_components = self.stage_1_fitted_.n_components
+        n_components = self.parametrization_fitted_.n_components
         if n_components is None:
             raise ValueError("Stage 1 n_components is not set")
 
@@ -665,8 +665,8 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         -------
             self: returns an instance of self.
         """
-        stage_1_model = self._resolve_stage_1()
-        X, y = self._validate_data(X, y, stage_1_model=stage_1_model)
+        parametrization_model = self._resolve_parametrization()
+        X, y = self._validate_data(X, y, parametrization_model=parametrization_model)
 
         if X.shape[0] == 1:
             raise ValueError("Found array with n_samples=1. SupervisedMDS requires at least 2 samples.")
@@ -677,21 +677,21 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         y = np.asarray(y).squeeze()
 
         if (
-            isinstance(stage_1_model, UserProvidedSMDSParametrization)
-            and stage_1_model.y is None
-            and stage_1_model.fixed_template is None
+            isinstance(parametrization_model, UserProvidedSMDSParametrization)
+            and parametrization_model.y is None
+            and parametrization_model.fixed_template is None
         ):
             y_arr = np.asarray(y)
             n_comp = y_arr.shape[1] if y_arr.ndim > 1 else 1
-            if stage_1_model.n_components != n_comp:
-                stage_1_model = UserProvidedSMDSParametrization(y=None, n_components=n_comp)
+            if parametrization_model.n_components != n_comp:
+                parametrization_model = UserProvidedSMDSParametrization(y=None, n_components=n_comp)
 
-        self.stage_1_fitted_: SMDSParametrization = clone(stage_1_model)
-        self.stage_1_fitted_.fit(y)
+        self.parametrization_fitted_: SMDSParametrization = clone(parametrization_model)
+        self.parametrization_fitted_.fit(y)
 
-        self.Y_ = self.stage_1_fitted_.Y_
+        self.Y_ = self.parametrization_fitted_.Y_
 
-        D = self.stage_1_fitted_.D_
+        D = self.parametrization_fitted_.D_
 
         if np.any(D < 0):
             # Inform if any distances are negative
@@ -838,7 +838,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         check_is_fitted(self)
         metric = self._validate_and_convert_metric(metric)
         X, y = self._validate_data(X, y, reset=False)
-        D_ideal = self.stage_1_fitted_.compute_ideal_distances(y)
+        D_ideal = self.parametrization_fitted_.compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
         X_proj = self.transform(X)

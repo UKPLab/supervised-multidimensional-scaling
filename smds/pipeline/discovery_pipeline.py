@@ -290,13 +290,13 @@ def discover_manifolds(
 
             if save_results and plots_dir is not None:
                 try:
-                    stage_1 = clone(parametrization)
-                    stage_1.fit(y)
-                    Y_ideal = stage_1.Y_
+                    parametrization_fitted = clone(parametrization)
+                    parametrization_fitted.fit(y)
+                    Y_ideal = parametrization_fitted.Y_
 
                     if n_folds >= 2:
                         kf = KFold(n_splits=n_folds, shuffle=False)
-                        X_embedded = np.full((X.shape[0], stage_1.n_components), np.nan, dtype=np.float64)
+                        X_embedded = np.full((X.shape[0], parametrization_fitted.n_components), np.nan, dtype=np.float64)
                         for train_idx, test_idx in kf.split(X):
                             X_embedded[test_idx] = (
                                 SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])

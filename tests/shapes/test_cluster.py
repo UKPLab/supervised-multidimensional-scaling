@@ -44,7 +44,7 @@ def test_cluster_distance_computation() -> None:
 @pytest.fixture
 def smds_engine() -> SupervisedMDS:
     """Provides a default SMDS engine configured with ClusterShape."""
-    return SupervisedMDS(stage_1="computed", manifold="cluster")
+    return SupervisedMDS(parametrization="computed", manifold="cluster")
 
 
 @pytest.fixture

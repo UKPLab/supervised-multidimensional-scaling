@@ -110,7 +110,7 @@ def test_shape_smoke_execution(
 
     # Assertion
     n_samples = X_high.shape[0]
-    n_components = smds_engine.stage_1_fitted_.n_components
+    n_components = smds_engine.parametrization_fitted_.n_components
 
     assert X_proj.shape == (n_samples, n_components), (
         f"[{shape_name}] Output shape is incorrect. Expected {(n_samples, n_components)}, but got {X_proj.shape}."

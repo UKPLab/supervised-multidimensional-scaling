@@ -47,19 +47,19 @@ class HybridSMDS(SupervisedMDS):
             bypass_mds_bool = bool(arr_bypass.flat[0])
 
         if bypass_mds_bool:
-            stage_1: SMDSParametrization | str = "user_provided"
+            parametrization: SMDSParametrization | str = "user_provided"
             manifold_for_super = "circular"
         elif isinstance(manifold, str):
-            stage_1 = "computed"
+            parametrization = "computed"
             manifold_for_super = manifold
         else:
             from smds.smds import ComputedSMDSParametrization
 
-            stage_1 = ComputedSMDSParametrization(manifold=manifold, n_components=n_components)
+            parametrization = ComputedSMDSParametrization(manifold=manifold, n_components=n_components)
             manifold_for_super = "circular"
 
         super().__init__(
-            stage_1=stage_1,
+            parametrization=parametrization,
             manifold=manifold_for_super,
             alpha=alpha,
             orthonormal=orthonormal,
@@ -71,7 +71,7 @@ class HybridSMDS(SupervisedMDS):
         self.bypass_mds = bypass_mds
 
     def _validate_data(
-        self, X: np.ndarray, y: np.ndarray, reset: bool = True, stage_1_model: SMDSParametrization | None = None
+        self, X: np.ndarray, y: np.ndarray, reset: bool = True, parametrization_model: SMDSParametrization | None = None
     ) -> tuple[np.ndarray, np.ndarray]:
         from sklearn.utils.validation import check_array
 
@@ -95,7 +95,7 @@ class HybridSMDS(SupervisedMDS):
                 )
             return X, y
         else:
-            return super()._validate_data(X, y, reset=reset, stage_1_model=stage_1_model)
+            return super()._validate_data(X, y, reset=reset, parametrization_model=parametrization_model)
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> "HybridSMDS":
         """
@@ -124,15 +124,15 @@ class HybridSMDS(SupervisedMDS):
                 y_arr = y_arr.reshape(-1, 1)
             Y = y_arr
         else:
-            stage_1_model = self._resolve_stage_1()
-            stage_1_fitted = clone(stage_1_model)
-            stage_1_fitted.fit(y)
+            parametrization_model = self._resolve_parametrization()
+            parametrization_fitted = clone(parametrization_model)
+            parametrization_fitted.fit(y)
 
             try:
-                distances = stage_1_fitted.D_
+                distances = parametrization_fitted.D_
             except AttributeError:
                 try:
-                    distances = stage_1_fitted.compute_ideal_distances(y)
+                    distances = parametrization_fitted.compute_ideal_distances(y)
                 except (ValueError, TypeError) as e:
                     if "dtype" in str(e).lower() or "type" in str(e).lower():
                         from sklearn.utils.multiclass import type_of_target  # type: ignore[import-untyped]
@@ -146,19 +146,19 @@ class HybridSMDS(SupervisedMDS):
             if isinstance(distances, np.ndarray) and np.any(distances < 0):
                 raise ValueError("HybridSMDS does not support incomplete distance matrices.")
 
-            Y = stage_1_fitted.Y_
+            Y = parametrization_fitted.Y_
 
             if Y.shape[1] < self.n_components:
                 pad = np.zeros((Y.shape[0], self.n_components - Y.shape[1]), dtype=np.float64)
                 Y = np.hstack([Y, pad])
 
-            self.stage_1_fitted_ = stage_1_fitted
+            self.parametrization_fitted_ = parametrization_fitted
 
         self.Y_ = Y
 
         if self.bypass_mds:
-            self.stage_1_fitted_ = UserProvidedSMDSParametrization(y=Y, n_components=self.n_components)
-            self.stage_1_fitted_.fit()
+            self.parametrization_fitted_ = UserProvidedSMDSParametrization(y=Y, n_components=self.n_components)
+            self.parametrization_fitted_.fit()
 
         self.reducer_ = clone(self.reducer)
         self.reducer_.fit(X, self.Y_)

@@ -25,7 +25,7 @@ def test_sklearn_compatibility() -> None:
     Tests SupervisedMDS with sklearn's check_estimator.
     This ensures that SupervisedMDS meets all sklearn compatibility requirements.
     """
-    estimator = SupervisedMDS(stage_1="computed", manifold="circular")
+    estimator = SupervisedMDS(parametrization="computed", manifold="circular")
 
     try:
         check_estimator(estimator)

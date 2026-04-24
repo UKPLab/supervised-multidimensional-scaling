@@ -35,9 +35,9 @@ X = np.random.randn(100, 20)
 y = np.random.randint(0, 5, size=100)
 
 # 2. Instantiate the model
-# stage_1: Strategy to initialize the distance matrix ('computed' is usually default)
+# parametrization: Strategy to initialize the distance matrix ('computed' is usually default)
 # manifold: The target shape (e.g., 'cluster', 'circular', 'chain', 'hierarchical')
-model = SupervisedMDS(stage_1="computed", manifold="cluster", alpha=0.1)
+model = SupervisedMDS(parametrization="computed", manifold="cluster", alpha=0.1)
 
 # 3. Fit to data
 model.fit(X, y)
@@ -50,7 +50,7 @@ print(f"Projected shape: {X_projected.shape}")  # (100, 2)
 
 ### Parameters
 - **`manifold`**: The name of the target shape (e.g., `"cluster"`, `"circular"`). See [Available Shapes](shapes.md) for a full list.
-- **`stage_1`**: Strategy for the first stage. `"computed"` is standard. `"user_provided"` requires passing a pre-computed distance matrix.
+- **`parametrization`**: Strategy for the first stage. `"computed"` is standard. `"user_provided"` requires passing a pre-computed distance matrix.
 - **`alpha`**: Regularization parameter (if applicable).
 
 ## 3. Automatic Manifold Discovery

@@ -45,9 +45,9 @@ X = np.random.randn(100, 20)  # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-# stage_1: "computed" (default) or "user_provided"
+# parametrization: "computed" (default) or "user_provided"
 # manifold: one of the built-in shape names, e.g. "cluster", "circular", "log_linear"
-smds = SupervisedMDS(stage_1="computed", manifold="cluster", alpha=0.1)
+smds = SupervisedMDS(parametrization="computed", manifold="cluster", alpha=0.1)
 smds.fit(X, y)
 
 # Transform to low-dimensional space
@@ -55,7 +55,7 @@ X_proj = smds.transform(X)
 print(X_proj.shape)  # (100, 2)
 ```
 
-If you set `stage_1="user_provided"`, `manifold` is ignored and a warning is raised.
+If you set `parametrization="user_provided"`, `manifold` is ignored and a warning is raised.
 
 ### Manifold Discovery
 
