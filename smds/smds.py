@@ -499,7 +499,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
     @staticmethod
     def _normalize_parametrization_name(parametrization: str) -> str:
         if not isinstance(parametrization, str):
-            raise TypeError(f"parametrization must be a string or SMDSParametrization instance, got {type(parametrization).__name__}")
+            raise TypeError(
+                f"parametrization must be a string or SMDSParametrization instance, "
+                f"got {type(parametrization).__name__}"
+            )
         parametrization_name = parametrization.strip().lower()
         if parametrization_name not in SupervisedMDS._PARAMETRIZATION_OPTIONS:
             valid = sorted(SupervisedMDS._PARAMETRIZATION_OPTIONS)
@@ -584,7 +587,10 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Validate and process X and y based on the manifold's expected y dimensionality.
         """
-        model = self.parametrization_fitted_ if hasattr(self, "parametrization_fitted_") else parametrization_model or self._resolve_parametrization()
+        if hasattr(self, "parametrization_fitted_"):
+            model = self.parametrization_fitted_
+        else:
+            model = parametrization_model or self._resolve_parametrization()
 
         if isinstance(model, UserProvidedSMDSParametrization):
             X = check_array(X)

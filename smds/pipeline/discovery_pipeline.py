@@ -296,7 +296,9 @@ def discover_manifolds(
 
                     if n_folds >= 2:
                         kf = KFold(n_splits=n_folds, shuffle=False)
-                        X_embedded = np.full((X.shape[0], parametrization_fitted.n_components), np.nan, dtype=np.float64)
+                        X_embedded = np.full(
+                            (X.shape[0], parametrization_fitted.n_components), np.nan, dtype=np.float64
+                        )
                         for train_idx, test_idx in kf.split(X):
                             X_embedded[test_idx] = (
                                 SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])
