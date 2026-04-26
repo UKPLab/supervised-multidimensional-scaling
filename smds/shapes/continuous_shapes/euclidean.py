@@ -71,7 +71,7 @@ class EuclideanShape(BaseShape):
         Compute pairwise absolute differences.
 
         Calculates:
-        $$ D_{ij} = |y_i - y_j| $$
+        \\[ D_{ij} = |y_i - y_j| \\]
 
         Parameters
         ----------

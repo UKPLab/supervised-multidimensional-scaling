@@ -36,7 +36,7 @@ class CartesianCoordinates(BaseCoordinates):
         """
         Compute the pairwise Euclidean distance matrix for the stored points.
 
-        Calculates $D_{ij} = ||x_i - x_j||_2$ using efficient vectorized operations.
+        Calculates \\(D_{ij} = ||x_i - x_j||_2\\) using efficient vectorized operations.
 
         Returns
         -------

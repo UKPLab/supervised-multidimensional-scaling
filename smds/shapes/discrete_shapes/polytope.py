@@ -6,11 +6,29 @@ from smds.shapes.base_shape import BaseShape
 
 class PolytopeShape(BaseShape):
     """
-    Manifold hypothesis representing a Polytope topology.
+    Arrange cluster centroids at maximally separated vertices of a unit polytope.
 
-    This shape logic tries to push the n_clusters passed as an argument
-    as far away as possible from each other on an n-dimensional unit sphere
-    using iterative repulsion.
+    Places ``n_clusters`` distinct points on the surface of an ``n_dim``-dimensional
+    unit sphere using iterative repulsion, then maps each input point to its
+    cluster centroid and computes Euclidean distances between centroids.
+
+    Parameters
+    ----------
+    n_dim : int, optional
+        Number of dimensions of the embedding sphere. Default is 3.
+    n_iter : int, optional
+        Number of repulsion iterations. Default is 500.
+    lr : float, optional
+        Step size for the repulsion update. Default is 0.1.
+    seed : int, optional
+        Random seed for reproducibility. Default is None.
+    normalize_labels : bool, optional
+        Whether to normalize labels using the base class logic. Default is False.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (1). Expects a 1D array of cluster labels.
     """
 
     def __init__(
@@ -49,8 +67,17 @@ class PolytopeShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Generates a distance matrix D between all points in y, where points with
-        different labels are maximally spread out in n_dim dimensions.
+        Place cluster centroids on a unit sphere via repulsion and return pairwise distances.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input 1D array of cluster labels.
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Pairwise Euclidean distance matrix between the repulsion-optimized centroids.
         """
         rng = np.random.default_rng(self.seed)
         labels, inverse_indices = np.unique(y, return_inverse=True)

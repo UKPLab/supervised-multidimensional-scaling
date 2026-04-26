@@ -77,8 +77,8 @@ class LogLinearShape(BaseShape):
         """
         Compute pairwise logarithmic distances.
 
-        Calculates $D_{ij} = |\\log(y_i + 1) - \\log(y_j + 1)|$.
-        A shift of 1.0 is added to avoid $\\log(0)$.
+        Calculates \\(D_{ij} = |\\log(y_i + 1) - \\log(y_j + 1)|\\).
+        A shift of 1.0 is added to avoid \\(\\log(0)\\).
 
         Parameters
         ----------

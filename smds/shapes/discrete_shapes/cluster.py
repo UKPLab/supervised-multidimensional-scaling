@@ -45,8 +45,8 @@ class ClusterShape(BaseShape):
         Returns
         -------
         NDArray[np.float64]
-            A pairwise distance matrix where $D_{ij} = 0$ if $y_i = y_j$ and
-            $D_{ij} = 1$ otherwise.
+            A pairwise distance matrix where \\(D_{ij} = 0\\) if \\(y_i = y_j\\) and
+            \\(D_{ij} = 1\\) otherwise.
         """
         distance_matrix: NDArray[np.float64] = (y[:, None] != y[None, :]).astype(float)
 

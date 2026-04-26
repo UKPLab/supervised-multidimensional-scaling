@@ -45,7 +45,7 @@ class ChainShape(BaseShape):
         """
         Compute the thresholded cyclic distance matrix.
 
-        Calculates the shortest ring distance $d_{cycle}$. If $d_{cycle} < \\text{threshold}$,
+        Calculates the shortest ring distance \\(d_{cycle}\\). If \\(d_{cycle} < \\text{threshold}\\),
         the distance is preserved; otherwise, it is set to -1.0 to indicate no connection.
 
         Parameters

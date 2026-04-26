@@ -49,8 +49,8 @@ class DiscreteCircularShape(BaseShape):
         Compute the shortest ring distance (circular arc length) between points.
 
         Calculates the minimum distance along the cycle:
-        $$ D_{ij} = \min(|y_i - y_j|, C - |y_i - y_j|) $$
-        where $C$ is the cycle length.
+        \[ D_{ij} = \min(|y_i - y_j|, C - |y_i - y_j|) \]
+        where \(C\) is the cycle length.
 
         Parameters
         ----------

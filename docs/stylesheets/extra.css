@@ -1,0 +1,6 @@
+/* Extend the three-column layout to fill wider viewports.
+   Material's default max-width (~61 rem / ~976 px) leaves large whitespace
+   to the right of the TOC column on 1440 p+ screens. */
+.md-grid {
+  max-width: 90rem; /* 1440 px at browser default 16 px */
+}

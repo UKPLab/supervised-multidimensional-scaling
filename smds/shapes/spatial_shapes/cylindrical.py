@@ -72,9 +72,9 @@ class CylindricalShape(BaseShape):
         """
         Map inputs to cylindrical coordinates and compute Euclidean norms.
 
-        Maps input (lat, lon) to $(x, y, z)$ where:
-        - $x, y$ are derived from `lon` (angle) and `radius`.
-        - $z$ is derived directly from `lat` (height).
+        Maps input (lat, lon) to \\((x, y, z)\\) where:
+        - \\(x, y\\) are derived from `lon` (angle) and `radius`.
+        - \\(z\\) is derived directly from `lat` (height).
 
         Parameters
         ----------

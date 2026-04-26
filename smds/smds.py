@@ -715,20 +715,23 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SupervisedMDS":
         """
-        Fit the linear transformation W to match distances induced by labels y.
-        Uses classical MDS + closed-form when all distances are defined,
-        and switches to optimization if some distances are undefined (negative).
+        Fit the linear projection W to match distances induced by labels y.
+
+        Uses classical MDS and a closed-form solution when all ideal distances
+        are defined, and switches to iterative optimization when some distances
+        are undefined (negative).
 
         Parameters
         ----------
-            X: array-like of shape (n_samples, n_features)
-                The input data to be transformed.
-            y: array-like of shape (n_samples,) or (n_samples, 2)
-                The labels or coordinates defining the ideal distances.
+        X : array-like of shape (n_samples, n_features)
+            Input data to be projected.
+        y : array-like of shape (n_samples,) or (n_samples, k)
+            Labels or coordinates defining the ideal manifold distances.
 
         Returns
         -------
-            self: returns an instance of self.
+        self : SupervisedMDS
+            Fitted estimator.
         """
         parametrization_model = self._resolve_parametrization()
         X, y = self._validate_data(X, y, parametrization_model=parametrization_model)
@@ -813,17 +816,17 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
-        Apply the learned transformation to X.
+        Apply the learned projection to X.
 
         Parameters
         ----------
-            X: array-like of shape (n_samples, n_features)
-                The input data to be transformed.
+        X : array-like of shape (n_samples, n_features)
+            Input data to project.
 
         Returns
         -------
-            X_proj: array of shape (n_samples, n_components)
-                The transformed data in the low-dimensional space.
+        X_proj : ndarray of shape (n_samples, n_components)
+            Data projected into the low-dimensional manifold space.
         """
         check_is_fitted(self)
         X = validate_data(self, X, reset=False)
@@ -850,13 +853,13 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         Parameters
         ----------
-            X_proj: array-like of shape (n_samples, n_components)
-                The low-dimensional representation of the input data.
+        X_proj : array-like of shape (n_samples, n_components)
+            Low-dimensional representation to invert.
 
         Returns
         -------
-            X_reconstructed: array of shape (n_samples, original_n_features)
-                The reconstructed data in the original space.
+        X_reconstructed : ndarray of shape (n_samples, n_features)
+            Reconstructed data in the original feature space.
         """
         check_is_fitted(self)
         X_proj = check_array(X_proj, ensure_2d=True)
@@ -877,18 +880,19 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
     def fit_transform(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
-        Fit the model and transform X in one step.
+        Fit the model and project X in one step.
 
         Parameters
         ----------
-            X: array-like of shape (n_samples, n_features)
-                The input data to be transformed.
-            y: array-like of shape (n_samples,) or (n_samples, 2)
+        X : array-like of shape (n_samples, n_features)
+            Input data to project.
+        y : array-like of shape (n_samples,) or (n_samples, k)
+            Labels or coordinates defining the ideal manifold distances.
 
         Returns
         -------
-            X_proj: array of shape (n_samples, n_components)
-                The transformed data in the low-dimensional space.
+        X_proj : ndarray of shape (n_samples, n_components)
+            Data projected into the low-dimensional manifold space.
         """
         result: np.ndarray = self.fit(X, y).transform(X)
         return result

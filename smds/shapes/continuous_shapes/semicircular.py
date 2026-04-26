@@ -9,7 +9,7 @@ class SemicircularShape(BaseShape):
     Compute Euclidean (chord) distances for points mapped to a semicircle.
 
     This shape maps normalized 1D scalar values to angles on a unit semicircle
-    (ranging from 0 to $\pi$) and computes the straight-line (chord) distance
+    (ranging from 0 to \(\pi\)) and computes the straight-line (chord) distance
     between them.
 
     Parameters
@@ -70,8 +70,8 @@ class SemicircularShape(BaseShape):
         Compute pairwise chord distances on the unit semicircle.
 
         The distance is calculated as:
-        $$ D_{ij} = 2 \\sin\\left(\\frac{\\pi}{2} |y_i - y_j|\\right) $$
-        This corresponds to mapping $y$ (assumed in $[0, 1]$) to angles $\\theta \\in [0, \\pi]$
+        \\[ D_{ij} = 2 \\sin\\left(\\frac{\\pi}{2} |y_i - y_j|\\right) \\]
+        This corresponds to mapping \\(y\\) (assumed in \\([0, 1]\\)) to angles \\(\\theta \\in [0, \\pi]\\)
         and finding the chord length.
 
         Parameters

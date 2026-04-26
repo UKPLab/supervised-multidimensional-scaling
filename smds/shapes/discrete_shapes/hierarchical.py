@@ -93,7 +93,7 @@ class HierarchicalShape(BaseShape):
         """
         Compute the pairwise distance matrix based on the first diverging level.
 
-        Identifies the index of the first column where $y_i$ and $y_j$ differ.
+        Identifies the index of the first column where \\(y_i\\) and \\(y_j\\) differ.
         The distance is then set to the value in `level_distances` at that index.
         If the rows are identical, the distance is 0.0.
 

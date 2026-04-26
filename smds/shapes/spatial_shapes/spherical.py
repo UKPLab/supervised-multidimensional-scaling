@@ -71,10 +71,10 @@ class SphericalShape(BaseShape):
         """
         Convert spherical coordinates to 3D Cartesian points and compute Euclidean norms.
 
-        Maps input (lat, lon) to $(x, y, z)$ using:
-        $$ x = r \\cos(lat) \\cos(lon) $$
-        $$ y = r \\cos(lat) \\sin(lon) $$
-        $$ z = r \\sin(lat) $$
+        Maps input (lat, lon) to \\((x, y, z)\\) using:
+        \\[ x = r \\cos(lat) \\cos(lon) \\]
+        \\[ y = r \\cos(lat) \\sin(lon) \\]
+        \\[ z = r \\sin(lat) \\]
 
         Parameters
         ----------
