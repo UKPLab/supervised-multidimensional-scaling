@@ -20,6 +20,7 @@ from smds.shapes.continuous_shapes import (
     LogLinearShape,
     SemicircularShape,
     SpiralShape,
+    TorusShape,
 )
 from smds.shapes.discrete_shapes import (
     ChainShape,
@@ -531,7 +532,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             "euclidean": (lambda: EuclideanShape(), 1),
             "semicircular": (lambda: SemicircularShape(), 2),
             "klein_bottle": (lambda: KleinBottleShape(), 4),
-            "torus": (lambda: KleinBottleShape(), 3),
+            "torus": (lambda: TorusShape(), 3),
             "graph_geodesic": (lambda: GraphGeodesicShape(), 3),
             "polytope": (lambda: PolytopeShape(), 3),
         }
@@ -613,6 +614,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             if y.ndim == 0:
                 y = y.reshape(1)
         else:
+            y = np.asarray(y)
             if y.ndim != expected_y_ndim:
                 raise ValueError(
                     f"Input 'y' must be {expected_y_ndim}-dimensional, "

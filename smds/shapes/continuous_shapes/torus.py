@@ -43,6 +43,11 @@ class TorusShape(BaseShape):
         return 2
 
     @property
+    def radii(self) -> tuple[float, float]:
+        """tuple of (float, float): Scaling weights for the two cyclic dimensions."""
+        return self._radii
+
+    @property
     def normalize_labels(self) -> bool:
         """bool: Whether labels are normalized to the unit square."""
         return self._normalize_labels_flag
