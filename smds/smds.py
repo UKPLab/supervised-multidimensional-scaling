@@ -651,7 +651,9 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         # Shapes accepting several dimensionalities are dispatched on the y actually
         # given; (n,) and (n, 1) carry the same labels, so both take the scalar path.
         if 1 in accepted_ndim and y_arr.shape[1:] in ((), (1,)):
-            X, y = validate_data(self, X, y, reset=reset)
+            # Ravel first: a column vector carries the same labels, and passing it
+            # through unflattened only earns a DataConversionWarning from sklearn.
+            X, y = validate_data(self, X, y_arr.reshape(-1), reset=reset)
             type_of_target(y, raise_unknown=True)
             y = np.asarray(y).squeeze()
             if y.ndim == 0:
