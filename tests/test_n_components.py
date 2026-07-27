@@ -41,6 +41,11 @@ def y_clusters() -> NDArray[np.float64]:
     return np.random.default_rng(3).integers(0, 6, N_SAMPLES).astype(float)
 
 
+@pytest.fixture
+def y_5d() -> NDArray[np.float64]:
+    return np.random.default_rng(4).random((N_SAMPLES, 5))
+
+
 # =============================================================================
 # DEFAULT (n_components=None) PRESERVES THE MANIFOLD'S NATURAL DIMENSION
 # =============================================================================
@@ -110,6 +115,22 @@ def test_override_retains_geometry_the_default_truncates(
 
     # Retaining more of the distance matrix fits it better (higher score is better).
     assert widened.score(X, y_clusters) > default.score(X, y_clusters)
+
+
+def test_euclidean_override_matches_label_dimensionality(X: NDArray[np.float64], y_5d: NDArray[np.float64]) -> None:
+    """
+    ``euclidean`` is the one manifold with no natural dimension: it takes both
+    scalar and coordinate labels, and its default of 1 suits only the former.
+    """
+    default = SupervisedMDS(manifold="euclidean", alpha=0.1).fit(X, y_5d)
+    widened = SupervisedMDS(manifold="euclidean", n_components=5, alpha=0.1).fit(X, y_5d)
+
+    assert default.Y_.shape == (N_SAMPLES, 1)
+    assert widened.Y_.shape == (N_SAMPLES, 5)
+
+    # Random 5D labels span all five axes, so none of them is zero padding.
+    assert np.all(widened.Y_.std(axis=0) > 1e-6)
+    assert widened.score(X, y_5d) > default.score(X, y_5d)
 
 
 def test_override_beyond_rank_pads_with_zeros(X: NDArray[np.float64], y_scalar: NDArray[np.float64]) -> None:

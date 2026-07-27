@@ -36,16 +36,20 @@ def generate_interactive_plot(
     filename = f"{safe_name}.html"
     filepath = os.path.join(save_dir, filename)
 
+    # Coordinate labels (spherical, hierarchical, n-D euclidean) colour by their
+    # first axis, matching create_plots.
+    hue_vals = y[:, 0] if y.ndim > 1 else y
+
     # Determine if y is discrete or continuous for coloring
-    unique_labels = np.unique(y)
+    unique_labels = np.unique(hue_vals)
     is_discrete = len(unique_labels) < 20
 
     # Prepare DataFrame-like dict for Plotly
-    plot_data = {"x": X_embedded[:, 0], "y": X_embedded[:, 1], "label": y}
+    plot_data = {"x": X_embedded[:, 0], "y": X_embedded[:, 1], "label": hue_vals}
 
     # Adjust formatting for discrete labels to ensure categorical legend
     if is_discrete:
-        plot_data["label"] = y.astype(str)
+        plot_data["label"] = hue_vals.astype(str)
 
     if n_components == 3:
         plot_data["z"] = X_embedded[:, 2]
@@ -62,7 +66,7 @@ def generate_interactive_plot(
         fig.update_traces(marker=dict(size=4))
         # Enforce correct aspect ratio in 3D
         if Y_ideal is not None and Y_ideal.shape[1] >= 3:
-            order = np.argsort(y.ravel())
+            order = np.argsort(hue_vals)
             line_x = Y_ideal[order, 0]
             line_y = Y_ideal[order, 1]
             line_z = Y_ideal[order, 2]
@@ -96,7 +100,7 @@ def generate_interactive_plot(
 
         # Enforce 1:1 Aspect Ratio
         if Y_ideal is not None and Y_ideal.shape[1] >= 2:
-            order = np.argsort(y.ravel())
+            order = np.argsort(hue_vals)
             line_x = Y_ideal[order, 0]
             line_y = Y_ideal[order, 1]
             fig.add_trace(

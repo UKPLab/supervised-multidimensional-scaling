@@ -473,6 +473,12 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         geometry. It is most useful for the discrete shapes (``cluster``,
         ``chain``, ``hierarchical``, ``graph_geodesic``), whose distance
         matrices are typically full rank and therefore truncated by the default.
+
+        ``euclidean`` is the one built-in manifold with no natural dimension of
+        its own: it accepts labels of shape (n_samples,) or
+        (n_samples, n_features) alike. Its default is fixed at 1 for the common
+        scalar-label case, so with (n_samples, n_features) labels pass
+        ``n_components=n_features`` explicitly to keep the full geometry.
     alpha : float, default=1.0
         Ridge regularization strength for the closed-form solver.
         Set to ``0`` for unregularized least squares.
@@ -638,19 +644,23 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
                 )
             return X, y
         else:
-            expected_y_ndim = getattr(model.manifold, "y_ndim", 1)
+            accepted_ndim = np.atleast_1d(getattr(model.manifold, "y_ndim", 1))
 
-        if expected_y_ndim == 1:
+        y_arr = np.asarray(y)
+
+        # Shapes accepting several dimensionalities are dispatched on the y actually
+        # given; (n,) and (n, 1) carry the same labels, so both take the scalar path.
+        if 1 in accepted_ndim and y_arr.shape[1:] in ((), (1,)):
             X, y = validate_data(self, X, y, reset=reset)
             type_of_target(y, raise_unknown=True)
             y = np.asarray(y).squeeze()
             if y.ndim == 0:
                 y = y.reshape(1)
         else:
-            y = np.asarray(y)
-            if y.ndim != expected_y_ndim:
+            y = y_arr
+            if y.ndim not in accepted_ndim:
                 raise ValueError(
-                    f"Input 'y' must be {expected_y_ndim}-dimensional, "
+                    f"Input 'y' must be {'- or '.join(map(str, accepted_ndim))}-dimensional, "
                     f"but got shape {y.shape} with {y.ndim} dimensions."
                 )
             if hasattr(self.parametrization, "validate_y"):

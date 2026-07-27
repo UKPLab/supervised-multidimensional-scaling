@@ -4,6 +4,8 @@ Verifies that the pipeline correctly orchestrates cross-validation,
 sorts results, and identifies the correct winning shape for known data topologies.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import pytest
@@ -11,6 +13,7 @@ from numpy.typing import NDArray
 
 from smds import UserProvidedSMDSParametrization
 from smds.pipeline import discover_manifolds
+from smds.pipeline.helpers.interactive_plots import generate_interactive_plot
 from smds.shapes.base_shape import BaseShape
 from smds.shapes.continuous_shapes import CircularShape, SpiralShape
 from smds.shapes.discrete_shapes import ClusterShape
@@ -130,3 +133,15 @@ def test_discover_manifolds_bypass(
         assert col in results.columns
     for m in StressMetrics:
         assert f"mean_{m.value}" in results.columns
+
+
+@pytest.mark.parametrize("y_shape", [(30,), (30, 2), (30, 5)])
+def test_interactive_plot_handles_coordinate_labels(y_shape: tuple[int, ...], tmp_path: Path) -> None:
+    """Coordinate labels (spherical, hierarchical, n-D euclidean) colour by their first axis."""
+    rng = np.random.default_rng(0)
+
+    filename = generate_interactive_plot(
+        rng.standard_normal((30, 2)), rng.standard_normal(y_shape), "EuclideanShape", str(tmp_path)
+    )
+
+    assert (tmp_path / filename).exists()

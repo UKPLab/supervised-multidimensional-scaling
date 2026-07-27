@@ -1,15 +1,18 @@
 import numpy as np
 from numpy.typing import NDArray
+from scipy.spatial.distance import pdist, squareform  # type: ignore[import-untyped]
 
 from smds.shapes import BaseShape
 
 
 class EuclideanShape(BaseShape):
     """
-    Compute Euclidean (linear) distances for continuous 1D data.
+    Compute Euclidean (linear) distances for continuous data in n dimensions.
 
-    This shape models data lying on a flat, 1D line. The distance is simply the
-    absolute difference between values.
+    This shape models data lying in a flat Euclidean space of arbitrary
+    dimensionality. Inputs of shape (n_samples,) are treated as points on a
+    line, inputs of shape (n_samples, n_features) as points in
+    :math:`\\mathbb{R}^{n\\_features}`.
 
     Reference: Table 1 in "Shape Happens" paper (referred to as 'linear').
 
@@ -20,11 +23,20 @@ class EuclideanShape(BaseShape):
 
     Attributes
     ----------
-    y_ndim : int
-        Dimensionality of input labels (1). Expects scalar values.
+    y_ndim : tuple of int
+        Accepted label dimensionalities, ``(1, 2)``: either scalar labels of
+        shape (n_samples,) or coordinate arrays of shape
+        (n_samples, n_features).
+
+    Notes
+    -----
+    :class:`~smds.SupervisedMDS` defaults ``n_components`` to 1 for this shape,
+    since scalar labels are the common case. With (n_samples, n_features)
+    labels you almost always want to pass ``n_components=n_features``
+    explicitly; otherwise the embedding is truncated to a single dimension.
     """
 
-    y_ndim = 1
+    y_ndim = (1, 2)
 
     @property
     def normalize_labels(self) -> bool:
@@ -34,57 +46,28 @@ class EuclideanShape(BaseShape):
     def __init__(self, normalize_labels: bool = True):
         self._normalize_labels = normalize_labels
 
-    def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
-        """
-        Validate input is 1D.
-
-        Parameters
-        ----------
-        y : NDArray[np.float64]
-            Input array.
-
-        Returns
-        -------
-        NDArray[np.float64]
-            Validated flat 1D array.
-
-        Raises
-        ------
-        ValueError
-            If `y` is empty or has more than one column.
-        """
-        y_proc: NDArray[np.float64] = np.asarray(y, dtype=np.float64)
-
-        if y_proc.size == 0:
-            raise ValueError("Input 'y' cannot be empty.")
-
-        if y_proc.ndim > 1 and y_proc.shape[1] > 1:
-            raise ValueError(
-                f"Input 'y' for EuclideanShape must be 1-dimensional (n_samples,) "
-                f"or (n_samples, 1), but got shape {y_proc.shape}."
-            )
-
-        return y_proc.ravel()
-
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Compute pairwise absolute differences.
+        Compute pairwise Euclidean distances.
 
         Calculates:
-        \\[ D_{ij} = |y_i - y_j| \\]
+
+        .. math::
+
+            D_{ij} = \\sqrt{\\sum_{k} (y_{ik} - y_{jk})^2}
 
         Parameters
         ----------
         y : NDArray[np.float64]
-            Input 1D array of labels.
+            Input array of shape (n_samples,) or (n_samples, n_features).
 
         Returns
         -------
         NDArray[np.float64]
-            Pairwise Euclidean distance matrix.
+            Pairwise Euclidean distance matrix of shape (n_samples, n_samples).
         """
-        y_flat = y.ravel()
+        points = y.reshape(len(y), -1)
 
-        distance_matrix: NDArray[np.float64] = np.abs(y_flat[:, None] - y_flat[None, :])
+        distance_matrix: NDArray[np.float64] = squareform(pdist(points))
 
         return distance_matrix

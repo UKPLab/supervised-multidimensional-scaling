@@ -218,7 +218,7 @@ def discover_manifolds(
         params = {}
 
         if isinstance(shape, BaseShape):
-            if shape.y_ndim != user_y_ndim:
+            if user_y_ndim not in np.atleast_1d(shape.y_ndim):
                 continue
 
             shape_name = shape.__class__.__name__
@@ -363,7 +363,8 @@ def discover_manifolds(
         valid_shapes = [
             h
             for h in shapes
-            if (isinstance(h, BaseShape) and h.y_ndim == user_y_ndim) or isinstance(h, UserProvidedSMDSParametrization)
+            if (isinstance(h, BaseShape) and user_y_ndim in np.atleast_1d(h.y_ndim))
+            or isinstance(h, UserProvidedSMDSParametrization)
         ]
         if valid_shapes:
             create_plots(
