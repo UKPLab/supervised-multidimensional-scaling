@@ -1,12 +1,15 @@
-# SMDS by Shape Wizards
+<p  align="center">
+  <img src='assets/logo.png' width='200'>
+</p>
 
-[![Arxiv](https://img.shields.io/badge/Arxiv-2510.01025-red?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.01025)
+# Supervised Multi-Dimensional Scaling
+
+[![Paper](https://img.shields.io/badge/paper-Transactions%20on%20Machine%20Learning%20Research%20(TMLR)-112467?style=flat-square&logoColor=white)](https://openreview.net/forum?id=vCKZ40YYPr)
 [![License](https://img.shields.io/github/license/UKPLab/supervised-multidimensional-scaling)](https://opensource.org/licenses/Apache-2.0)
 [![Python Versions](https://img.shields.io/badge/Python-3.12-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![CI](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml/badge.svg)](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml)
 
-This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens:
-Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the
+This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Hypothesis-Driven Feature Manifold Analysis in LLMs via Supervised Multi-Dimensional Scaling". It contains a plug-and-play class written with the
 familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds
 of various shape.
 
@@ -19,18 +22,21 @@ Don't hesitate to report an issue if you have further questions or spot a bug.
 ## Getting started
 
 With uv (recommended):
+
 ```shell
 uv add smds
 ```
 
 With pip:
+
 ```bash
 pip install smds
 ```
 
 ## Usage
 
-The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS, it requires selecting a stage-1 strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
+The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS,
+it requires selecting a parametrization strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
 
 ### Fit & Transform
 
@@ -45,9 +51,9 @@ X = np.random.randn(100, 20)  # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-# stage_1: "computed" (default) or "user_provided"
+# parametrization: "computed" (default) or "user_provided"
 # manifold: one of the built-in shape names, e.g. "cluster", "circular", "log_linear"
-smds = SupervisedMDS(stage_1="computed", manifold="cluster", alpha=0.1)
+smds = SupervisedMDS(parametrization="computed", manifold="cluster", alpha=0.1)
 smds.fit(X, y)
 
 # Transform to low-dimensional space
@@ -55,7 +61,7 @@ X_proj = smds.transform(X)
 print(X_proj.shape)  # (100, 2)
 ```
 
-If you set `stage_1="user_provided"`, `manifold` is ignored and a warning is raised.
+If you set `parametrization="user_provided"`, `manifold` is ignored and a warning is raised.
 
 ### Manifold Discovery
 
@@ -70,12 +76,12 @@ from smds.pipeline import open_dashboard
 # Evaluates default shapes (Cluster, Circular, Hierarchical, etc.)
 # Returns a DataFrame sorted by best fit (lowest stress / highest score)
 df_results, save_path = discover_manifolds(
-    X, 
-    y, 
-    smds_components=2,           # Target dimensionality
-    n_folds=5,                   # Cross-validation folds
-    experiment_name="My_Exp",    # Name for saved results
-    n_jobs=-1                    # Use all available cores
+    X,
+    y,
+    smds_components=2,  # Target dimensionality
+    n_folds=5,  # Cross-validation folds
+    experiment_name="My_Exp",  # Name for saved results
+    n_jobs=-1  # Use all available cores
 )
 
 print(f"Best matching shape: {df_results.iloc[0]['shape']}")
@@ -86,55 +92,17 @@ open_dashboard.main(save_path)
 ```
 
 The discovery pipeline handles:
+
 - **Hypothesis Testing**: Iterates through a default or custom list of manifold shapes.
 - **Cross-Validation**: Uses k-fold CV to ensure robust scoring.
 - **Caching**: Caches intermediate results to resume interrupted experiments.
 - **Visualization**: Generates interactive plots for the dashboard.
 
-## Optimization & GPU Support
-
-For manifolds with undefined distances (e.g. `ChainShape`), SMDS falls back to a generic SciPy solver.  
-For large datasets, this can be slow.
-
-SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can transparently leverage GPUs when available.
-
-### Enabling the Accelerator
-
-Install SMDS with the optional `fast` extra:
-
-```bash
-  pip install smds[fast]
-```
-
-Then enable it in your model:
-```python
-smds = SupervisedMDS(
-    ...,
-    manifold="chain",
-    gpu_accel=True,
-)
-```
-If a compatible GPU is available, PyTorch will use it automatically.
-Otherwise, the accelerated solver will run on CPU.
-
->💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
-See the official PyTorch documentation for platform-specific setup.
-
-## Development (for contributors)
-
-This seciton is especially usefull if you consider contributing to the library!
-
-### Documentation
-
-To build and serve the documentation locally:
-
-```bash
-mkdocs serve
-```
-
 ### Statistical Validation
 
-Standard cross-validation provides a mean score, but it does not tell you if one manifold is *statistically* better than another. SMDS includes a robust **Statistical Testing (ST)** wrapper that runs repeated experiments to perform a **Friedman Rank Sum Test** and **Nemenyi Post-Hoc Analysis**.
+Standard cross-validation provides a mean score, but it does not tell you if one manifold is *statistically* better than
+another. SMDS includes a robust **Statistical Testing (ST)** wrapper that runs repeated experiments to perform a *
+*Friedman Rank Sum Test** and **Nemenyi Post-Hoc Analysis**.
 
 #### Running a Statistical Test
 
@@ -145,8 +113,8 @@ from smds.pipeline.statistical_testing.run_statistical_test import run_statistic
 
 # Runs the pipeline 10 times (10 repeats), each with 5-Fold CV
 pivot_dfs, output_path = run_statistical_validation(
-    X=my_data, 
-    y=my_labels, 
+    X=my_data,
+    y=my_labels,
     n_repeats=10,
     n_folds=5,
     experiment_name="my_robust_experiment"
@@ -157,8 +125,11 @@ pivot_dfs, output_path = run_statistical_validation(
 
 Open the dashboard to view the **Friedman Statistic**, **P-Value Heatmap**, and **Critical Difference (CD) Diagram**:
 
-```bash
-python smds/pipeline/open_dashboard.py
+```python
+from smds.pipeline import open_dashboard
+
+# Launch the interactive Streamlit dashboard to explore results and plots
+open_dashboard.main()
 ```
 
 ### Testing
@@ -166,7 +137,50 @@ python smds/pipeline/open_dashboard.py
 Run the test suite using pytest:
 
 ```bash
-make test
+  make test
+```
+
+### Optimization & GPU Support
+
+For manifolds with undefined distances (e.g. `ChainShape`), SMDS falls back to a generic SciPy solver.  
+For large datasets, this can be slow.
+
+SMDS provides an **optional accelerated solver** based on **PyTorch**, which is significantly faster on CPU and can
+transparently leverage GPUs when available.
+
+#### Enabling the Accelerator
+
+Install SMDS with the optional `fast` extra:
+
+```bash
+  pip install smds[fast]
+```
+
+Then enable it in your model:
+
+```python
+smds = SupervisedMDS(
+    ...,
+    manifold="chain",
+    gpu_accel=True,
+)
+```
+
+If a compatible GPU is available, PyTorch will use it automatically.
+Otherwise, the accelerated solver will run on CPU.
+
+> 💡 GPU support (CUDA on NVIDIA, MPS on Apple Silicon) depends on your PyTorch installation.
+> See the official PyTorch documentation for platform-specific setup.
+
+### Documentation
+
+The full online documentation is available
+at  [SMDS Documentation](https://ukplab.github.io/supervised-multidimensional-scaling/).
+
+To build and serve the documentation locally:
+
+```bash
+mkdocs serve
 ```
 
 ## Contributors (the Shape Wizards team)
@@ -175,18 +189,31 @@ make test
   <img src="https://contrib.rocks/image?repo=UKPLab/supervised-multidimensional-scaling" />
 </a>
 
+## Contribution Matrix
+
+| Category                                       | Anton                                                                                                                                  | Arwin                                             | Jan                                                                                                                                                                                                                                                                                 | Simon                                                             | Vinayak                                                            |
+|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------------------------------|
+| Shape Implementation                           | Geodesic, Cylindrical, Spherical                                                                                                       | KleinBottle, HierarchicalShape                    | Shapes:<br>CircularShape<br>SpiralShape                                                                                                                                                                                                                                                             | ClusterShape, DiscreteCircular, ChainShape                        | LogLinear, Euclidean, SemiCircular, Torus, Polytope, GraphGeodesic |
+| Architectural Extensions                       | BaseShape API design/implementation, Precomputed manifolds (Y bypass)                                                                  | BaseShape, AlternativeReducer                     | Design base shape abstraction. Design of stress metrics following sklearn conventions following research papers                                                                                                                                                     |                                                                   |                                                                    |
+| Stress Metrics                                 |                                                                                                                                        | Non-metric stress                                 | Implement abstraction of stress metric. Shepard score.                                                                                                                                                                                                                                                                                    |                                                                   | Normalized stress, KL divergence                                   |
+| Discovery, Visualization & Validation          |                                                                                                                                        | Discovery Pipeline, png-Visualization             |                                                                                                                                                                                                                                                                                     | Discovery Pipeline, Dashboard, Statistical Testing                |                                                                    |
+| Infrastructure, Tooling, Testing & Performance | Default normalization in BaseShape, General refactoring ([PR](https://github.com/UKPLab/supervised-multidimensional-scaling/pull/34)) Shapes API | Unified stress tests, sklearn compatibility tests | Leading engineering efforts: Implementing CI/CD pipelines<br>Implementing environment reproducibility<br>Selection of tools used by our team for coding and organisation<br>Deploying package to PyPi<br>Designing rules for Pull Requests review process<br>Creating documentation | Shape Integration Test Framework, GPU acceleration for ChainShape |                                                                    |
+| Experiments                                    | Manifold Activation Patching                                                                                                           | Hour of Manifold Experiment                       | Experimental notebook                                                                                                                                                                                                                                                               | Manifold Location Experiment                                      | Color Manifolds in VLMs                                            |
+
 ## Cite
 
 Please use the following citation:
 
 ```
-@misc{tiblias2025shapehappensautomaticfeature,
-      title={Shape Happens: Automatic Feature Manifold Discovery in LLMs via Supervised Multi-Dimensional Scaling}, 
-      author={Federico Tiblias and Irina Bigoulaeva and Jingcheng Niu and Simone Balloccu and Iryna Gurevych},
-      year={2025},
-      eprint={2510.01025},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2510.01025}, 
+@article{tibliasHypothesisDrivenFeatureManifold2025,
+  title = {Hypothesis-Driven Feature Manifold Analysis in LLMs via Supervised Multi-Dimensional Scaling},
+  author = {Tiblias, Federico and Bigoulaeva, Irina and Niu, Jingcheng and Balloccu, Simone and Gurevych, Iryna},
+  year = 2025,
+  month = oct,
+  journal = {Transactions on Machine Learning Research},
+  issn = {2835-8856},
+  urldate = {2026-04-26},
+  url={https://openreview.net/forum?id=vCKZ40YYPr},
+  langid = {english},
 }
 ```

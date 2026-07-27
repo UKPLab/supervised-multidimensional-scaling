@@ -20,6 +20,7 @@ from smds.shapes.continuous_shapes import (
     LogLinearShape,
     SemicircularShape,
     SpiralShape,
+    TorusShape,
 )
 from smds.shapes.discrete_shapes import (
     ChainShape,
@@ -50,8 +51,23 @@ except ImportError:
 #   result: X_proj
 
 
-# smds stage 1 - for the manifold Y_
 class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore[misc]
+    """
+    Abstract base class defining the interface for SMDS parametrization strategies.
+
+    A parametrization maps labels or coordinates to an ideal pairwise distance
+    matrix and a low-dimensional embedding. Subclasses implement the specific
+    strategy for computing these (e.g., via a geometric manifold or user-provided
+    coordinates).
+
+    Attributes
+    ----------
+    D_ : ndarray of shape (n_samples, n_samples)
+        Ideal pairwise distance matrix, set after fitting.
+    Y_ : ndarray of shape (n_samples, n_components)
+        Low-dimensional embedding of the ideal distances, set after fitting.
+    """
+
     @property
     @abstractmethod
     def n_components(self) -> int | None:
@@ -125,14 +141,25 @@ class SMDSParametrization(TransformerMixin, BaseEstimator, ABC):  # type: ignore
 
 class ComputedSMDSParametrization(SMDSParametrization):
     """
-    Stage-1 parametrization that computes ideal distances using a manifold function.
+    Parametrization that computes ideal distances using a geometric manifold.
+
+    Fits a classical MDS embedding from distances derived by applying a manifold
+    function to the input labels.
 
     Parameters
     ----------
     manifold : Callable
-        Function that takes labels and returns a distance matrix.
+        A callable that accepts labels of shape (n_samples,) or (n_samples, k)
+        and returns a pairwise distance matrix of shape (n_samples, n_samples).
     n_components : int
-        Number of embedding dimensions.
+        Number of dimensions in the low-dimensional embedding.
+
+    Attributes
+    ----------
+    D_ : ndarray of shape (n_samples, n_samples)
+        Ideal pairwise distance matrix computed from the manifold.
+    Y_ : ndarray of shape (n_samples, n_components)
+        Classical MDS embedding of the ideal distances.
     """
 
     def __init__(self, manifold: Callable[[NDArray[Any]], NDArray[np.float64]], n_components: int):
@@ -241,20 +268,33 @@ class ComputedSMDSParametrization(SMDSParametrization):
 
 class UserProvidedSMDSParametrization(SMDSParametrization):
     """
-    Stage-1 parametrization using user-provided coordinates or template mapping.
+    Parametrization using user-provided coordinates or a template mapping.
+
+    Instead of deriving distances from a built-in manifold, this class accepts
+    pre-computed embedding coordinates directly, or maps labels onto a fixed
+    template via a user-supplied function.
 
     Parameters
     ----------
-    y : ndarray, optional
-        Pre-computed embedding coordinates.
+    y : ndarray of shape (n_samples, n_components), optional
+        Pre-computed embedding coordinates. If provided, these are used directly
+        without any fitting computation.
     n_components : int, optional
-        Number of embedding dimensions (inferred from y if not provided).
+        Number of embedding dimensions. Inferred from ``y`` if not provided.
     fixed_template : ndarray, optional
-        Fixed template coordinates for mapping.
+        Fixed reference coordinates used together with ``mapper``.
     mapper : Callable, optional
-        Function to map labels to template coordinates.
+        Function with signature ``(labels, template) -> coordinates`` that maps
+        input labels onto the fixed template.
     name : str, optional
-        Name for this parametrization.
+        Optional name for this parametrization instance.
+
+    Attributes
+    ----------
+    D_ : ndarray of shape (n_samples, n_samples)
+        Pairwise distance matrix computed from the stored coordinates.
+    Y_ : ndarray of shape (n_samples, n_components)
+        The stored or mapped embedding coordinates.
     """
 
     def __init__(
@@ -397,49 +437,98 @@ class UserProvidedSMDSParametrization(SMDSParametrization):
 
 
 class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
-    _STAGE_1_OPTIONS = {"computed", "user_provided"}
+    """
+    Learn a linear map W that projects high-dimensional data onto a hypothesis manifold.
+
+    The manifold is defined by labels ``y`` via a parametrization strategy.
+    The projection matrix W is fitted in closed form (ridge regression or Procrustes)
+    when all ideal distances are fully defined, or via iterative optimization for
+    incomplete distance matrices.
+
+    Parameters
+    ----------
+    parametrization : str or SMDSParametrization, default="computed"
+        Strategy for computing the ideal manifold embedding.
+
+        - ``"computed"``: derive distances from a built-in geometric manifold
+          selected by the ``manifold`` argument.
+        - ``"user_provided"``: accept coordinates or a template mapping directly.
+        - An ``SMDSParametrization`` instance: use a custom parametrization object.
+    manifold : str, default="circular"
+        Name of the built-in manifold to use when ``parametrization="computed"``.
+        Ignored when an ``SMDSParametrization`` instance is passed.
+        Valid options: ``chain``, ``circular``, ``cluster``, ``cylindrical``,
+        ``discrete_circular``, ``euclidean``, ``geodesic``, ``graph_geodesic``,
+        ``hierarchical``, ``klein_bottle``, ``log_linear``, ``polytope``,
+        ``semicircular``, ``spherical``, ``spiral``, ``torus``.
+    n_components : int or None, default=None
+        Dimensionality of the manifold embedding. If None, the natural embedding
+        dimension of the selected ``manifold`` is used (e.g. 2 for ``circular``,
+        3 for ``spherical``, 4 for ``klein_bottle``).
+
+        Only meaningful when ``parametrization="computed"``; ignored otherwise.
+        Note that classical MDS cannot produce more dimensions than the rank of
+        the manifold's distance matrix: requesting more components than a shape
+        can support yields zero-filled trailing columns rather than extra
+        geometry. It is most useful for the discrete shapes (``cluster``,
+        ``chain``, ``hierarchical``, ``graph_geodesic``), whose distance
+        matrices are typically full rank and therefore truncated by the default.
+
+        ``euclidean`` is the one built-in manifold with no natural dimension of
+        its own: it accepts labels of shape (n_samples,) or
+        (n_samples, n_features) alike. Its default is fixed at 1 for the common
+        scalar-label case, so with (n_samples, n_features) labels pass
+        ``n_components=n_features`` explicitly to keep the full geometry.
+    alpha : float, default=1.0
+        Ridge regularization strength for the closed-form solver.
+        Set to ``0`` for unregularized least squares.
+    orthonormal : bool, default=False
+        If True, solve for an orthonormal projection via Procrustes.
+        ``alpha`` is ignored when this is True.
+    gpu_accel : bool, default=False
+        If True, use a PyTorch-based solver for incomplete distance matrices.
+        Requires PyTorch to be installed.
+
+    Attributes
+    ----------
+    W_ : ndarray of shape (n_components, n_features)
+        Learned linear projection matrix.
+    Y_ : ndarray of shape (n_samples, n_components)
+        Ideal manifold embedding used during fitting.
+    parametrization_fitted_ : SMDSParametrization
+        Fitted parametrization object holding ``D_`` and ``Y_``.
+    """
+
+    _PARAMETRIZATION_OPTIONS = {"computed", "user_provided"}
 
     def __init__(
         self,
-        stage_1: str = "computed",
+        parametrization: str = "computed",
         manifold: str = "circular",
-        alpha: float = 0.1,
+        n_components: int | None = None,
+        alpha: float = 1.0,
         orthonormal: bool = False,
-        radius: float = 6371,
         gpu_accel: bool = False,
     ):
-        # todo: add string for stage_1
-        # todo: add string for manifold
-        # todo: warn if stage_1 is UserProv -> manifold is ignored
-        """
-        Parameters
-        ----------
-            stage_1:
-                Stage 1 strategy. One of {"computed", "user_provided"}.
-            manifold:
-                Manifold type used by computed stage_1.
-            metric:
-                The metric to use for scoring the embedding.
-            gpu_accel:
-                If True, attempts to use PyTorch (and CUDA/MPS if available)
-                to solve sparse/incomplete manifold optimization.
-        """
-        self.stage_1 = stage_1
+        self.parametrization = parametrization
+        self.n_components = n_components
         self.manifold = manifold
         self.alpha = alpha
         self.orthonormal = orthonormal
-        self.radius = radius
         self.gpu_accel = gpu_accel
 
     @staticmethod
-    def _normalize_stage_1_name(stage_1: str) -> str:
-        if not isinstance(stage_1, str):
-            raise TypeError(f"stage_1 must be a string or SMDSParametrization instance, got {type(stage_1).__name__}")
-        stage_1_name = stage_1.strip().lower()
-        if stage_1_name not in SupervisedMDS._STAGE_1_OPTIONS:
-            valid = sorted(SupervisedMDS._STAGE_1_OPTIONS)
-            raise ValueError(f"Unknown stage_1: {stage_1!r}. Valid options are: {valid}")
-        return stage_1_name
+    def _normalize_parametrization_name(parametrization: str) -> str:
+        if not isinstance(parametrization, str):
+            raise TypeError(
+                f"parametrization must be a string or SMDSParametrization instance, "
+                f"got {type(parametrization).__name__}"
+            )
+        parametrization_name = parametrization.strip().lower()
+        if parametrization_name not in SupervisedMDS._PARAMETRIZATION_OPTIONS:
+            valid = sorted(SupervisedMDS._PARAMETRIZATION_OPTIONS)
+            raise ValueError(f"Unknown parametrization: {parametrization!r}. Valid options are: {valid}")
+        return parametrization_name
 
     @staticmethod
     def _normalize_manifold_name(manifold: str) -> str:
@@ -455,15 +544,15 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
             "discrete_circular": (lambda: DiscreteCircularShape(), 2),
             "hierarchical": (lambda: HierarchicalShape(level_distances=np.array([100.0, 10.0, 1.0])), 2),
             "circular": (lambda: CircularShape(), 2),
-            "cylindrical": (lambda: CylindricalShape(radius=self.radius), 3),
-            "spherical": (lambda: SphericalShape(radius=self.radius), 3),
-            "geodesic": (lambda: GeodesicShape(radius=self.radius), 3),
+            "cylindrical": (lambda: CylindricalShape(), 3),
+            "spherical": (lambda: SphericalShape(), 3),
+            "geodesic": (lambda: GeodesicShape(), 3),
             "spiral": (lambda: SpiralShape(), 2),
             "log_linear": (lambda: LogLinearShape(), 1),
             "euclidean": (lambda: EuclideanShape(), 1),
             "semicircular": (lambda: SemicircularShape(), 2),
             "klein_bottle": (lambda: KleinBottleShape(), 4),
-            "torus": (lambda: KleinBottleShape(), 3),
+            "torus": (lambda: TorusShape(), 3),
             "graph_geodesic": (lambda: GraphGeodesicShape(), 3),
             "polytope": (lambda: PolytopeShape(), 3),
         }
@@ -473,20 +562,39 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         factory, n_components = manifold_factories[manifold_name]
         return factory(), n_components
 
-    def _build_stage_1(self, stage_1_name: str, manifold_name: str) -> SMDSParametrization:
-        if stage_1_name == "computed":
-            manifold_obj, n_components = self._build_manifold(manifold_name)
+    def _resolve_n_components(self) -> int | None:
+        """
+        Return the explicit embedding-dimension override, or None for the manifold default.
+
+        Subclasses that give ``n_components`` a different meaning may override this.
+        """
+        n_components = self.n_components
+
+        if n_components is None:
+            return None
+
+        if isinstance(n_components, bool) or not isinstance(n_components, (int, np.integer)) or n_components < 1:
+            raise ValueError(f"n_components must be a positive integer or None, got {n_components!r}.")
+
+        return int(n_components)
+
+    def _build_parametrization(self, parametrization_name: str, manifold_name: str) -> SMDSParametrization:
+        if parametrization_name == "computed":
+            manifold_obj, default_n_components = self._build_manifold(manifold_name)
+            n_components = self._resolve_n_components()
+            if n_components is None:
+                n_components = default_n_components
             return ComputedSMDSParametrization(manifold=manifold_obj, n_components=n_components)
 
-        warnings.warn("stage_1='user_provided': manifold value is ignored.", UserWarning, stacklevel=2)
+        warnings.warn("parametrization='user_provided': manifold value is ignored.", UserWarning, stacklevel=2)
         return UserProvidedSMDSParametrization()
 
-    def _resolve_stage_1(self) -> SMDSParametrization:
-        if isinstance(self.stage_1, SMDSParametrization):
-            return self.stage_1
-        normalized_stage_1 = self._normalize_stage_1_name(self.stage_1)
+    def _resolve_parametrization(self) -> SMDSParametrization:
+        if isinstance(self.parametrization, SMDSParametrization):
+            return self.parametrization
+        normalized_parametrization = self._normalize_parametrization_name(self.parametrization)
         normalized_manifold = self._normalize_manifold_name(self.manifold)
-        return self._build_stage_1(normalized_stage_1, normalized_manifold)
+        return self._build_parametrization(normalized_parametrization, normalized_manifold)
 
     def _validate_and_convert_metric(self, metric: str | StressMetrics) -> StressMetrics:
         """
@@ -503,9 +611,9 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         """
         Compute the loss only on the defined distances (where mask is True).
         """
-        n_components = self.stage_1_fitted_.n_components
+        n_components = self.parametrization_fitted_.n_components
         if n_components is None:
-            raise ValueError("stage_1_fitted_.n_components is not set.")
+            raise ValueError("parametrization_fitted_.n_components is not set.")
         W = W_flat.reshape((n_components, X.shape[1]))
         X_proj = (W @ X.T).T
         D_pred = np.linalg.norm(X_proj[:, None, :] - X_proj[None, :, :], axis=-1)
@@ -514,12 +622,15 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         return result
 
     def _validate_data(
-        self, X: np.ndarray, y: np.ndarray, reset: bool = True, stage_1_model: SMDSParametrization | None = None
+        self, X: np.ndarray, y: np.ndarray, reset: bool = True, parametrization_model: SMDSParametrization | None = None
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Validate and process X and y based on the manifold's expected y dimensionality.
         """
-        model = self.stage_1_fitted_ if hasattr(self, "stage_1_fitted_") else stage_1_model or self._resolve_stage_1()
+        if hasattr(self, "parametrization_fitted_"):
+            model = self.parametrization_fitted_
+        else:
+            model = parametrization_model or self._resolve_parametrization()
 
         if isinstance(model, UserProvidedSMDSParametrization):
             X = check_array(X)
@@ -533,22 +644,29 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
                 )
             return X, y
         else:
-            expected_y_ndim = getattr(model.manifold, "y_ndim", 1)
+            accepted_ndim = np.atleast_1d(getattr(model.manifold, "y_ndim", 1))
 
-        if expected_y_ndim == 1:
-            X, y = validate_data(self, X, y, reset=reset)
+        y_arr = np.asarray(y)
+
+        # Shapes accepting several dimensionalities are dispatched on the y actually
+        # given; (n,) and (n, 1) carry the same labels, so both take the scalar path.
+        if 1 in accepted_ndim and y_arr.shape[1:] in ((), (1,)):
+            # Ravel first: a column vector carries the same labels, and passing it
+            # through unflattened only earns a DataConversionWarning from sklearn.
+            X, y = validate_data(self, X, y_arr.reshape(-1), reset=reset)
             type_of_target(y, raise_unknown=True)
             y = np.asarray(y).squeeze()
             if y.ndim == 0:
                 y = y.reshape(1)
         else:
-            if y.ndim != expected_y_ndim:
+            y = y_arr
+            if y.ndim not in accepted_ndim:
                 raise ValueError(
-                    f"Input 'y' must be {expected_y_ndim}-dimensional, "
+                    f"Input 'y' must be {'- or '.join(map(str, accepted_ndim))}-dimensional, "
                     f"but got shape {y.shape} with {y.ndim} dimensions."
                 )
-            if hasattr(self.stage_1, "validate_y"):
-                self.stage_1.validate_y(y)
+            if hasattr(self.parametrization, "validate_y"):
+                self.parametrization.validate_y(y)
             if X.shape[0] != y.shape[0]:
                 raise ValueError(
                     f"X and y must have the same number of samples. "
@@ -585,9 +703,9 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         # Parameter Initialization
         n_features = X.shape[1]
-        n_components = self.stage_1_fitted_.n_components
+        n_components = self.parametrization_fitted_.n_components
         if n_components is None:
-            raise ValueError("Stage 1 n_components is not set")
+            raise ValueError("parametrization_fitted_.n_components is not set")
 
         W_t = torch.nn.Parameter(torch.randn(n_components, n_features, device=device, dtype=torch.float32) * 0.01)
 
@@ -639,9 +757,9 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         Used when distances are incomplete (negative) and GPU accel is off/unavailable.
         """
         rng = np.random.default_rng(42)
-        n_components = self.stage_1_fitted_.n_components
+        n_components = self.parametrization_fitted_.n_components
         if n_components is None:
-            raise ValueError("Stage 1 n_components is not set")
+            raise ValueError("parametrization_fitted_.n_components is not set")
 
         W0 = rng.normal(scale=0.01, size=(n_components, X.shape[1]))
         result = minimize(self._masked_loss, W0.ravel(), args=(X, D, mask), method="L-BFGS-B")
@@ -650,23 +768,26 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "SupervisedMDS":
         """
-        Fit the linear transformation W to match distances induced by labels y.
-        Uses classical MDS + closed-form when all distances are defined,
-        and switches to optimization if some distances are undefined (negative).
+        Fit the linear projection W to match distances induced by labels y.
+
+        Uses classical MDS and a closed-form solution when all ideal distances
+        are defined, and switches to iterative optimization when some distances
+        are undefined (negative).
 
         Parameters
         ----------
-            X: array-like of shape (n_samples, n_features)
-                The input data to be transformed.
-            y: array-like of shape (n_samples,) or (n_samples, 2)
-                The labels or coordinates defining the ideal distances.
+        X : array-like of shape (n_samples, n_features)
+            Input data to be projected.
+        y : array-like of shape (n_samples,) or (n_samples, k)
+            Labels or coordinates defining the ideal manifold distances.
 
         Returns
         -------
-            self: returns an instance of self.
+        self : SupervisedMDS
+            Fitted estimator.
         """
-        stage_1_model = self._resolve_stage_1()
-        X, y = self._validate_data(X, y, stage_1_model=stage_1_model)
+        parametrization_model = self._resolve_parametrization()
+        X, y = self._validate_data(X, y, parametrization_model=parametrization_model)
 
         if X.shape[0] == 1:
             raise ValueError("Found array with n_samples=1. SupervisedMDS requires at least 2 samples.")
@@ -677,21 +798,21 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         y = np.asarray(y).squeeze()
 
         if (
-            isinstance(stage_1_model, UserProvidedSMDSParametrization)
-            and stage_1_model.y is None
-            and stage_1_model.fixed_template is None
+            isinstance(parametrization_model, UserProvidedSMDSParametrization)
+            and parametrization_model.y is None
+            and parametrization_model.fixed_template is None
         ):
             y_arr = np.asarray(y)
             n_comp = y_arr.shape[1] if y_arr.ndim > 1 else 1
-            if stage_1_model.n_components != n_comp:
-                stage_1_model = UserProvidedSMDSParametrization(y=None, n_components=n_comp)
+            if parametrization_model.n_components != n_comp:
+                parametrization_model = UserProvidedSMDSParametrization(y=None, n_components=n_comp)
 
-        self.stage_1_fitted_: SMDSParametrization = clone(stage_1_model)
-        self.stage_1_fitted_.fit(y)
+        self.parametrization_fitted_: SMDSParametrization = clone(parametrization_model)
+        self.parametrization_fitted_.fit(y)
 
-        self.Y_ = self.stage_1_fitted_.Y_
+        self.Y_ = self.parametrization_fitted_.Y_
 
-        D = self.stage_1_fitted_.D_
+        D = self.parametrization_fitted_.D_
 
         if np.any(D < 0):
             # Inform if any distances are negative
@@ -748,17 +869,17 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
-        Apply the learned transformation to X.
+        Apply the learned projection to X.
 
         Parameters
         ----------
-            X: array-like of shape (n_samples, n_features)
-                The input data to be transformed.
+        X : array-like of shape (n_samples, n_features)
+            Input data to project.
 
         Returns
         -------
-            X_proj: array of shape (n_samples, n_components)
-                The transformed data in the low-dimensional space.
+        X_proj : ndarray of shape (n_samples, n_components)
+            Data projected into the low-dimensional manifold space.
         """
         check_is_fitted(self)
         X = validate_data(self, X, reset=False)
@@ -785,13 +906,13 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
         Parameters
         ----------
-            X_proj: array-like of shape (n_samples, n_components)
-                The low-dimensional representation of the input data.
+        X_proj : array-like of shape (n_samples, n_components)
+            Low-dimensional representation to invert.
 
         Returns
         -------
-            X_reconstructed: array of shape (n_samples, original_n_features)
-                The reconstructed data in the original space.
+        X_reconstructed : ndarray of shape (n_samples, n_features)
+            Reconstructed data in the original feature space.
         """
         check_is_fitted(self)
         X_proj = check_array(X_proj, ensure_2d=True)
@@ -812,18 +933,19 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
 
     def fit_transform(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
-        Fit the model and transform X in one step.
+        Fit the model and project X in one step.
 
         Parameters
         ----------
-            X: array-like of shape (n_samples, n_features)
-                The input data to be transformed.
-            y: array-like of shape (n_samples,) or (n_samples, 2)
+        X : array-like of shape (n_samples, n_features)
+            Input data to project.
+        y : array-like of shape (n_samples,) or (n_samples, k)
+            Labels or coordinates defining the ideal manifold distances.
 
         Returns
         -------
-            X_proj: array of shape (n_samples, n_components)
-                The transformed data in the low-dimensional space.
+        X_proj : ndarray of shape (n_samples, n_components)
+            Data projected into the low-dimensional manifold space.
         """
         result: np.ndarray = self.fit(X, y).transform(X)
         return result
@@ -838,7 +960,7 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         check_is_fitted(self)
         metric = self._validate_and_convert_metric(metric)
         X, y = self._validate_data(X, y, reset=False)
-        D_ideal = self.stage_1_fitted_.compute_ideal_distances(y)
+        D_ideal = self.parametrization_fitted_.compute_ideal_distances(y)
 
         # Compute predicted pairwise distances
         X_proj = self.transform(X)

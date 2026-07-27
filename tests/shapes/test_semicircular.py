@@ -7,7 +7,7 @@ from smds import SupervisedMDS
 @pytest.fixture
 def engine() -> SupervisedMDS:
     # Semicircle is 2D
-    return SupervisedMDS(stage_1="computed", manifold="semicircular", alpha=0.1)
+    return SupervisedMDS(parametrization="computed", manifold="semicircular", alpha=0.1)
 
 
 @pytest.fixture

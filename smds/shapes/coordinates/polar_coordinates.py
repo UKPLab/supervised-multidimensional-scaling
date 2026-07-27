@@ -6,7 +6,7 @@ from smds.shapes.coordinates import BaseCoordinates, CartesianCoordinates
 
 class PolarCoordinates(BaseCoordinates):
     """
-    Represent points in Polar coordinates ($r, \theta$).
+    Represent points in Polar coordinates \\((r, \\theta)\\).
 
     Parameters
     ----------
@@ -25,8 +25,8 @@ class PolarCoordinates(BaseCoordinates):
         Convert polar coordinates to 2D Cartesian coordinates.
 
         The transformation is defined as:
-        $$ x = r \\cos(\\theta) $$
-        $$ y = r \\sin(\\theta) $$
+        \\[ x = r \\cos(\\theta) \\]
+        \\[ y = r \\sin(\\theta) \\]
 
         Returns
         -------

@@ -44,7 +44,22 @@ class KleinBottleShape(BaseShape):
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Validates input and ensures exactly 2 dimensions for (u, v) parameters.
+        Validate input and ensure exactly 2 dimensions for (u, v) parameters.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of shape (n_samples,) or (n_samples, n_features).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Array of shape (n_samples, 2).
+
+        Raises
+        ------
+        ValueError
+            If ``y`` is empty or has more than 2 features.
         """
         y_proc = np.asarray(y, dtype=np.float64)
 
@@ -70,8 +85,21 @@ class KleinBottleShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Computes geodesic distances on a Flat Klein Bottle.
-        Assumes y is normalized to [0, 1].
+        Compute geodesic distances on a flat Klein bottle.
+
+        Considers all four identification cases (direct, cylinder wrap, Möbius
+        twist, and combined wrap) and returns the minimum distance.
+        Assumes ``y`` is normalized to [0, 1] × [0, 1].
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of shape (n_samples, 2) with columns (u, v).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Pairwise geodesic distance matrix of shape (n_samples, n_samples).
         """
         u = y[:, 0]  # Twist axis
         v = y[:, 1]  # Cylinder axis

@@ -6,7 +6,7 @@ from smds import SupervisedMDS
 
 @pytest.fixture
 def engine() -> SupervisedMDS:
-    return SupervisedMDS(stage_1="computed", manifold="log_linear", alpha=0.1)
+    return SupervisedMDS(parametrization="computed", manifold="log_linear", alpha=0.1)
 
 
 @pytest.fixture

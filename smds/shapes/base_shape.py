@@ -21,7 +21,7 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
 
     Attributes
     ----------
-    y_ndim : int
+    y_ndim : int or tuple of int
         Abstract property. The expected dimensionality of the input labels.
     normalize_labels : bool
         Abstract property. Whether to normalize inputs before computation.
@@ -29,16 +29,20 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
 
     @property
     @abstractmethod
-    def y_ndim(self) -> int:
+    def y_ndim(self) -> int | tuple[int, ...]:
         """
         Get the required dimensionality of the input labels `y`.
 
         Returns
         -------
-        int
+        int or tuple of int
             The number of dimensions expected for the input array.
             - 1: 1D array (e.g., time series, clusters).
             - 2: 2D array (e.g., lat/lon coordinates, hierarchical levels).
+
+            A tuple declares that several are accepted, e.g. ``(1, 2)`` for a
+            shape defined for both scalar labels and coordinate arrays. Test it
+            with ``ndim in np.atleast_1d(shape.y_ndim)``, not for equality.
         """
         pass
 
@@ -149,9 +153,11 @@ class BaseShape(BaseEstimator, ABC):  # type: ignore[misc]
         if y_proc.size == 0:
             raise ValueError("Input 'y' cannot be empty.")
 
-        if y_proc.ndim != self.y_ndim:
+        accepted = np.atleast_1d(self.y_ndim)
+
+        if y_proc.ndim not in accepted:
             raise ValueError(
-                f"Input 'y' must be {self.y_ndim}-dimensional (n_samples,), "
+                f"Input 'y' must be {'- or '.join(map(str, accepted))}-dimensional, "
                 f"but got shape {y_proc.shape} with {y_proc.ndim} dimensions."
             )
 

@@ -44,8 +44,8 @@ class CircularShape(BaseShape):
 
         The labels are treated as fractions of a circle (0 to 1).
         The distance is calculated as:
-        $$ D_{ij} = 2 \\sin(\\pi \\cdot \\delta_{ij}) $$
-        where $\\delta_{ij} = \\min(|y_i - y_j|, 1 - |y_i - y_j|)$ is the shortest
+        \\[ D_{ij} = 2 \\sin(\\pi \\cdot \\delta_{ij}) \\]
+        where \\(\\delta_{ij} = \\min(|y_i - y_j|, 1 - |y_i - y_j|)\\) is the shortest
         arc fraction between points.
 
         Parameters

@@ -218,7 +218,7 @@ def discover_manifolds(
         params = {}
 
         if isinstance(shape, BaseShape):
-            if shape.y_ndim != user_y_ndim:
+            if user_y_ndim not in np.atleast_1d(shape.y_ndim):
                 continue
 
             shape_name = shape.__class__.__name__
@@ -290,13 +290,15 @@ def discover_manifolds(
 
             if save_results and plots_dir is not None:
                 try:
-                    stage_1 = clone(parametrization)
-                    stage_1.fit(y)
-                    Y_ideal = stage_1.Y_
+                    parametrization_fitted = clone(parametrization)
+                    parametrization_fitted.fit(y)
+                    Y_ideal = parametrization_fitted.Y_
 
                     if n_folds >= 2:
                         kf = KFold(n_splits=n_folds, shuffle=False)
-                        X_embedded = np.full((X.shape[0], stage_1.n_components), np.nan, dtype=np.float64)
+                        X_embedded = np.full(
+                            (X.shape[0], parametrization_fitted.n_components), np.nan, dtype=np.float64
+                        )
                         for train_idx, test_idx in kf.split(X):
                             X_embedded[test_idx] = (
                                 SupervisedMDS(parametrization).fit(X[train_idx], y[train_idx]).transform(X[test_idx])
@@ -361,7 +363,8 @@ def discover_manifolds(
         valid_shapes = [
             h
             for h in shapes
-            if (isinstance(h, BaseShape) and h.y_ndim == user_y_ndim) or isinstance(h, UserProvidedSMDSParametrization)
+            if (isinstance(h, BaseShape) and user_y_ndim in np.atleast_1d(h.y_ndim))
+            or isinstance(h, UserProvidedSMDSParametrization)
         ]
         if valid_shapes:
             create_plots(

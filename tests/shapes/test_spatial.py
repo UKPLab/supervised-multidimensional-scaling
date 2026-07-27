@@ -6,17 +6,17 @@ from smds import SupervisedMDS
 
 @pytest.fixture
 def engine_cylindrical() -> SupervisedMDS:
-    return SupervisedMDS(stage_1="computed", manifold="cylindrical", alpha=0.1)
+    return SupervisedMDS(parametrization="computed", manifold="cylindrical", alpha=0.1)
 
 
 @pytest.fixture
 def engine_geodesic() -> SupervisedMDS:
-    return SupervisedMDS(stage_1="computed", manifold="geodesic", alpha=0.1)
+    return SupervisedMDS(parametrization="computed", manifold="geodesic", alpha=0.1)
 
 
 @pytest.fixture
 def engine_spherical() -> SupervisedMDS:
-    return SupervisedMDS(stage_1="computed", manifold="spherical", alpha=0.1)
+    return SupervisedMDS(parametrization="computed", manifold="spherical", alpha=0.1)
 
 
 @pytest.fixture

@@ -7,21 +7,30 @@ from smds.shapes.base_shape import BaseShape
 
 class TorusShape(BaseShape):
     """
-    Manifold hypothesis representing a Flat Torus topology.
-    This shape assumes the data lies on the product of two circles (T1 x T1).
+    Compute geodesic distances on a flat torus (T\\ :sup:`1` × T\\ :sup:`1`) manifold.
 
-    Logic:
-    1. Dimensionality Reduction: Projects input 'y' to 2 dimensions via PCA
-       (or padding) to capture the two independent cycles.
-    2. Parametrization: Maps these 2 dimensions to the unit square [0, 1] x [0, 1].
-    3. Distance Calculation: Computes pairwise distances respecting the Torus
-       identifications (periodic boundary conditions in both directions):
-       - Top/Bottom edges match: (u, 0) ~ (u, 1)
-       - Left/Right edges match: (0, v) ~ (1, v)
+    Models data lying on the product of two circles. Input coordinates are
+    mapped onto the unit square [0, 1] × [0, 1] with periodic boundary
+    conditions in both directions:
 
-    Hyperparameters:
-        radii: A tuple (r1, r2) weighting the two cyclic dimensions.
-               Default is (1.0, 1.0) (Flat Clifford Torus).
+    - (u, 0) ~ (u, 1) — cylinder wrap in the v direction.
+    - (0, v) ~ (1, v) — cylinder wrap in the u direction.
+
+    If the input has more than 2 dimensions it is first reduced to 2 via PCA;
+    if it has fewer than 2 dimensions zeros are padded.
+
+    Parameters
+    ----------
+    radii : tuple of (float, float), optional
+        Scaling weights (r1, r2) for the two cyclic dimensions.
+        Default is ``(1.0, 1.0)`` (flat Clifford torus).
+    normalize_labels : bool, optional
+        Whether to normalize labels to the range [0, 1]. Default is True.
+
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (2). Expects (u, v) parameters.
     """
 
     def __init__(self, radii: tuple[float, float] = (1.0, 1.0), normalize_labels: bool = True):
@@ -30,18 +39,37 @@ class TorusShape(BaseShape):
 
     @property
     def y_ndim(self) -> int:
-        """Get the expected number of dimensions for the Torus topology."""
+        """int: Expected input dimensionality (2)."""
         return 2
 
     @property
+    def radii(self) -> tuple[float, float]:
+        """Tuple of (float, float): Scaling weights for the two cyclic dimensions."""
+        return self._radii
+
+    @property
     def normalize_labels(self) -> bool:
-        """Check whether labels should be normalized to the unit square."""
+        """bool: Whether labels are normalized to the unit square."""
         return self._normalize_labels_flag
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Validates input and reduces dimensions if necessary via PCA.
-        Matches KleinBottleShape logic.
+        Validate input and reduce or pad to exactly 2 dimensions.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of shape (n_samples,) or (n_samples, n_features).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Array of shape (n_samples, 2) suitable for torus projection.
+
+        Raises
+        ------
+        ValueError
+            If ``y`` is empty.
         """
         y_proc = np.asarray(y, dtype=np.float64)
 
@@ -62,7 +90,6 @@ class TorusShape(BaseShape):
             else:
                 pca = PCA(n_components=2)
                 y_proc = pca.fit_transform(y_proc)
-
         elif n_features < 2:
             zeros = np.zeros((n_samples, 2 - n_features))
             y_proc = np.hstack([y_proc, zeros])
@@ -71,8 +98,27 @@ class TorusShape(BaseShape):
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
         """
-        Computes geodesic distances on a Flat Torus.
-        Assumes y is normalized to [0, 1].
+        Compute geodesic distances on the flat torus.
+
+        Calculates the shortest-path distance respecting periodic boundaries
+        in both u and v directions:
+
+        .. math::
+
+            D_{ij} = \\sqrt{(r_1 \\cdot \\delta u_{ij})^2 + (r_2 \\cdot \\delta v_{ij})^2}
+
+        where :math:`\\delta u = \\min(|u_i - u_j|,\\, 1 - |u_i - u_j|)` and
+        analogously for :math:`\\delta v`.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of shape (n_samples, 2), assumed normalized to [0, 1].
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Pairwise geodesic distance matrix of shape (n_samples, n_samples).
         """
         u = y[:, 0]
         v = y[:, 1]

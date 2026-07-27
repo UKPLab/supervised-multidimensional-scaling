@@ -8,21 +8,25 @@ from smds.shapes.base_shape import BaseShape
 
 class GraphGeodesicShape(BaseShape):
     """
-    A generic discrete shape hypothesis that approximates the manifold structure
-    using a K-Nearest Neighbors (KNN) Geodesic Graph (Isomap approach).
+    Approximate manifold distances via a k-nearest-neighbors geodesic graph.
 
-    Logic:
-    1. Graph Construction: Connects each point to its 'k' nearest neighbors.
-    2. Geodesic Distance: Defines distance between two points as the shortest
-       path along the graph edges, rather than the straight Euclidean line.
+    Constructs a KNN graph over the input coordinates and computes the shortest
+    path between all pairs (Isomap approach). This lets the model respect the
+    intrinsic geometry of curved manifolds without knowing their equation.
 
-    This allows the model to "unfold" arbitrary curved shapes (like Swiss Rolls
-    or folded paper) without knowing their equation beforehand.
+    Parameters
+    ----------
+    n_neighbors : int, optional
+        Number of nearest neighbors to connect each point to. Default is 5.
+        Too small a value may leave the graph disconnected; too large a value
+        may introduce shortcuts that distort the geodesic distances.
+    normalize_labels : bool, optional
+        Whether to normalize labels using the base class logic. Default is True.
 
-    Hyperparameters:
-        n_neighbors (int): Number of neighbors to connect. Default is 5.
-                           - Too small: Graph might be disconnected.
-                           - Too large: Short-circuits the manifold (shortcuts).
+    Attributes
+    ----------
+    y_ndim : int
+        Dimensionality of input labels (2). Expects (n_samples, n_features).
     """
 
     def __init__(self, n_neighbors: int = 5, normalize_labels: bool = True):
@@ -31,23 +35,54 @@ class GraphGeodesicShape(BaseShape):
 
     @property
     def y_ndim(self) -> int:
-        """Dimensionality of the input labels."""
+        """int: Dimensionality of the input labels (2)."""
         return 2
 
     @property
     def normalize_labels(self) -> bool:
-        """Whether to normalize the input labels."""
+        """bool: Whether to normalize the input labels."""
         return self._normalize_labels_flag
 
     def _validate_input(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Validate and coerce input to a 2D float64 array.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of shape (n_samples,) or (n_samples, n_features).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Validated 2D array of shape (n_samples, n_features).
+
+        Raises
+        ------
+        ValueError
+            If ``y`` has more than 2 dimensions after reshaping.
+        """
         y_proc = np.asarray(y, dtype=np.float64)
         if y_proc.ndim == 1:
             y_proc = y_proc.reshape(-1, 1)
         if y_proc.ndim != 2:
-            raise ValueError(f"GraphGeodesic expects 2D input (n_samples, n_features), got {y_proc.ndim}D")
+            raise ValueError(f"GraphGeodesicShape expects 2D input (n_samples, n_features), got {y_proc.ndim}D.")
         return y_proc
 
     def _compute_distances(self, y: NDArray[np.float64]) -> NDArray[np.float64]:
+        """
+        Build a KNN graph and return all-pairs shortest-path distances.
+
+        Parameters
+        ----------
+        y : NDArray[np.float64]
+            Input array of shape (n_samples, n_features).
+
+        Returns
+        -------
+        NDArray[np.float64]
+            Pairwise geodesic distance matrix of shape (n_samples, n_samples).
+        """
         y_proc = np.asarray(y, dtype=np.float64)
         n_samples = y_proc.shape[0]
 
@@ -59,5 +94,5 @@ class GraphGeodesicShape(BaseShape):
 
         dist_matrix = shortest_path(csgraph=graph, method="auto", directed=False)
 
-        result = np.asarray(dist_matrix, dtype=np.float64)
+        result: NDArray[np.float64] = np.asarray(dist_matrix, dtype=np.float64)
         return result

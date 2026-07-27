@@ -6,7 +6,7 @@ from sklearn.utils.estimator_checks import check_estimator  # type: ignore[impor
 
 from smds.smds import SupervisedMDS
 
-# todo: add same for Stage1SMDSTransformer
+# todo: add same for SMDSParametrization
 
 
 def dummy_manifold_func(y: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -25,7 +25,7 @@ def test_sklearn_compatibility() -> None:
     Tests SupervisedMDS with sklearn's check_estimator.
     This ensures that SupervisedMDS meets all sklearn compatibility requirements.
     """
-    estimator = SupervisedMDS(stage_1="computed", manifold="circular")
+    estimator = SupervisedMDS(parametrization="computed", manifold="circular")
 
     try:
         check_estimator(estimator)

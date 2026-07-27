@@ -1,16 +1,15 @@
 <p  align="center">
-  <img src='logo.png' width='200'>
+  <img src='docs/assets/logo.png' width='200'>
 </p>
 
 # Supervised Multi-Dimensional Scaling
 
-[![Arxiv](https://img.shields.io/badge/Arxiv-2510.01025-red?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2510.01025)
+[![Paper](https://img.shields.io/badge/paper-Transactions%20on%20Machine%20Learning%20Research%20(TMLR)-112467?style=flat-square&logoColor=white)](https://openreview.net/forum?id=vCKZ40YYPr)
 [![License](https://img.shields.io/github/license/UKPLab/supervised-multidimensional-scaling)](https://opensource.org/licenses/Apache-2.0)
 [![Python Versions](https://img.shields.io/badge/Python-3.12-blue.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![CI](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml/badge.svg)](https://github.com/UKPLab/supervised-multidimensional-scaling/actions/workflows/main.yml)
 
-This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Shape Happens:
-Automatic Feature Manifold Discovery in LLMs". It contains a plug-and-play class written with the
+This is a stand-alone implementation of Supervised Multi-Dimensional Scaling (SMDS) from the paper "Hypothesis-Driven Feature Manifold Analysis in LLMs via Supervised Multi-Dimensional Scaling". It contains a plug-and-play class written with the
 familiar [scikit-learn](https://scikit-learn.org) interface. SMDS supports several template shapes to discover manifolds
 of various shape.
 
@@ -37,7 +36,7 @@ pip install smds
 ## Usage
 
 The `SupervisedMDS` class provides a scikit-learn style interface that is straightforward to use. Unlike standard MDS,
-it requires selecting a stage-1 strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
+it requires selecting a parametrization strategy and target `manifold` by name (for example: `"cluster"`, `"circular"`).
 
 ### Fit & Transform
 
@@ -52,9 +51,9 @@ X = np.random.randn(100, 20)  # 100 samples, 20 features
 y = np.random.randint(0, 5, size=100)  # Discrete labels (clusters)
 
 # Instantiate and fit
-# stage_1: "computed" (default) or "user_provided"
+# parametrization: "computed" (default) or "user_provided"
 # manifold: one of the built-in shape names, e.g. "cluster", "circular", "log_linear"
-smds = SupervisedMDS(stage_1="computed", manifold="cluster", alpha=0.1)
+smds = SupervisedMDS(parametrization="computed", manifold="cluster", alpha=0.1)
 smds.fit(X, y)
 
 # Transform to low-dimensional space
@@ -62,7 +61,7 @@ X_proj = smds.transform(X)
 print(X_proj.shape)  # (100, 2)
 ```
 
-If you set `stage_1="user_provided"`, `manifold` is ignored and a warning is raised.
+If you set `parametrization="user_provided"`, `manifold` is ignored and a warning is raised.
 
 ### Manifold Discovery
 
@@ -206,13 +205,15 @@ mkdocs serve
 Please use the following citation:
 
 ```
-@misc{tiblias2025shapehappensautomaticfeature,
-      title={Shape Happens: Automatic Feature Manifold Discovery in LLMs via Supervised Multi-Dimensional Scaling}, 
-      author={Federico Tiblias and Irina Bigoulaeva and Jingcheng Niu and Simone Balloccu and Iryna Gurevych},
-      year={2025},
-      eprint={2510.01025},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2510.01025}, 
+@article{tibliasHypothesisDrivenFeatureManifold2025,
+  title = {Hypothesis-Driven Feature Manifold Analysis in LLMs via Supervised Multi-Dimensional Scaling},
+  author = {Tiblias, Federico and Bigoulaeva, Irina and Niu, Jingcheng and Balloccu, Simone and Gurevych, Iryna},
+  year = 2025,
+  month = oct,
+  journal = {Transactions on Machine Learning Research},
+  issn = {2835-8856},
+  urldate = {2026-04-26},
+  url={https://openreview.net/forum?id=vCKZ40YYPr},
+  langid = {english},
 }
 ```

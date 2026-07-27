@@ -10,7 +10,7 @@ class SpiralShape(BaseShape):
     Arrange points in an Archimedean spiral pattern.
 
     This class generates a shape where points are arranged along a spiral
-    trajectory defined by the equation $r = a + b\theta$. The distance metric
+    trajectory defined by the equation \\(r = a + b\\theta\\). The distance metric
     is computed based on the Euclidean distance between these points in
     Cartesian coordinates.
 
@@ -18,14 +18,14 @@ class SpiralShape(BaseShape):
     ----------
     initial_radius : float, optional
         The starting radius of the spiral (offset from the origin), corresponding
-        to $a$ in the Archimedean spiral equation. Default is 0.5.
+        to \\(a\\) in the Archimedean spiral equation. Default is 0.5.
     growth_rate : float, optional
         The rate at which the spiral expands away from the center for every radian
-        of rotation, corresponding to $b$ in the Archimedean spiral equation.
+        of rotation, corresponding to \\(b\\) in the Archimedean spiral equation.
         Default is 1.0.
     num_turns : float, optional
         The total number of complete rotations the spiral makes. This scales the
-        input labels mapping them to the angle $\theta$. Default is 2.0.
+        input labels mapping them to the angle \\(\\theta\\). Default is 2.0.
     normalize_labels : bool, optional
         Whether to normalize the input labels `y` to the range [0, 1] before
         computing the spiral coordinates. Default is True.
@@ -92,10 +92,10 @@ class SpiralShape(BaseShape):
         """
         Compute the pairwise distance matrix for points mapped to the spiral.
 
-        The input labels `y` are first converted to polar coordinates $(r, \theta)$
+        The input labels `y` are first converted to polar coordinates \\((r, \\theta)\\)
         using the class parameters:
-        $$ \theta = y \times 2\\pi \times \text{num\\_turns} $$
-        $$ r = \text{initial\\_radius} + \text{growth\\_rate} \times \theta $$
+        \\[ \\theta = y \\times 2\\pi \\times \\text{num\\_turns} \\]
+        \\[ r = \\text{initial\\_radius} + \\text{growth\\_rate} \\times \\theta \\]
 
         These polar coordinates are converted to Cartesian coordinates, and the
         Euclidean distances between all pairs of points are calculated.

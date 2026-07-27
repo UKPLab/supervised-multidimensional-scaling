@@ -6,4 +6,18 @@ Technische Universität Darmstadt
 -------------------------------------------------------------------------------
 Third party legal information
 
+docs/notebooks/world_cities_continents.csv
+
+  This file is a DERIVATIVE WORK of the simplemaps World Cities Database,
+  Basic edition (https://simplemaps.com/data/world-cities), which is licensed
+  under the Creative Commons Attribution 4.0 International licence
+  (https://creativecommons.org/licenses/by/4.0/).
+
+  Changes made to the original: the city list was filtered to administrative
+  centres (plus US and Canadian cities above 100,000 inhabitants); a
+  "continent" column was added by joining on country name and, for cities the
+  join did not cover, by majority vote over the three nearest labelled cities;
+  duplicate city names were collapsed to the most populous entry; and only the
+  city, country, continent, lat, lon and population columns were retained.
+
 
