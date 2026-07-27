@@ -9,12 +9,11 @@ nav:
       - Shapes: api/shapes.md
       - Stress Metrics: api/stress.md
   - Examples:
-      - Find Manifold Location: notebooks/find_manifold_location.ipynb
-      - Family Tree Experiment: notebooks/family_tree.ipynb
+      - City Geography Manifold (end-to-end): notebooks/city_geography_manifold.ipynb
       - Find Hour-of-Day Manifold: notebooks/hour_experiment.ipynb
+      - Find Manifold Location: notebooks/find_manifold_location.ipynb
       - Manifold Activation Patching: notebooks/manifold_activation_patching.ipynb
       - Adding a custom Shape: examples/custom_shape.md
-      - Finding manifold of color in VLMs: notebooks/emergence_of_color_manifold_in_VLM.ipynb
 
 theme:
   name: material
