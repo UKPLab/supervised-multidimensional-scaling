@@ -44,7 +44,7 @@ class TorusShape(BaseShape):
 
     @property
     def radii(self) -> tuple[float, float]:
-        """tuple of (float, float): Scaling weights for the two cyclic dimensions."""
+        """Tuple of (float, float): Scaling weights for the two cyclic dimensions."""
         return self._radii
 
     @property
