@@ -68,6 +68,17 @@ class HybridSMDS(SupervisedMDS):
         self.reducer = reducer
         self.bypass_mds = bypass_mds
 
+    def _resolve_n_components(self) -> int | None:
+        """
+        Opt out of the base-class embedding-dimension override.
+
+        For HybridSMDS ``n_components`` is a lower bound on the reducer target
+        (``Y_`` is zero-padded up to it in ``fit``), not a request to truncate the
+        manifold's natural embedding, so built-in manifolds keep their own
+        dimensionality here.
+        """
+        return None
+
     def _validate_data(
         self, X: np.ndarray, y: np.ndarray, reset: bool = True, parametrization_model: SMDSParametrization | None = None
     ) -> tuple[np.ndarray, np.ndarray]:

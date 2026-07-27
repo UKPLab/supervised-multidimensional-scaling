@@ -461,6 +461,18 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         ``discrete_circular``, ``euclidean``, ``geodesic``, ``graph_geodesic``,
         ``hierarchical``, ``klein_bottle``, ``log_linear``, ``polytope``,
         ``semicircular``, ``spherical``, ``spiral``, ``torus``.
+    n_components : int or None, default=None
+        Dimensionality of the manifold embedding. If None, the natural embedding
+        dimension of the selected ``manifold`` is used (e.g. 2 for ``circular``,
+        3 for ``spherical``, 4 for ``klein_bottle``).
+
+        Only meaningful when ``parametrization="computed"``; ignored otherwise.
+        Note that classical MDS cannot produce more dimensions than the rank of
+        the manifold's distance matrix: requesting more components than a shape
+        can support yields zero-filled trailing columns rather than extra
+        geometry. It is most useful for the discrete shapes (``cluster``,
+        ``chain``, ``hierarchical``, ``graph_geodesic``), whose distance
+        matrices are typically full rank and therefore truncated by the default.
     alpha : float, default=1.0
         Ridge regularization strength for the closed-form solver.
         Set to ``0`` for unregularized least squares.
@@ -487,11 +499,13 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         self,
         parametrization: str = "computed",
         manifold: str = "circular",
+        n_components: int | None = None,
         alpha: float = 1.0,
         orthonormal: bool = False,
         gpu_accel: bool = False,
     ):
         self.parametrization = parametrization
+        self.n_components = n_components
         self.manifold = manifold
         self.alpha = alpha
         self.orthonormal = orthonormal
@@ -542,9 +556,28 @@ class SupervisedMDS(TransformerMixin, BaseEstimator):  # type: ignore[misc]
         factory, n_components = manifold_factories[manifold_name]
         return factory(), n_components
 
+    def _resolve_n_components(self) -> int | None:
+        """
+        Return the explicit embedding-dimension override, or None for the manifold default.
+
+        Subclasses that give ``n_components`` a different meaning may override this.
+        """
+        n_components = self.n_components
+
+        if n_components is None:
+            return None
+
+        if isinstance(n_components, bool) or not isinstance(n_components, (int, np.integer)) or n_components < 1:
+            raise ValueError(f"n_components must be a positive integer or None, got {n_components!r}.")
+
+        return int(n_components)
+
     def _build_parametrization(self, parametrization_name: str, manifold_name: str) -> SMDSParametrization:
         if parametrization_name == "computed":
-            manifold_obj, n_components = self._build_manifold(manifold_name)
+            manifold_obj, default_n_components = self._build_manifold(manifold_name)
+            n_components = self._resolve_n_components()
+            if n_components is None:
+                n_components = default_n_components
             return ComputedSMDSParametrization(manifold=manifold_obj, n_components=n_components)
 
         warnings.warn("parametrization='user_provided': manifold value is ignored.", UserWarning, stacklevel=2)
