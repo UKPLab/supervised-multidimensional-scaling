@@ -9,10 +9,10 @@ nav:
       - Shapes: api/shapes.md
       - Stress Metrics: api/stress.md
   - Examples:
-      - City Geography Manifold (end-to-end): notebooks/city_geography_manifold.ipynb
+      - City Geography Manifold: notebooks/city_geography_manifold.ipynb
       - Find Hour-of-Day Manifold: notebooks/hour_experiment.ipynb
       - Find Manifold Location: notebooks/find_manifold_location.ipynb
-      - Manifold Activation Patching: notebooks/manifold_activation_patching.ipynb
+      # - Manifold Activation Patching: notebooks/manifold_activation_patching.ipynb
       - Adding a custom Shape: examples/custom_shape.md
 
 theme:
