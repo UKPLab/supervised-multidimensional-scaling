@@ -138,9 +138,17 @@ dmypy.json
 sketch*
 supervised_multidimensional_scaling/sketch*
 
+# Cached notebook activations
+activations/
+
 # Manifold Discovery Results
 .cache/
 saved_results/
 st_results/
 # Mac system files
 .DS_Store
+
+# Upstream tables for the city notebook: only the derived world_cities_continents.csv
+# is redistributed.
+docs/notebooks/worldcities.csv
+docs/notebooks/countries_by_continent.csv
